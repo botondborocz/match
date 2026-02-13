@@ -1,4 +1,3 @@
-import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -19,12 +18,13 @@ kotlin {
     jvm()
     
     js {
+        outputModuleName = "shared"
         browser()
-    }
-    
-    @OptIn(ExperimentalWasmDsl::class)
-    wasmJs {
-        browser()
+        binaries.library()
+        generateTypeScriptDefinitions()
+        compilerOptions {
+            target = "es2015"
+        }
     }
     
     sourceSets {
