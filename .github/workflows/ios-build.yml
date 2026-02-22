@@ -18,6 +18,9 @@ jobs:
           java-version: '17'
           distribution: 'zulu'
 
+      - name: Make Gradle Wrapper Executable
+        run: chmod +x gradlew
+
       - name: Build Unsigned iOS App
         run: |
           # 1. Ask Xcode to build the app, but explicitly disable code signing
