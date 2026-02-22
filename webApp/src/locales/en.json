@@ -1,0 +1,14 @@
+{
+  "app_name": "MATCH",
+  "home": "Home",
+  "map": "Map",
+  "ai_coach": "AI Coach",
+  "match": "Match",
+  "profile": "Profile",
+  "pro_badge": "PRO",
+  "welcome_message": "Welcome to %1$s",
+  "find_your_match": "Find Your Match",
+  "new_matches_today": "3 new matches today",
+  "elo_format": "ELO %1$s",
+  "distance_away": "%1$s km away"
+}

@@ -1,47 +1,124 @@
 package org.ttproject
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.safeContentPadding
-import androidx.compose.material3.Button
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
-import org.jetbrains.compose.resources.painterResource
-
-import ttproject.composeapp.generated.resources.Res
-import ttproject.composeapp.generated.resources.compose_multiplatform
+import androidx.compose.ui.unit.dp
+import androidx.navigation.NavDestination.Companion.hasRoute
+import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
+import org.ttproject.components.DesktopSidebar
+import org.ttproject.components.MobileBottomNav
+import org.ttproject.components.MobileTopBar
 
 @Composable
-@Preview
 fun App() {
-    MaterialTheme {
-        var showContent by remember { mutableStateOf(false) }
-        Column(
-            modifier = Modifier
-                .background(MaterialTheme.colorScheme.primaryContainer)
-                .safeContentPadding()
-                .fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Button(onClick = { showContent = !showContent }) {
-                Text("Click me!")
+    val navController = rememberNavController()
+
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentDestination = navBackStackEntry?.destination
+
+    val currentRoute = remember(currentDestination) {
+        when {
+            currentDestination?.hasRoute(NavRoute.Map::class) == true -> NavRoute.Map
+            currentDestination?.hasRoute(NavRoute.Coach::class) == true -> NavRoute.Coach
+            currentDestination?.hasRoute(NavRoute.Match::class) == true -> NavRoute.Match
+            currentDestination?.hasRoute(NavRoute.Profile::class) == true -> NavRoute.Profile
+            else -> NavRoute.Home
+        }
+    }
+
+    val onNavigate: (NavRoute) -> Unit = { targetRoute ->
+        navController.navigate(targetRoute) {
+            popUpTo<NavRoute.Home> {
+                saveState = true
             }
-            AnimatedVisibility(showContent) {
-                val greeting = remember { Greeting().greet() }
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalAlignment = Alignment.CenterHorizontally,
+            launchSingleTop = true
+            restoreState = true
+        }
+    }
+
+    // Determine the title for the TopBar
+    val topBarTitle = when (currentRoute) {
+        NavRoute.Home -> "Home" // Or use stringResource(SharedStrings.home)
+        NavRoute.Map -> "Map"
+        NavRoute.Coach -> "AI Coach"
+        NavRoute.Match -> "Match"
+        NavRoute.Profile -> "Profile"
+    }
+
+    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+
+        val isMobile = maxWidth < 600.dp
+
+        Row(modifier = Modifier.fillMaxSize().background(AppColors.Background)) {
+
+            // Show Desktop Sidebar if width is >= 800.dp
+            if (!isMobile) {
+                DesktopSidebar(
+                    currentRoute = currentRoute,
+                    onNavigate = onNavigate
+                )
+            }
+
+            // Main Content Area: Replaced Column with Scaffold
+            Scaffold(
+                topBar = {
+                    if (isMobile) {
+                        MobileTopBar()
+                    }
+                },
+                bottomBar = {
+                    if (isMobile) {
+                        MobileBottomNav(
+                            currentRoute = currentRoute,
+                            onNavigate = onNavigate
+                        )
+                    }
+                },
+                containerColor = AppColors.Background,
+                modifier = Modifier.weight(1f) // Takes the remaining width next to the Sidebar
+            ) { innerPadding ->
+
+                // The NavHost now uses the innerPadding to stay safely between the bars
+                NavHost(
+                    navController = navController,
+                    startDestination = NavRoute.Home,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(innerPadding)
                 ) {
-                    Image(painterResource(Res.drawable.compose_multiplatform), null)
-                    Text("Compose: $greeting")
+                    composable<NavRoute.Home> {
+                        Box(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+                            Text("Home Screen", color = AppColors.TextPrimary)
+                        }
+                    }
+                    composable<NavRoute.Map> {
+                        Box(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+                            Text("Map Screen", color = AppColors.TextPrimary)
+                        }
+                    }
+                    composable<NavRoute.Coach> {
+                        Box(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+                            Text("Coach Screen", color = AppColors.TextPrimary)
+                        }
+                    }
+                    composable<NavRoute.Match> {
+                        Box(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+                            Text("Match Screen", color = AppColors.TextPrimary)
+                        }
+                    }
+                    composable<NavRoute.Profile> {
+                        Box(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+                            Text("Profile Screen", color = AppColors.TextPrimary)
+                        }
+                    }
                 }
             }
         }
