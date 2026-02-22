@@ -1,0 +1,45 @@
+name: Build KMP iOS App (Unsigned)
+
+# This allows you to manually trigger the build from the GitHub website
+on:
+  workflow_dispatch:
+
+jobs:
+  build-ios:
+    runs-on: macos-latest # This requests the free cloud Mac
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17 (Required for Kotlin)
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'zulu'
+
+      - name: Build Unsigned iOS App
+        run: |
+          # 1. Ask Xcode to build the app, but explicitly disable code signing
+          # Note: If your Xcode project is named differently, update "iosApp" below.
+          xcodebuild clean build \
+            -project iosApp/iosApp.xcodeproj \
+            -scheme iosApp \
+            -configuration Release \
+            -sdk iphoneos \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            CONFIGURATION_BUILD_DIR=build/Release-iphoneos
+
+          # 2. Package the resulting .app folder into an .ipa file
+          # An .ipa is secretly just a zip file containing a "Payload" folder!
+          mkdir -p Payload
+          mv build/Release-iphoneos/iosApp.app Payload/
+          zip -r KmpApp.ipa Payload
+
+      - name: Upload IPA Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: KmpApp-IPA
+          path: KmpApp.ipa
