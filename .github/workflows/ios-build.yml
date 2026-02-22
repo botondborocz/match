@@ -38,7 +38,7 @@ jobs:
           # 2. Package the resulting .app folder into an .ipa file
           # An .ipa is secretly just a zip file containing a "Payload" folder!
           mkdir -p Payload
-          mv build/Release-iphoneos/iosApp.app Payload/
+          mv build/Release-iphoneos/TTProject.app Payload/
           zip -r KmpApp.ipa Payload
 
       - name: Upload IPA Artifact
