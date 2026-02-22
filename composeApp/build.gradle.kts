@@ -6,7 +6,7 @@ plugins {
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
-    kotlin("plugin.serialization") version "2.3.0"
+    alias(libs.plugins.kotlinSerialization)
 }
 
 kotlin {
@@ -25,11 +25,12 @@ kotlin {
             isStatic = true
         }
     }
-    
+
     sourceSets {
         androidMain.dependencies {
             implementation(libs.compose.uiToolingPreview)
             implementation(libs.androidx.activity.compose)
+            implementation(libs.androidx.core.splashscreen)
         }
         commonMain.dependencies {
             implementation(libs.compose.runtime)
@@ -42,8 +43,8 @@ kotlin {
             implementation(libs.androidx.lifecycle.runtimeCompose)
             implementation(projects.shared)
             implementation(compose.materialIconsExtended)
-            implementation("org.jetbrains.androidx.navigation:navigation-compose:2.8.0-alpha08")
-            implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
+            implementation(libs.androidx.navigation.compose)
+            implementation(libs.kotlinx.serialization.json)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
@@ -85,4 +86,3 @@ android {
 dependencies {
     debugImplementation(libs.compose.uiTooling)
 }
-
