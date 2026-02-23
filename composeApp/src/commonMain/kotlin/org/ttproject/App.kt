@@ -16,6 +16,7 @@ import androidx.navigation.compose.rememberNavController
 import org.ttproject.components.DesktopSidebar
 import org.ttproject.components.MobileBottomNav
 import org.ttproject.components.MobileTopBar
+import org.ttproject.screens.MatchScreen
 
 @Composable
 fun App() {
@@ -110,9 +111,7 @@ fun App() {
                         }
                     }
                     composable<NavRoute.Match> {
-                        Box(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-                            Text("Match Screen", color = AppColors.TextPrimary)
-                        }
+                        MatchScreen()
                     }
                     composable<NavRoute.Profile> {
                         Box(modifier = Modifier.fillMaxSize().padding(16.dp)) {
