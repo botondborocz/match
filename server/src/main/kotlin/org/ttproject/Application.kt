@@ -14,7 +14,10 @@ fun main() {
 fun Application.module() {
     routing {
         get("/") {
-            call.respondText("Ktor: ${Greeting().greet()}")
+            call.respondText("Ktor: hoppá")
+        }
+        get("/ping") {
+            call.respondText("pong")
         }
     }
 }

@@ -1,12 +1,12 @@
 /* --- Global Resets & Layout --- */
 :root {
-  --bg-dark: #0B1120;
-  --surface-dark: #151C2C;
-  --surface-hover: #1E2738;
-  --surface-active: #2A3441;
-  --accent-orange: #FF5A36;
+  --bg-dark: #0F172A;
+  --surface-dark: #162032;
+  --surface-hover: #1a263f;
+  --surface-active: #0F172A;
+  --accent-orange: #FF6B35;
   --text-primary: #FFFFFF;
-  --text-secondary: #9CA3AF;
+  --text-secondary: #94A3B8;
   --border-color: #1F2937;
   --header-height: 60px;
   --bottom-nav-height: 70px;
@@ -75,15 +75,14 @@ html, body {
   align-items: center; 
   padding: 24px;
 }
-.logo-icon { 
-  width: 16px; 
-  height: 16px; 
-  background: var(--accent-orange); 
-  border-radius: 50%; 
-  margin-right: 12px; 
-  box-shadow: 0 0 10px var(--accent-orange);
+
+/* 👇 Az új kép stílusa */
+.logo-image {
+  height: 32px; /* Állítsd be a kívánt magasságot (pl. 24px vagy 32px) */
+  width: auto;  /* A szélesség automatikusan skálázódik, hogy ne torzuljon a kép */
+  object-fit: contain;
+  display: block;
 }
-.logo-text { font-size: 20px; font-weight: 700; color: var(--text-primary); letter-spacing: 0.5px; }
 
 /* --- Sidebar Navigation Styles --- */
 .nav-column {
@@ -146,15 +145,15 @@ html, body {
 }
 
 .pro-badge { 
-  background-color: rgba(255, 90, 54, 0.1); 
+  background-color: rgba(255, 90, 54, 0.15); 
   color: var(--accent-orange); 
   font-size: 10px; 
-  padding: 2px 6px; 
+  padding: 3px 6px; 
   border-radius: 4px; 
-  font-weight: bold; 
+  font-weight: 700; 
   margin-left: auto; 
+  letter-spacing: 0.5px;
 }
-
 .notification-dot { 
   width: 8px; 
   height: 8px; 

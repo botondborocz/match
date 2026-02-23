@@ -4,6 +4,7 @@ import { SharedRes } from '../../shared/SharedRes';
 import '../../App.css';
 import { useTranslation } from 'react-i18next';
 import { LanguageToggle } from '../LanguageToggle';
+// import logoPng from '../../../assets/match_logo_long.png';
 
 interface SidebarProps {
   activeTab: string;
@@ -27,7 +28,8 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange, isOpen, onClo
   const menuItems: NavItem[] = [
     { id: 'home', label: t('home'), icon: Home },
     { id: 'map', label: t('map'), icon: Map },
-    { id: 'coach', label: t('ai_coach'), icon: Brain, notification: true },
+    // 👇 Itt cseréltük le a notification-t isPro-ra!
+    { id: 'coach', label: t('ai_coach'), icon: Brain, isPro: true },
     { id: 'match', label: t('match'), icon: Flame },
     { id: 'profile', label: t('profile'), icon: UserIcon },
   ];
@@ -54,8 +56,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange, isOpen, onClo
 
         {/* Logo Area */}
         <div className="logo-section">
-          <div className="logo-icon"></div>
-          <span className="logo-text">SpinSync</span>
+          <img src="../../../assets/match_logo_long.png" alt="Match Logo" className="logo-image" />
         </div>
 
         {/* Navigation Items */}
@@ -82,11 +83,13 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange, isOpen, onClo
                 <item.icon 
                   size={20} 
                   color={isActive ? "#FF5A36" : "#9CA3AF"} 
-                  /* Optional: animate the icon color smoothly */
-                  // style={{ transition: 'color 0.2s' }}
                 />
                 <span className="nav-text">{item.label}</span>
-                {item.isPro && <span className="pro-badge">{SharedRes.strings.pro}</span>}
+                
+                {/* PRO Badge megjelenítése, ha isPro igaz */}
+                {item.isPro && <span className="pro-badge">{SharedRes.strings.pro || 'PRO'}</span>}
+                
+                {/* Notification pötty, ha notification igaz (most nincs ilyen, de a jövőben jól jöhet) */}
                 {item.notification && <div className="notification-dot"></div>}
               </div>
             );

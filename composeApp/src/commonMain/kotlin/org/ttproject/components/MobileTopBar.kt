@@ -24,7 +24,7 @@ import org.ttproject.AppColors
 
 // 👇 Import your generated KMP resources here
 import ttproject.composeapp.generated.resources.Res
-import ttproject.composeapp.generated.resources.match_logo // Replace with your actual PNG name
+import ttproject.composeapp.generated.resources.match_logo
 import ttproject.composeapp.generated.resources.match_logo_long
 
 @OptIn(ExperimentalMaterial3Api::class)
