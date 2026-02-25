@@ -20,4 +20,10 @@ dependencies {
     implementation(libs.ktor.serverNetty)
     testImplementation(libs.ktor.serverTestHost)
     testImplementation(libs.kotlin.testJunit)
+    // Database dependencies
+    implementation("org.postgresql:postgresql:42.7.2")
+    implementation("com.zaxxer:HikariCP:5.1.0")
+    implementation("org.jetbrains.exposed:exposed-core:0.47.0")
+    implementation("org.jetbrains.exposed:exposed-jdbc:0.47.0")
+    implementation("org.jetbrains.exposed:exposed-java-time:0.47.0")
 }
