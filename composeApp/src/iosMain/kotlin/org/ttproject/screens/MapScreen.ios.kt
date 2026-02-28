@@ -9,6 +9,7 @@ import androidx.compose.ui.viewinterop.UIKitView
 import kotlinx.cinterop.ExperimentalForeignApi
 import platform.CoreLocation.CLLocationCoordinate2DMake
 import platform.CoreLocation.CLLocationManager
+import platform.MapKit.MKAnnotationProtocol
 import platform.MapKit.MKAnnotationView
 import platform.MapKit.MKMapView
 import platform.MapKit.MKMapViewDelegateProtocol
@@ -23,6 +24,7 @@ import platform.darwin.NSObject
 actual fun NativeMap(
     modifier: Modifier,
     locations: List<TTClub>,
+    selectedClub: TTClub?,
     onMarkerClick: (TTClub) -> Unit
 ) {
     val currentLocations by rememberUpdatedState(locations)
@@ -125,6 +127,24 @@ actual fun NativeMap(
                     setTitle(club.id)
                 }
                 mapView.addAnnotation(annotation)
+            }
+
+            if (selectedClub != null) {
+                // Find the Apple pin that matches the selected Compose club
+                val annotationToSelect = mapView.annotations.firstOrNull {
+                    (it as? MKAnnotationProtocol)?.title == selectedClub.id
+                } as? MKAnnotationProtocol
+
+                if (annotationToSelect != null) {
+                    mapView.selectAnnotation(annotationToSelect, animated = true)
+                    val centerCoord = CLLocationCoordinate2DMake(selectedClub.lat, selectedClub.lng)
+                    mapView.setCenterCoordinate(centerCoord, animated = true)
+                }
+            } else {
+                // If selectedClub is null (user closed the card), deselect everything natively
+                mapView.selectedAnnotations.forEach {
+                    mapView.deselectAnnotation(it as MKAnnotationProtocol, animated = true)
+                }
             }
         }
     )

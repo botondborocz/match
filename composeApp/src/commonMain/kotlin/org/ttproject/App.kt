@@ -75,7 +75,7 @@ fun App() {
             // Main Content Area: Replaced Column with Scaffold
             Scaffold(
                 topBar = {
-                    if (isMobile) {
+                    if (isMobile && currentRoute != NavRoute.Map) {
                         MobileTopBar()
                     }
                 },

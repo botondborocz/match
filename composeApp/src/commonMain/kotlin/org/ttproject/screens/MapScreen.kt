@@ -3,6 +3,7 @@ package org.ttproject.screens
 import androidx.compose.animation.*
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
@@ -22,6 +23,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
+import androidx.compose.animation.togetherWith
 
 data class TTClub(
     val id: String, val name: String, val distance: String, val tables: Int,
@@ -30,7 +32,7 @@ data class TTClub(
 
 @Composable
 expect fun NativeMap(
-    modifier: Modifier, locations: List<TTClub>, onMarkerClick: (TTClub) -> Unit
+    modifier: Modifier, locations: List<TTClub>, selectedClub: TTClub?, onMarkerClick: (TTClub) -> Unit
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -66,6 +68,7 @@ fun MapScreen() {
                 NativeMap(
                     modifier = Modifier.fillMaxSize(),
                     locations = sampleClubs,
+                    selectedClub = selectedClub,
                     onMarkerClick = { clickedClub ->
                         coroutineScope.launch {
                             // 1. If the sheet is currently pulled up, animate it down FIRST
@@ -97,29 +100,48 @@ fun MapScreen() {
                 }
 
                 // FLOATING SELECTED CLUB CARD (Bottom, above the peek sheet)
-                AnimatedVisibility(
-                    visible = selectedClub != null,
-                    // Add a bouncy spring effect when it slides up
-                    enter = slideInVertically(
-                        initialOffsetY = { it },
-                        animationSpec = spring(
-                            dampingRatio = Spring.DampingRatioMediumBouncy,
-                            stiffness = Spring.StiffnessLow
-                        )
-                    ) + fadeIn(),
-                    // Slide down smoothly when closed
-                    exit = slideOutVertically(targetOffsetY = { it }) + fadeOut(),
+                AnimatedContent(
+                    targetState = selectedClub,
+                    transitionSpec = {
+                        if (targetState != null && initialState == null) {
+                            // 1. OPENING: Slide up with a bouncy spring
+                            (slideInVertically(
+                                initialOffsetY = { it },
+                                animationSpec = spring(
+                                    dampingRatio = Spring.DampingRatioMediumBouncy,
+                                    stiffness = Spring.StiffnessLow
+                                )
+                            ) + fadeIn()).togetherWith(fadeOut())
+                        } else if (targetState == null && initialState != null) {
+                            // 2. CLOSING: Slide smoothly down and fade out
+                            fadeIn().togetherWith(
+                                slideOutVertically(
+                                    targetOffsetY = { it },
+                                    animationSpec = tween(250)
+                                ) + fadeOut(tween(250))
+                            )
+                        } else {
+                            // 3. SWAPPING (Club A -> Club B): Smooth crossfade
+                            fadeIn(tween(300)).togetherWith(fadeOut(tween(300)))
+                        }
+                    },
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
-                        .padding(bottom = 90.dp, start = 16.dp, end = 16.dp)
-                ) {
-                    selectedClub?.let { club ->
+                        .padding(bottom = 90.dp, start = 16.dp, end = 16.dp),
+                    label = "ClubCardAnimation"
+                ) { currentClub ->
+
+                    if (currentClub != null) {
                         FloatingClubCard(
-                            club = club,
+                            club = currentClub,
                             cardBg = cardBg,
                             brandOrange = brandOrange,
                             onClose = { selectedClub = null }
                         )
+                    } else {
+                        // CRITICAL: An empty box gives the card something to visually
+                        // collapse into during the closing animation!
+                        Box(modifier = Modifier.fillMaxWidth())
                     }
                 }
             }
@@ -176,7 +198,7 @@ fun FilterChip(text: String, isSelected: Boolean, bgColor: Color) {
 
 @Composable
 fun NearbyClubsList(clubs: List<TTClub>, cardBg: Color, brandOrange: Color) {
-    LazyColumn(contentPadding = PaddingValues(bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    LazyColumn(contentPadding = PaddingValues(bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.padding(horizontal = 16.dp)) {
         item {
             // Re-added the title here so it acts as the "Peek" header
             Text("Nearby Clubs", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 8.dp))
