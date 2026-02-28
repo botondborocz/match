@@ -24,6 +24,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.clickable
+import androidx.compose.material.icons.filled.MyLocation
 
 data class TTClub(
     val id: String, val name: String, val distance: String, val tables: Int,
@@ -32,7 +34,7 @@ data class TTClub(
 
 @Composable
 expect fun NativeMap(
-    modifier: Modifier, locations: List<TTClub>, selectedClub: TTClub?, onMarkerClick: (TTClub) -> Unit
+    modifier: Modifier, locations: List<TTClub>, selectedClub: TTClub?, userLocationTrigger: Int, onMarkerClick: (TTClub) -> Unit
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -53,6 +55,17 @@ fun MapScreen() {
 
     val coroutineScope = rememberCoroutineScope()
 
+    var userLocationTrigger by remember { mutableStateOf(0) }
+
+    val handleClubSelection: (TTClub) -> Unit = { clickedClub ->
+        coroutineScope.launch {
+            if (scaffoldState.bottomSheetState.currentValue == SheetValue.Expanded) {
+                scaffoldState.bottomSheetState.partialExpand()
+            }
+            selectedClub = clickedClub
+        }
+    }
+
     BottomSheetScaffold(
         scaffoldState = scaffoldState,
         sheetContainerColor = sheetBg,
@@ -60,7 +73,12 @@ fun MapScreen() {
         sheetShape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
         sheetContent = {
             // BOTTOM SHEET IS NOW ONLY FOR THE LIST
-            NearbyClubsList(sampleClubs, cardBg, brandOrange)
+            NearbyClubsList(
+                clubs = sampleClubs,
+                cardBg = cardBg,
+                brandOrange = brandOrange,
+                onClubClick = handleClubSelection
+            )
         },
         content = { innerPadding ->
             Box(modifier = Modifier.fillMaxSize()) {
@@ -69,20 +87,8 @@ fun MapScreen() {
                     modifier = Modifier.fillMaxSize(),
                     locations = sampleClubs,
                     selectedClub = selectedClub,
-                    onMarkerClick = { clickedClub ->
-                        coroutineScope.launch {
-                            // 1. If the sheet is currently pulled up, animate it down FIRST
-                            if (scaffoldState.bottomSheetState.currentValue == SheetValue.Expanded) {
-                                // This is a suspend function! It will pause this block
-                                // of code until the sheet finishes sliding down.
-                                scaffoldState.bottomSheetState.partialExpand()
-                            }
-
-                            // 2. Once the sheet is safely out of the way (or if it was
-                            // already down), show the floating card!
-                            selectedClub = clickedClub
-                        }
-                    }
+                    userLocationTrigger = userLocationTrigger,
+                    onMarkerClick = handleClubSelection
                 )
 
                 // FLOATING FILTER CHIPS (Top)
@@ -90,13 +96,35 @@ fun MapScreen() {
                     modifier = Modifier
                         .fillMaxWidth()
                         .align(Alignment.TopCenter)
-                        .padding(top = 56.dp, start = 16.dp, end = 16.dp)
+                        // 1. Dynamically clear the status bar/notch!
+                        .windowInsetsPadding(WindowInsets.systemBars.only(WindowInsetsSides.Top))
+                        // 2. Add just a tiny bit of breathing room
+                        .padding(top = 12.dp, start = 16.dp, end = 16.dp)
                         .horizontalScroll(rememberScrollState()),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     FilterChip("Indoor", false, cardBg)
                     FilterChip("Outdoor", true, brandOrange)
                     FilterChip("Free", false, cardBg)
+                }
+
+                // 3. THE CUSTOM "MY LOCATION" BUTTON
+                AnimatedVisibility(
+                    visible = selectedClub == null, // <-- HIDE IT WHEN A CLUB IS SELECTED!
+                    enter = fadeIn() + scaleIn(),   // Pop in smoothly
+                    exit = fadeOut() + scaleOut(),  // Shrink away smoothly
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        // Push it 90dp up so it sits right above the bottom sheet!
+                        .padding(bottom = 90.dp, end = 16.dp)
+                ) {
+                    FloatingActionButton(
+                        onClick = { userLocationTrigger++ },
+                        containerColor = cardBg,
+                        contentColor = brandOrange
+                    ) {
+                        Icon(Icons.Default.MyLocation, contentDescription = "Center on me")
+                    }
                 }
 
                 // FLOATING SELECTED CLUB CARD (Bottom, above the peek sheet)
@@ -196,20 +224,30 @@ fun FilterChip(text: String, isSelected: Boolean, bgColor: Color) {
     }
 }
 
+// 4. Update the List to accept onClubClick and pass it down
 @Composable
-fun NearbyClubsList(clubs: List<TTClub>, cardBg: Color, brandOrange: Color) {
-    LazyColumn(contentPadding = PaddingValues(bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.padding(horizontal = 16.dp)) {
+fun NearbyClubsList(clubs: List<TTClub>, cardBg: Color, brandOrange: Color, onClubClick: (TTClub) -> Unit) {
+    LazyColumn(contentPadding = PaddingValues(bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         item {
-            // Re-added the title here so it acts as the "Peek" header
             Text("Nearby Clubs", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 8.dp))
         }
-        items(clubs) { club -> ClubCard(club, cardBg, brandOrange) }
+        items(clubs) { club ->
+            // Pass the specific club to the click handler
+            ClubCard(club, cardBg, brandOrange, onClick = { onClubClick(club) })
+        }
     }
 }
 
+// 5. Update the Card to accept onClick and make the Surface clickable
 @Composable
-fun ClubCard(club: TTClub, cardBg: Color, brandOrange: Color) {
-    Surface(shape = RoundedCornerShape(12.dp), color = cardBg, modifier = Modifier.fillMaxWidth()) {
+fun ClubCard(club: TTClub, cardBg: Color, brandOrange: Color, onClick: () -> Unit) {
+    Surface(
+        shape = RoundedCornerShape(12.dp),
+        color = cardBg,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() }
+    ) {
         Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
             Box(modifier = Modifier.size(50.dp).background(Color(0xFF333947), RoundedCornerShape(8.dp)))
             Spacer(modifier = Modifier.width(16.dp))

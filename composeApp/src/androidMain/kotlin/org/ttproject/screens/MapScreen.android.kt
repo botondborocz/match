@@ -9,6 +9,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Text
@@ -17,6 +18,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.google.android.gms.maps.CameraUpdateFactory
@@ -29,6 +31,7 @@ actual fun NativeMap(
     modifier: Modifier,
     locations: List<TTClub>,
     selectedClub: TTClub?,
+    userLocationTrigger: Int,
     onMarkerClick: (TTClub) -> Unit
 ) {
     var hasLocationPermission by remember { mutableStateOf(false) }
@@ -47,6 +50,28 @@ actual fun NativeMap(
         position = CameraPosition.fromLatLngZoom(budapest, 12f)
     }
 
+    val context = LocalContext.current
+
+    LaunchedEffect(userLocationTrigger) {
+        if (userLocationTrigger > 0 && hasLocationPermission) {
+            try {
+                // Use pure Android location services (No extra Gradle libraries needed!)
+                val locationManager = context.getSystemService(android.content.Context.LOCATION_SERVICE) as android.location.LocationManager
+                val lastLocation = locationManager.getLastKnownLocation(android.location.LocationManager.GPS_PROVIDER)
+                    ?: locationManager.getLastKnownLocation(android.location.LocationManager.NETWORK_PROVIDER)
+
+                lastLocation?.let { loc ->
+                    cameraPositionState.animate(
+                        update = CameraUpdateFactory.newLatLngZoom(LatLng(loc.latitude, loc.longitude), 14f),
+                        durationMs = 400
+                    )
+                }
+            } catch (e: SecurityException) {
+                // Ignore if location is somehow restricted
+            }
+        }
+    }
+
     // NEW: When a club is selected, smoothly animate the camera to center it!
     LaunchedEffect(selectedClub) {
         if (selectedClub != null) {
@@ -60,9 +85,11 @@ actual fun NativeMap(
     GoogleMap(
         modifier = modifier,
         cameraPositionState = cameraPositionState,
+        // We still need content padding to move the Google Logo up from the bottom sheet!
+        contentPadding = PaddingValues(top = 72.dp, bottom = 90.dp),
         properties = MapProperties(isMyLocationEnabled = hasLocationPermission),
         uiSettings = MapUiSettings(
-            myLocationButtonEnabled = hasLocationPermission,
+            myLocationButtonEnabled = false, // <-- TURN OFF GOOGLE'S NATIVE BUTTON
             zoomControlsEnabled = false,
             mapToolbarEnabled = false
         )
