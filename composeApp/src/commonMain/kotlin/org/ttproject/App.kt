@@ -19,6 +19,7 @@ import androidx.navigation.compose.rememberNavController
 import org.ttproject.components.DesktopSidebar
 import org.ttproject.components.MobileBottomNav
 import org.ttproject.components.MobileTopBar
+import org.ttproject.screens.MapScreen
 import org.ttproject.screens.MatchScreen
 
 @Composable
@@ -106,9 +107,7 @@ fun App() {
                         }
                     }
                     composable<NavRoute.Map> {
-                        Box(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-                            Text("Map Screen", color = AppColors.TextPrimary)
-                        }
+                        MapScreen()
                     }
                     composable<NavRoute.Coach> {
                         Box(modifier = Modifier.fillMaxSize().padding(16.dp)) {
