@@ -3,6 +3,8 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.androidLibrary)
+    id("org.jetbrains.compose")
+    id("org.jetbrains.kotlin.plugin.compose")
 }
 
 kotlin {
@@ -29,7 +31,8 @@ kotlin {
     
     sourceSets {
         commonMain.dependencies {
-            // put your Multiplatform dependencies here
+            implementation("org.jetbrains.compose.runtime:runtime:1.10.0")
+            implementation("org.jetbrains.compose.components:components-resources:1.10.0")
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
@@ -47,4 +50,9 @@ android {
     defaultConfig {
         minSdk = libs.versions.android.minSdk.get().toInt()
     }
+}
+
+compose.resources {
+    publicResClass = true
+    packageOfResClass = "org.ttproject.shared.resources"
 }

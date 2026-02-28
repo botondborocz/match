@@ -1,0 +1,14 @@
+{
+  "app_name": "MATCH",
+  "home": "Kezdőlap",
+  "map": "Térkép",
+  "ai_coach": "AI Edző",
+  "match": "Meccs",
+  "profile": "Profil",
+  "pro_badge": "PRO",
+  "welcome_message": "Üdvözöllek itt: %1$s",
+  "find_your_match": "Találd meg a partnered",
+  "new_matches_today": "3 új mai találat",
+  "elo_format": "ELO %1$s",
+  "distance_away": "%1$s km-re tőled"
+}

@@ -6,6 +6,7 @@ plugins {
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
+    kotlin("plugin.serialization") version "2.3.0"
 }
 
 kotlin {
@@ -40,6 +41,9 @@ kotlin {
             implementation(libs.androidx.lifecycle.viewmodelCompose)
             implementation(libs.androidx.lifecycle.runtimeCompose)
             implementation(projects.shared)
+            implementation(compose.materialIconsExtended)
+            implementation("org.jetbrains.androidx.navigation:navigation-compose:2.8.0-alpha08")
+            implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
@@ -64,6 +68,10 @@ android {
         }
     }
     buildTypes {
+        getByName("debug") {
+            isMinifyEnabled = false
+            isShrinkResources = false
+        }
         getByName("release") {
             isMinifyEnabled = false
         }

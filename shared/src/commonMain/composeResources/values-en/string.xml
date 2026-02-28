@@ -1,0 +1,14 @@
+<resources>
+    <string name="app_name">MATCH</string>
+    <string name="home">Home</string>
+    <string name="map">Map</string>
+    <string name="ai_coach">AI Coach</string>
+    <string name="match">Match</string>
+    <string name="profile">Profile</string>
+    <string name="pro_badge">PRO</string>
+    <string name="welcome_message">Welcome to %1$s</string>
+    <string name="find_your_match">Find Your Match</string>
+    <string name="new_matches_today">3 new matches today</string>
+    <string name="elo_format">ELO %1$s</string>
+    <string name="distance_away">%1$s km away</string>
+</resources>

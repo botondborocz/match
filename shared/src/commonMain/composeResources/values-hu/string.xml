@@ -1,0 +1,14 @@
+<resources>
+    <string name="app_name">MATCH</string>
+    <string name="home">Kezdőlap</string>
+    <string name="map">Térkép</string>
+    <string name="ai_coach">AI Edző</string>
+    <string name="match">Meccs</string>
+    <string name="profile">Profil</string>
+    <string name="pro_badge">PRO</string>
+    <string name="welcome_message">Üdvözöllek itt: %1$s</string>
+    <string name="find_your_match">Találd meg a partnered</string>
+    <string name="new_matches_today">3 új mai találat</string>
+    <string name="elo_format">ELO %1$s</string>
+    <string name="distance_away">%1$s km-re tőled</string>
+</resources>
