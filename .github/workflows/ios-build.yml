@@ -38,7 +38,8 @@ jobs:
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO \
-            CONFIGURATION_BUILD_DIR=build/Release-iphoneos
+            CONFIGURATION_BUILD_DIR=build/Release-iphoneos \
+            OTHER_LDFLAGS="-framework MapKit -framework CoreLocation"
 
           # 2. Package the resulting .app folder into an .ipa file
           # An .ipa is secretly just a zip file containing a "Payload" folder!
