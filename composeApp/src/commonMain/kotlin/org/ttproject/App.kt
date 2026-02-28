@@ -1,5 +1,8 @@
 package org.ttproject
 
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Scaffold
@@ -16,6 +19,7 @@ import androidx.navigation.compose.rememberNavController
 import org.ttproject.components.DesktopSidebar
 import org.ttproject.components.MobileBottomNav
 import org.ttproject.components.MobileTopBar
+import org.ttproject.screens.MatchScreen
 
 @Composable
 fun App() {
@@ -85,14 +89,16 @@ fun App() {
                 containerColor = AppColors.Background,
                 modifier = Modifier.weight(1f) // Takes the remaining width next to the Sidebar
             ) { innerPadding ->
-
-                // The NavHost now uses the innerPadding to stay safely between the bars
                 NavHost(
                     navController = navController,
                     startDestination = NavRoute.Home,
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(innerPadding)
+                        .padding(innerPadding),
+                    enterTransition = { fadeIn(animationSpec = tween(200)) },
+                    exitTransition = { fadeOut(animationSpec = tween(200)) },
+                    popEnterTransition = { fadeIn(animationSpec = tween(200)) },
+                    popExitTransition = { fadeOut(animationSpec = tween(200)) }
                 ) {
                     composable<NavRoute.Home> {
                         Box(modifier = Modifier.fillMaxSize().padding(16.dp)) {
@@ -110,9 +116,7 @@ fun App() {
                         }
                     }
                     composable<NavRoute.Match> {
-                        Box(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-                            Text("Match Screen", color = AppColors.TextPrimary)
-                        }
+                        MatchScreen()
                     }
                     composable<NavRoute.Profile> {
                         Box(modifier = Modifier.fillMaxSize().padding(16.dp)) {

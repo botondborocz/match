@@ -21,6 +21,11 @@ jobs:
       - name: Make Gradle Wrapper Executable
         run: chmod +x gradlew
 
+      - name: Inject API Key into local.properties
+        env:
+          MAPS_API_KEY: ${{ secrets.MAPS_API_KEY }}
+        run: echo "MAPS_API_KEY=$MAPS_API_KEY" >> local.properties
+
       - name: Build Unsigned iOS App
         run: |
           # 1. Ask Xcode to build the app, but explicitly disable code signing
