@@ -13,7 +13,11 @@ object Users : Table("users") {
     val fullName = varchar("full_name", 100)
     val avatarUrl = text("avatar_url").nullable()
 
-    val skillLevel = enumerationByName("skill_level", 20, SkillLevel::class)
+    val email = varchar("email", 255).uniqueIndex()
+    val passwordHash = varchar("password_hash", 255).nullable()
+    val googleId = varchar("google_id", 255).nullable().uniqueIndex()
+
+    val skillLevel = enumerationByName("skill_level", 20, SkillLevel::class).nullable()
     val eloRating = integer("elo_rating").default(1200)
     val playStyle = enumerationByName("play_style", 20, PlayStyle::class).nullable()
 

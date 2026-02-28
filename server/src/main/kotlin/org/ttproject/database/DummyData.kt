@@ -21,6 +21,7 @@ fun insertDummyData() {
             val user1Id = Users.insert {
                 it[username] = "bence_pingpong"
                 it[fullName] = "Bence Kovács"
+                it[email] = "bence@example.com"
                 it[skillLevel] = SkillLevel.Intermediate
                 it[eloRating] = 1350
                 it[playStyle] = PlayStyle.Offensive
@@ -33,6 +34,7 @@ fun insertDummyData() {
             val user2Id = Users.insert {
                 it[username] = "anna_spin"
                 it[fullName] = "Anna Varga"
+                it[email] = "anna@example.com"
                 it[skillLevel] = SkillLevel.Advanced
                 it[eloRating] = 1500
                 it[playStyle] = PlayStyle.AllRound
