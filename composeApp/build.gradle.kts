@@ -34,6 +34,8 @@ kotlin {
             implementation(libs.androidx.core.splashscreen)
             implementation(libs.maps.compose)
             implementation(libs.play.services.maps)
+            implementation("io.insert-koin:koin-android:3.5.3")
+            implementation("io.ktor:ktor-client-okhttp:3.3.0")
         }
         commonMain.dependencies {
             implementation(libs.compose.runtime)
@@ -48,9 +50,13 @@ kotlin {
             implementation(compose.materialIconsExtended)
             implementation(libs.androidx.navigation.compose)
             implementation(libs.kotlinx.serialization.json)
+            implementation("io.insert-koin:koin-compose:1.1.2")
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
+        }
+        iosMain.dependencies {
+            implementation("io.ktor:ktor-client-darwin:3.3.0")
         }
     }
 }

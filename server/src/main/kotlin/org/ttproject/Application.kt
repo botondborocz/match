@@ -22,6 +22,7 @@ import org.ttproject.security.JwtConfig
 import kotlin.collections.map
 import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.serialization.gson.*
+import org.ttproject.routes.userRoutes
 
 fun main() {
     embeddedServer(Netty, port = SERVER_PORT, host = "0.0.0.0", module = Application::module)
@@ -53,6 +54,7 @@ fun Application.module() {
 
     routing {
         authRoutes()
+        userRoutes()
 
         get("/") {
             call.respondText("Ktor Server is Online!")

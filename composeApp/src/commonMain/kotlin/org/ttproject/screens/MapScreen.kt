@@ -26,6 +26,9 @@ import kotlinx.coroutines.launch
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.clickable
 import androidx.compose.material.icons.filled.MyLocation
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.zIndex
 
 data class TTClub(
     val id: String, val name: String, val distance: String, val tables: Int,
@@ -155,7 +158,9 @@ fun MapScreen() {
                     },
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
-                        .padding(bottom = 90.dp, start = 16.dp, end = 16.dp),
+                        .padding(bottom = 90.dp, start = 16.dp, end = 16.dp)
+                        .zIndex(1f)
+                        .graphicsLayer(clip = false),
                     label = "ClubCardAnimation"
                 ) { currentClub ->
 
@@ -183,7 +188,9 @@ fun FloatingClubCard(club: TTClub, cardBg: Color, brandOrange: Color, onClose: (
         shape = RoundedCornerShape(16.dp),
         color = cardBg,
         shadowElevation = 8.dp,
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(elevation = 8.dp, shape = RoundedCornerShape(16.dp))
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.Top) {

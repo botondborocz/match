@@ -19,6 +19,7 @@ import androidx.navigation.compose.rememberNavController
 import org.ttproject.components.DesktopSidebar
 import org.ttproject.components.MobileBottomNav
 import org.ttproject.components.MobileTopBar
+import org.ttproject.screens.LoginScreen
 import org.ttproject.screens.MapScreen
 import org.ttproject.screens.MatchScreen
 
@@ -102,9 +103,7 @@ fun App() {
                     popExitTransition = { fadeOut(animationSpec = tween(200)) }
                 ) {
                     composable<NavRoute.Home> {
-                        Box(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-                            Text("Home Screen", color = AppColors.TextPrimary)
-                        }
+                        LoginScreen()
                     }
                     composable<NavRoute.Map> {
                         MapScreen()
