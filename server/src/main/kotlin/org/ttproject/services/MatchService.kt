@@ -1,4 +1,4 @@
-package org.ttproject.server.services
+package org.ttproject.services
 
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction

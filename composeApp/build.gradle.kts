@@ -50,7 +50,13 @@ kotlin {
             implementation(compose.materialIconsExtended)
             implementation(libs.androidx.navigation.compose)
             implementation(libs.kotlinx.serialization.json)
-            implementation("io.insert-koin:koin-compose:1.1.2")
+            // Your base Koin libraries
+            implementation("io.insert-koin:koin-core:4.0.0") // Or your current version (e.g., 3.5.6)
+            implementation("io.insert-koin:koin-compose:4.0.0")
+
+            // 👇 ADD THESE TWO FOR KMP VIEWMODELS
+            implementation("io.insert-koin:koin-core-viewmodel:4.0.0")    // Fixes AppModule.kt
+            implementation("io.insert-koin:koin-compose-viewmodel:4.0.0") // Fixes LoginScreen.kt
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)

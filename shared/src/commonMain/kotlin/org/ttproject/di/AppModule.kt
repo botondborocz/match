@@ -1,6 +1,8 @@
 package org.ttproject.di
 
+import org.koin.core.context.startKoin
 import org.koin.core.module.Module
+import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
 import org.ttproject.repository.AuthRepository
 import org.ttproject.repository.AuthRepositoryImpl
@@ -18,6 +20,12 @@ val appModule = module {
     single { createHttpClient() }
     single<AuthRepository> { AuthRepositoryImpl(get(), get()) }
     single<MatchRepository> { MatchRepositoryImpl(get(), get()) }
-    factory { LoginViewModel(get()) }
-    factory { MatchViewModel(get()) }
+    viewModel { LoginViewModel(get()) }
+    viewModel { MatchViewModel(get()) }
+}
+
+fun initKoin() {
+    startKoin {
+        modules(appModule)
+    }
 }

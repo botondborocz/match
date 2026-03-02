@@ -1,77 +1,231 @@
 package org.ttproject.screens
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
-import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
-import org.koin.compose.koinInject
-import org.koin.core.logger.Logger
+import androidx.compose.ui.unit.sp
+import org.jetbrains.compose.resources.painterResource
+import org.koin.compose.viewmodel.koinViewModel
+import org.ttproject.AppColors
 import org.ttproject.viewmodel.LoginState
 import org.ttproject.viewmodel.LoginViewModel
+import ttproject.composeapp.generated.resources.Res
+import ttproject.composeapp.generated.resources.match_logo_long
 
 @Composable
 fun LoginScreen(
-    // 🪄 Magic! Koin finds the ViewModel and gives it to us.
-    viewModel: LoginViewModel = koinInject()
+    // 👇 Using koinViewModel() here so it survives screen rotations!
+    viewModel: LoginViewModel = koinViewModel()
 ) {
-    // 1. Observe the state from the ViewModel
     val uiState by viewModel.uiState.collectAsState()
 
-    // 2. Local UI State for the text fields
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
 
-    Column(modifier = Modifier.padding(16.dp)) {
-        Text("Welcome to Match App", style = MaterialTheme.typography.bodyLarge)
-        Spacer(modifier = Modifier.height(16.dp))
+    // Used to hide the keyboard when tapping outside the text fields
+    val focusManager = LocalFocusManager.current
 
-        // Text Fields
-        OutlinedTextField(
-            value = email,
-            onValueChange = { email = it },
-            label = { Text("Email") },
-            modifier = Modifier.fillMaxWidth()
-        )
-        OutlinedTextField(
-            value = password,
-            onValueChange = { password = it },
-            label = { Text("Password") },
-            modifier = Modifier.fillMaxWidth()
-        )
+    val backgroundGradient = Brush.verticalGradient(
+        colors = listOf(Color(0xFF151C2C), Color(0xFF0A0D14)) // Deep dark blue to almost black
+    )
 
-        Spacer(modifier = Modifier.height(16.dp))
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(backgroundGradient)
+            .pointerInput(Unit) {
+                detectTapGestures(onTap = { focusManager.clearFocus() })
+            },
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 32.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
 
-        // 3. React to the ViewModel's StateFlow!
-        when (uiState) {
-            is LoginState.Idle -> {
-                Button(
-                    onClick = { viewModel.login(email, password) },
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text("Login")
+            // --- LOGO & HEADER ---
+//            Text(
+//                text = "MATCH",
+//                color = Color.White,
+//                fontSize = 42.sp,
+//                fontWeight = FontWeight.ExtraBold,
+//                letterSpacing = 2.sp
+//            )
+//            Spacer(modifier = Modifier.height(8.dp))
+//            Text(
+//                text = "Find your partner today",
+//                color = Color.LightGray,
+//                fontSize = 16.sp
+//            )
+            Image(
+                painter = painterResource(Res.drawable.match_logo_long),
+                contentDescription = "App Logo",
+                modifier = Modifier.height(64.dp)
+            )
+            Spacer(modifier = Modifier.height(48.dp))
+
+            // --- INPUT FIELDS ---
+            OutlinedTextField(
+                value = email,
+                onValueChange = { email = it },
+                label = { Text("Email") },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = AppColors.AccentOrange,
+                    unfocusedBorderColor = Color.DarkGray,
+                    focusedLabelColor = AppColors.AccentOrange,
+                    unfocusedLabelColor = Color.Gray,
+                    focusedTextColor = Color.White,
+                    unfocusedTextColor = Color.White,
+                    cursorColor = AppColors.AccentOrange
+                )
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            OutlinedTextField(
+                value = password,
+                onValueChange = { password = it },
+                label = { Text("Password") },
+                singleLine = true,
+                visualTransformation = PasswordVisualTransformation(), // Hides the password text!
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = AppColors.AccentOrange,
+                    unfocusedBorderColor = Color.DarkGray,
+                    focusedLabelColor = AppColors.AccentOrange,
+                    unfocusedLabelColor = Color.Gray,
+                    focusedTextColor = Color.White,
+                    unfocusedTextColor = Color.White,
+                    cursorColor = AppColors.AccentOrange
+                )
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Forgot Password (Placeholder)
+            Text(
+                text = "Forgot password?",
+                color = AppColors.AccentOrange,
+                fontSize = 14.sp,
+                modifier = Modifier
+                    .align(Alignment.End)
+                    .clickable { /* TODO: Navigate to recovery */ }
+                    .padding(4.dp)
+            )
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            // --- STATE HANDLING (Error & Loading) ---
+            AnimatedVisibility(visible = uiState is LoginState.Error) {
+                if (uiState is LoginState.Error) {
+                    val errorMessage = (uiState as LoginState.Error).message
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(bottom = 16.dp)
+                    ) {
+                        Icon(Icons.Default.Warning, contentDescription = null, tint = Color(0xFFFF4B4B), modifier = Modifier.size(20.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(errorMessage, color = Color(0xFFFF4B4B), fontSize = 14.sp)
+                    }
                 }
             }
-            is LoginState.Loading -> {
-                CircularProgressIndicator()
-                Text("Connecting to server...")
-            }
-            is LoginState.Success -> {
-                Text("✅ Logged in successfully! JWT Saved!", color = (Color.Green))
-                // Here is where you would navigate to your FeedScreen!
-            }
-            is LoginState.Error -> {
-                val errorMessage = (uiState as LoginState.Error).message
-                Text("❌ Error: $errorMessage", color = (Color.Red))
 
-                Button(onClick = { viewModel.login(email, password) }) {
-                    Text("Try Again")
+            AnimatedVisibility(visible = uiState is LoginState.Success) {
+                Text("✅ Logging you in...", color = Color(0xFF00E676), modifier = Modifier.padding(bottom = 16.dp))
+                // Note: Your navigation to the FeedScreen should happen via a LaunchedEffect!
+            }
+
+            // --- PRIMARY LOGIN BUTTON ---
+            Button(
+                onClick = {
+                    focusManager.clearFocus()
+                    viewModel.login(email, password)
+                },
+                enabled = uiState !is LoginState.Loading && email.isNotBlank() && password.isNotBlank(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                shape = RoundedCornerShape(28.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = AppColors.AccentOrange,
+                    disabledContainerColor = AppColors.AccentOrange.copy(alpha = 0.5f)
+                )
+            ) {
+                if (uiState is LoginState.Loading) {
+                    CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+                } else {
+                    Text("LOG IN", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                 }
+            }
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            // --- DIVIDER ---
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                HorizontalDivider(modifier = Modifier.weight(1f), color = Color.DarkGray)
+                Text(" OR ", color = Color.Gray, fontSize = 14.sp, modifier = Modifier.padding(horizontal = 16.dp))
+                HorizontalDivider(modifier = Modifier.weight(1f), color = Color.DarkGray)
+            }
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            // --- GOOGLE LOGIN BUTTON ---
+            OutlinedButton(
+                onClick = { /* TODO: Implement Google Auth */ },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                shape = RoundedCornerShape(28.dp),
+                border = BorderStroke(1.dp, Color.DarkGray),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    containerColor = Color.Transparent
+                )
+            ) {
+                // We use a simple text placeholder for the icon until you import the Google drawable
+                Text(
+                    text = "G",
+                    color = Color.White,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    modifier = Modifier.padding(end = 12.dp)
+                )
+                Text(
+                    text = "Continue with Google",
+                    color = Color.White,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Medium
+                )
             }
         }
     }

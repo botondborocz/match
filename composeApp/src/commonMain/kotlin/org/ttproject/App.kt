@@ -76,7 +76,7 @@ fun App() {
             // Main Content Area: Replaced Column with Scaffold
             Scaffold(
                 topBar = {
-                    if (isMobile && currentRoute != NavRoute.Map) {
+                    if (isMobile && currentRoute != NavRoute.Map && currentRoute != NavRoute.Profile) {
                         MobileTopBar()
                     }
                 },
@@ -103,7 +103,9 @@ fun App() {
                     popExitTransition = { fadeOut(animationSpec = tween(200)) }
                 ) {
                     composable<NavRoute.Home> {
-                        LoginScreen()
+                        Box(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+                            Text("Home Screen", color = AppColors.TextPrimary)
+                        }
                     }
                     composable<NavRoute.Map> {
                         MapScreen()
@@ -117,9 +119,7 @@ fun App() {
                         MatchScreen()
                     }
                     composable<NavRoute.Profile> {
-                        Box(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-                            Text("Profile Screen", color = AppColors.TextPrimary)
-                        }
+                        LoginScreen()
                     }
                 }
             }

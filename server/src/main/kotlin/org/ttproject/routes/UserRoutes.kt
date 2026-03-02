@@ -13,15 +13,27 @@ import org.jetbrains.exposed.sql.transactions.transaction
 import org.ttproject.database.tables.Users
 import org.ttproject.utils.calculateDistanceKm
 import kotlinx.serialization.Serializable
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.inList
+import org.jetbrains.exposed.sql.and
 import org.ttproject.data.SwipeRequest
 import org.ttproject.data.SwipeResponse
-import org.ttproject.server.services.MatchService
+import org.ttproject.database.tables.Swipes
+import org.ttproject.services.MatchService
+import java.util.UUID
 
 fun Route.userRoutes() {
     // We put this inside the JWT block so only logged-in users can see other players
     authenticate("auth-jwt") {
 
         get("/users/nearby") {
+            val principal = call.principal<JWTPrincipal>()
+            val currentUserId = principal?.payload?.getClaim("userId")?.asString()
+
+            if (currentUserId == null) {
+                call.respond(HttpStatusCode.Unauthorized, "Invalid token")
+                return@get
+            }
             // Read the coordinates from the URL (e.g., /users/nearby?lat=47.5&lng=19.1)
             val userLat = call.request.queryParameters["lat"]?.toDoubleOrNull()
             val userLng = call.request.queryParameters["lng"]?.toDoubleOrNull()
@@ -36,12 +48,25 @@ fun Route.userRoutes() {
                         lat = row[Users.lastLat],
                         lng = row[Users.lastLng]
                     )
-                }
+                }.filter { it.id != currentUserId }
+            }
+
+            val alreadySwipedPlayers = transaction {
+                Swipes.selectAll().where {
+                    (Swipes.swiperId eq UUID.fromString(currentUserId)) and
+                            (Swipes.swipedId inList allPlayers.map { UUID.fromString(it.id) })
+                }.map {
+                    it[Swipes.swipedId].toString()
+                }.toSet()
+            }
+
+            val freshPlayers = allPlayers.filterNot { player ->
+                alreadySwipedPlayers.contains(player.id)
             }
 
             if (userLat != null && userLng != null) {
                 // 📍 SORT BY DISTANCE
-                val sortedPlayers = allPlayers.sortedBy { player ->
+                val sortedPlayers = freshPlayers.sortedBy { player ->
                     if (player.lat != null && player.lng != null) {
                         calculateDistanceKm(userLat, userLng, player.lat, player.lng)
                     } else {
@@ -51,7 +76,7 @@ fun Route.userRoutes() {
                 call.respond(sortedPlayers)
             } else {
                 // 🎲 RANDOM SHUFFLE
-                call.respond(allPlayers.shuffled())
+                call.respond(freshPlayers.shuffled())
             }
         }
 
