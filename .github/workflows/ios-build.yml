@@ -6,7 +6,7 @@ on:
 
 jobs:
   build-ios:
-    runs-on: macos-latest # This requests the free cloud Mac
+    runs-on: macos-13 # This requests the free cloud Mac
 
     steps:
       - name: Checkout Repository
