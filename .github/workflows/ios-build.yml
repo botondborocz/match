@@ -6,7 +6,7 @@ on:
 
 jobs:
   build-ios:
-    runs-on: macos-15-intel # This requests the free cloud Mac
+    runs-on: macos-latest # This requests the free cloud Mac
 
     steps:
       - name: Checkout Repository
@@ -18,8 +18,22 @@ jobs:
           java-version: '17'
           distribution: 'zulu'
 
+      # NEW: This official action caches your Gradle dependencies
+      # so they don't have to re-download every single time you build.
+      - name: Setup Gradle Cache
+        uses: gradle/actions/setup-gradle@v3
+
       - name: Make Gradle Wrapper Executable
         run: chmod +x gradlew
+
+      # NEW: We dynamically write strict memory limits to gradle.properties.
+      # Gradle gets 1GB, Kotlin Native gets 4GB. This equals 5GB,
+      # leaving a safe 2GB for macOS and Xcode to operate without crashing.
+      - name: Configure Gradle Memory limits for 7GB GitHub Runner
+        run: |
+          echo "org.gradle.jvmargs=-Xmx1g -XX:MaxMetaspaceSize=512m" >> gradle.properties
+          echo "kotlin.native.jvmArgs=-Xmx4g" >> gradle.properties
+          echo "kotlin.native.cacheKind=none" >> gradle.properties
 
       - name: Inject API Key into local.properties
         env:
