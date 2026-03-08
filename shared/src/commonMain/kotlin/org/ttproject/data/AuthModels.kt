@@ -14,3 +14,8 @@ data class LoginRequest(
 data class TokenResponse(
     val token: String
 )
+
+@Serializable
+data class UpdateLanguageRequest(
+    val language: String
+)

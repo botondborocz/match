@@ -13,11 +13,19 @@ import org.jetbrains.exposed.sql.transactions.transaction
 import org.ttproject.database.tables.Users
 import org.ttproject.utils.calculateDistanceKm
 import kotlinx.serialization.Serializable
+import org.jetbrains.exposed.sql.Op
+import org.jetbrains.exposed.sql.SqlExpressionBuilder
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.inList
 import org.jetbrains.exposed.sql.and
+import org.jetbrains.exposed.sql.select
+import org.jetbrains.exposed.sql.selectAll
+import org.jetbrains.exposed.sql.update
+import org.ttproject.data.PlayerResponse
 import org.ttproject.data.SwipeRequest
 import org.ttproject.data.SwipeResponse
+import org.ttproject.data.UpdateLanguageRequest
+import org.ttproject.data.UserProfile
 import org.ttproject.database.tables.Swipes
 import org.ttproject.services.MatchService
 import java.util.UUID
@@ -68,7 +76,7 @@ fun Route.userRoutes() {
                 // 📍 SORT BY DISTANCE
                 val sortedPlayers = freshPlayers.sortedBy { player ->
                     if (player.lat != null && player.lng != null) {
-                        calculateDistanceKm(userLat, userLng, player.lat, player.lng)
+                        calculateDistanceKm(userLat, userLng, player.lat!!, player.lng!!)
                     } else {
                         Double.MAX_VALUE // Put users with no location at the very bottom
                     }
@@ -112,15 +120,67 @@ fun Route.userRoutes() {
             // 5. Reply to the mobile app!
             call.respond(HttpStatusCode.OK, SwipeResponse(isMatch = isMatch))
         }
+        get("/users/me") {
+            val principal = call.principal<JWTPrincipal>()
+            val userId = principal?.payload?.getClaim("userId")?.asString()
+
+            val userProfile = transaction {
+                Users.selectAll().where { Users.id eq UUID.fromString(userId) }
+                    .singleOrNull()?.let { row ->
+                        UserProfile(
+                            id = row[Users.id].toString(),
+                            name = row[Users.username],
+                            email = row[Users.email],
+                            elo = row[Users.eloRating],
+                            winRate = "50%", // Placeholder, calculate based on your matches table
+                            preferredLanguage = row[Users.preferred_language]
+                        )
+                }
+            }
+
+            if (userProfile != null) {
+                call.respond(userProfile)
+            } else {
+                call.respond(HttpStatusCode.NotFound, "User not found")
+            }
+        }
+        put("/users/language") {
+            // 1. Grab the user's ID from their secure JWT token
+            val principal = call.principal<JWTPrincipal>()
+            val userIdClaim = principal?.payload?.getClaim("userId")?.asString() // Note: check your login function to see what you named this claim! It might just be "id".
+
+            if (userIdClaim == null) {
+                call.respond(HttpStatusCode.Unauthorized, "Invalid token")
+                return@put
+            }
+
+            // 2. Parse the JSON body from the mobile app
+            val request = try {
+                call.receive<UpdateLanguageRequest>()
+            } catch (e: Exception) {
+                call.respond(HttpStatusCode.BadRequest, "Invalid JSON format")
+                return@put
+            }
+
+            // 3. Update the database!
+            try {
+                val userUuid = UUID.fromString(userIdClaim)
+
+                val updatedRows = transaction {
+                    Users.update({ Users.id eq userUuid }) {
+                        it[Users.preferred_language] = request.language
+                    }
+                }
+
+                if (updatedRows > 0) {
+                    call.respond(HttpStatusCode.OK, "Language updated successfully!")
+                } else {
+                    call.respond(HttpStatusCode.NotFound, "User not found in database.")
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                call.respond(HttpStatusCode.InternalServerError, "Database error: ${e.message}")
+            }
+        }
     }
 }
-
-// The JSON model to send back
-@Serializable
-data class PlayerResponse(
-    val id: String,
-    val username: String,
-    val skillLevel: String,
-    val lat: Double?,
-    val lng: Double?
-)

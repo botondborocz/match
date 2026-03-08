@@ -24,10 +24,18 @@ class LoginViewModel(
             val result = authRepository.login(email, password)
 
             result.fold(
-                onSuccess = { _uiState.value = LoginState.Success },
+                onSuccess = {
+                    _uiState.value = LoginState.Success
+//                    val userLang = apiResponse.user.preferredLanguage ?: "en"
+//                    tokenStorage.saveLanguage(userLang)
+                            },
                 onFailure = { error -> _uiState.value = LoginState.Error(error.message ?: "Unknown error") }
             )
         }
+    }
+
+    fun resetState() {
+        _uiState.value = LoginState.Idle
     }
 }
 

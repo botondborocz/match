@@ -11,4 +11,7 @@ class AndroidTokenStorage(context: Context) : TokenStorage {
     override fun saveToken(token: String) { vault.set(key, token) }
     override fun getToken(): String? = vault.string(key)
     override fun clearToken() { vault.deleteObject(key) }
+    override fun saveLanguage(languageCode: String) { vault.set("language", languageCode) }
+    override fun getLanguage(): String? = vault.string("language")
+    override fun clearLanguage() { vault.deleteObject("language") }
 }

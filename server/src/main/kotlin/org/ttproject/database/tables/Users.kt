@@ -28,6 +28,8 @@ object Users : Table("users") {
     val lastLat = double("last_lat").nullable()
     val lastLng = double("last_lng").nullable()
 
+    val preferred_language = varchar("preferred_language", 10).nullable()
+
     val createdAt = timestamp("created_at")
 
     override val primaryKey = PrimaryKey(id)

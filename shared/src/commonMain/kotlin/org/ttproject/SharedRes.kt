@@ -12,8 +12,12 @@ object SharedTheme {
     val hexAccentCyan = "#00D2FF"
     val hexTextPrimary = "#FFFFFF"
     val hexTextSecondary = "#94A3B8"
+    val hexTextGray = "#A0AABF"
     val hexProBadgeBg = "#0C4A6E"
     val hexAccentOrange = "#FF6B35"
+    val hexErrorText = "#FF4B4B"
+    val hexSuccessText = "#00E676"
+    val hexButtonBackground = "#151C2C"
 }
 
 @OptIn(ExperimentalJsExport::class)

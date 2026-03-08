@@ -9,8 +9,12 @@ object AppColors {
     val AccentCyan = SharedTheme.hexAccentCyan.toColor()
     val TextPrimary = SharedTheme.hexTextPrimary.toColor()
     val TextSecondary = SharedTheme.hexTextSecondary.toColor()
+    val TextGray = SharedTheme.hexTextGray.toColor()
     val ProBadgeBg = SharedTheme.hexProBadgeBg.toColor()
     val AccentOrange = SharedTheme.hexAccentOrange.toColor()
+    val ErrorText = SharedTheme.hexErrorText.toColor()
+    val SuccessText = SharedTheme.hexSuccessText.toColor()
+    val ButtonBackground = SharedTheme.hexButtonBackground.toColor()
 }
 
 fun String.toColor(): Color {

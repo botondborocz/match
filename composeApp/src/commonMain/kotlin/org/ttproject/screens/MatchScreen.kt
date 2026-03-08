@@ -102,21 +102,21 @@ fun MatchScreen(
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
-
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(Color(0xFF00D2FF).copy(alpha = 0.15f))
-                        .border(1.dp, Color(0xFF00D2FF).copy(alpha = 0.3f), RoundedCornerShape(16.dp))
-                        .padding(horizontal = 16.dp, vertical = 6.dp)
-                ) {
-                    Text(
-                        text = stringResource(SharedRes.string.new_matches_today),
-                        color = Color(0xFF00D2FF),
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                }
+                // Today new matches
+//                Box(
+//                    modifier = Modifier
+//                        .clip(RoundedCornerShape(16.dp))
+//                        .background(Color(0xFF00D2FF).copy(alpha = 0.15f))
+//                        .border(1.dp, Color(0xFF00D2FF).copy(alpha = 0.3f), RoundedCornerShape(16.dp))
+//                        .padding(horizontal = 16.dp, vertical = 6.dp)
+//                ) {
+//                    Text(
+//                        text = stringResource(SharedRes.string.new_matches_today),
+//                        color = Color(0xFF00D2FF),
+//                        fontSize = 12.sp,
+//                        fontWeight = FontWeight.SemiBold
+//                    )
+//                }
             }
         }
 
@@ -147,6 +147,11 @@ fun MatchScreen(
                         val offsetX = remember(topPlayer?.id) { Animatable(0f) }
                         val offsetY = remember(topPlayer?.id) { Animatable(0f) }
                         val coroutineScope = rememberCoroutineScope()
+                        var showContent by remember { mutableStateOf(false) }
+
+                        LaunchedEffect(Unit) {
+                            showContent = true
+                        }
 
                         val triggerSwipe = { directionRight: Boolean, screenWidthPx: Float ->
                             coroutineScope.launch {
@@ -164,7 +169,7 @@ fun MatchScreen(
                         // 👇 2. Wrap the CARDS in a local Column to fix the AnimatedVisibility scope
                         Column(modifier = Modifier.align(Alignment.Center)) {
                             AnimatedVisibility(
-                                visible = isVisible,
+                                visible = showContent,
                                 enter = fadeIn(tween(500, delayMillis = 150)) + scaleIn(initialScale = 0.8f, animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow)) + slideInVertically(initialOffsetY = { 100 }, animationSpec = tween(500, delayMillis = 150))
                             ) {
                                 Box(contentAlignment = Alignment.Center) {
@@ -206,7 +211,7 @@ fun MatchScreen(
                                 .padding(bottom = 32.dp)
                         ) {
                             AnimatedVisibility(
-                                visible = isVisible,
+                                visible = showContent,
                                 enter = fadeIn(tween(300, delayMillis = 350)) + scaleIn(initialScale = 0.5f, animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow))
                             ) {
                                 ActionButtonsRow(
@@ -257,8 +262,8 @@ fun SwipeableMatchCard(
 
     Box(
         modifier = modifier
-            .heightIn(max = 600.dp)
-            .fillMaxHeight(0.8f)
+            .heightIn(max = 800.dp)
+            .fillMaxHeight(0.9f)
             .padding(bottom = 120.dp) // Make room for the buttons floating over it
             .widthIn(max = 400.dp)
             .padding(horizontal = 24.dp)
@@ -302,8 +307,8 @@ fun MatchCard(
 ) {
     Box(
         modifier = modifier
-            .heightIn(max = 600.dp)
-            .fillMaxHeight(0.8f)
+            .heightIn(max = 800.dp)
+            .fillMaxHeight(0.9f)
             .padding(bottom = 120.dp)
             .widthIn(max = 400.dp)
             .padding(horizontal = 24.dp)
@@ -418,40 +423,40 @@ fun ActionButtonsRow(onLike: () -> Unit, onPass: () -> Unit) {
             modifier = Modifier
                 .size(64.dp)
                 .clip(CircleShape)
-                .background(Color(0xFF151C2C))
-                .border(2.dp, Color(0xFFFF4B4B).copy(alpha = 0.5f), CircleShape)
+                .background(AppColors.ButtonBackground)
+                .border(2.dp, AppColors.ErrorText.copy(alpha = 0.5f), CircleShape)
                 .clickable { onPass() },
             contentAlignment = Alignment.Center
         ) {
-            Icon(Icons.Default.Close, contentDescription = "Pass", tint = Color(0xFFFF4B4B), modifier = Modifier.size(32.dp))
+            Icon(Icons.Default.Close, contentDescription = "Pass", tint = AppColors.ErrorText, modifier = Modifier.size(32.dp))
         }
 
         Spacer(modifier = Modifier.width(24.dp))
 
-        Box(
-            modifier = Modifier
-                .size(48.dp)
-                .clip(CircleShape)
-                .background(Color(0xFF151C2C))
-                .border(2.dp, Color(0xFF00D2FF).copy(alpha = 0.5f), CircleShape)
-                .clickable { /* Super Like */ },
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(Icons.Default.Star, contentDescription = "Star", tint = Color(0xFF00D2FF), modifier = Modifier.size(24.dp))
-        }
-
-        Spacer(modifier = Modifier.width(24.dp))
+//        Box(
+//            modifier = Modifier
+//                .size(48.dp)
+//                .clip(CircleShape)
+//                .background(Color(0xFF151C2C))
+//                .border(2.dp, Color(0xFF00D2FF).copy(alpha = 0.5f), CircleShape)
+//                .clickable { /* Super Like */ },
+//            contentAlignment = Alignment.Center
+//        ) {
+//            Icon(Icons.Default.Star, contentDescription = "Star", tint = Color(0xFF00D2FF), modifier = Modifier.size(24.dp))
+//        }
+//
+//        Spacer(modifier = Modifier.width(24.dp))
 
         Box(
             modifier = Modifier
                 .size(64.dp)
                 .clip(CircleShape)
-                .background(Color(0xFF151C2C))
-                .border(2.dp, Color(0xFF00E676).copy(alpha = 0.5f), CircleShape)
+                .background(AppColors.ButtonBackground)
+                .border(2.dp, AppColors.SuccessText.copy(alpha = 0.5f), CircleShape)
                 .clickable { onLike() },
             contentAlignment = Alignment.Center
         ) {
-            Icon(Icons.Default.Check, contentDescription = "Like", tint = Color(0xFF00E676), modifier = Modifier.size(32.dp))
+            Icon(Icons.Default.Check, contentDescription = "Like", tint = AppColors.SuccessText, modifier = Modifier.size(32.dp))
         }
     }
 }

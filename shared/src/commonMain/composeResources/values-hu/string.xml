@@ -11,4 +11,12 @@
     <string name="new_matches_today">3 új mai találat</string>
     <string name="elo_format">ELO %1$s</string>
     <string name="distance_away">%1$s km-re tőled</string>
+    <string name="email">Email</string>
+    <string name="password">Jelszó</string>
+    <string name="forgot_password">Elfelejtett jelszó?</string>
+    <string name="login">Bejelentkezés</string>
+    <string name="or">VAGY</string>
+    <string name="continue_with_google">Folytatás Google-lal</string>
+    <string name="english">Angol</string>
+    <string name="hungarian">Magyar</string>
 </resources>

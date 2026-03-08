@@ -25,10 +25,12 @@ import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.clickable
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.zIndex
+import org.ttproject.AppColors
 
 data class TTClub(
     val id: String, val name: String, val distance: String, val tables: Int,
@@ -43,9 +45,9 @@ expect fun NativeMap(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MapScreen() {
-    val sheetBg = Color(0xFF161A23)
-    val cardBg = Color(0xFF252A36)
-    val brandOrange = Color(0xFFFF7B42)
+    val sheetBg = AppColors.Background
+    val cardBg = AppColors.SurfaceDark
+    val brandOrange = AppColors.AccentOrange
 
     val sampleClubs = listOf(
         TTClub("1", "Corvin Club", "200m away", 8, 4.8, 47.485, 19.071, listOf("AC", "Showers", "+1")),
@@ -72,7 +74,7 @@ fun MapScreen() {
     BottomSheetScaffold(
         scaffoldState = scaffoldState,
         sheetContainerColor = sheetBg,
-        sheetPeekHeight = 76.dp,
+        sheetPeekHeight = 90.dp,
         sheetShape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
         sheetContent = {
             // BOTTOM SHEET IS NOW ONLY FOR THE LIST
@@ -112,21 +114,45 @@ fun MapScreen() {
                 }
 
                 // 3. THE CUSTOM "MY LOCATION" BUTTON
+                // 3. THE FLOATING ACTION BUTTONS
                 AnimatedVisibility(
-                    visible = selectedClub == null, // <-- HIDE IT WHEN A CLUB IS SELECTED!
-                    enter = fadeIn() + scaleIn(),   // Pop in smoothly
-                    exit = fadeOut() + scaleOut(),  // Shrink away smoothly
+                    visible = selectedClub == null, // Hide both when a club is selected
+                    enter = fadeIn() + scaleIn(),
+                    exit = fadeOut() + scaleOut(),
                     modifier = Modifier
-                        .align(Alignment.BottomEnd)
-                        // Push it 90dp up so it sits right above the bottom sheet!
-                        .padding(bottom = 90.dp, end = 16.dp)
+                        .align(Alignment.TopEnd)
+                        .padding(end = 16.dp)
+                        .graphicsLayer {
+                            val sheetY = try {
+                                scaffoldState.bottomSheetState.requireOffset()
+                            } catch (e: Exception) {
+                                10000f
+                            }
+                            translationY = sheetY - size.height - 16.dp.toPx()
+                        }
                 ) {
-                    FloatingActionButton(
-                        onClick = { userLocationTrigger++ },
-                        containerColor = cardBg,
-                        contentColor = brandOrange
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(12.dp) // Tighter gap for smaller buttons
                     ) {
-                        Icon(Icons.Default.MyLocation, contentDescription = "Center on me")
+
+                        FloatingActionButton(
+                            onClick = { /* TODO: Add new club action */ },
+                            containerColor = cardBg,
+                            contentColor = brandOrange,
+                            modifier = Modifier.size(48.dp)
+                        ) {
+                            Icon(Icons.Default.Add, contentDescription = "Add Club")
+                        }
+
+                        FloatingActionButton(
+                            onClick = { userLocationTrigger++ },
+                            containerColor = cardBg,
+                            contentColor = brandOrange,
+                            modifier = Modifier.size(48.dp)
+                        ) {
+                            Icon(Icons.Default.MyLocation, contentDescription = "Center on me")
+                        }
                     }
                 }
 
@@ -236,7 +262,7 @@ fun FilterChip(text: String, isSelected: Boolean, bgColor: Color) {
 fun NearbyClubsList(clubs: List<TTClub>, cardBg: Color, brandOrange: Color, onClubClick: (TTClub) -> Unit) {
     LazyColumn(contentPadding = PaddingValues(bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         item {
-            Text("Nearby Clubs", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 8.dp))
+            Text("Nearby Clubs", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 16.dp, top = 0.dp, end = 16.dp, bottom = 8.dp))
         }
         items(clubs) { club ->
             // Pass the specific club to the click handler

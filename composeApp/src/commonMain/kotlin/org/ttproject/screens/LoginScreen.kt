@@ -22,20 +22,29 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.toUpperCase
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import org.jetbrains.compose.resources.painterResource
+import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 import org.ttproject.AppColors
+import org.ttproject.shared.resources.continue_with_google
+import org.ttproject.shared.resources.forgot_password
+import org.ttproject.shared.resources.login
+import org.ttproject.shared.resources.or
 import org.ttproject.viewmodel.LoginState
 import org.ttproject.viewmodel.LoginViewModel
 import ttproject.composeapp.generated.resources.Res
 import ttproject.composeapp.generated.resources.match_logo_long
+import org.ttproject.shared.resources.Res as SharedRes
+import org.ttproject.shared.resources.password
 
 @Composable
 fun LoginScreen(
     // 👇 Using koinViewModel() here so it survives screen rotations!
-    viewModel: LoginViewModel = koinViewModel()
+    viewModel: LoginViewModel = koinViewModel(),
+    onLoginSuccess: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
@@ -44,6 +53,13 @@ fun LoginScreen(
 
     // Used to hide the keyboard when tapping outside the text fields
     val focusManager = LocalFocusManager.current
+
+    LaunchedEffect(uiState) {
+        if (uiState is LoginState.Success) {
+            onLoginSuccess()
+            viewModel.resetState()
+        }
+    }
 
     val backgroundGradient = Brush.verticalGradient(
         colors = listOf(Color(0xFF151C2C), Color(0xFF0A0D14)) // Deep dark blue to almost black
@@ -111,7 +127,7 @@ fun LoginScreen(
             OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
-                label = { Text("Password") },
+                label = { Text(stringResource( SharedRes.string.password)) },
                 singleLine = true,
                 visualTransformation = PasswordVisualTransformation(), // Hides the password text!
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
@@ -132,7 +148,7 @@ fun LoginScreen(
 
             // Forgot Password (Placeholder)
             Text(
-                text = "Forgot password?",
+                text = stringResource(SharedRes.string.forgot_password),
                 color = AppColors.AccentOrange,
                 fontSize = 14.sp,
                 modifier = Modifier
@@ -151,16 +167,11 @@ fun LoginScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier.padding(bottom = 16.dp)
                     ) {
-                        Icon(Icons.Default.Warning, contentDescription = null, tint = Color(0xFFFF4B4B), modifier = Modifier.size(20.dp))
+                        Icon(Icons.Default.Warning, contentDescription = null, tint = AppColors.ErrorText, modifier = Modifier.size(20.dp))
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text(errorMessage, color = Color(0xFFFF4B4B), fontSize = 14.sp)
+                        Text(errorMessage, color = AppColors.ErrorText, fontSize = 14.sp)
                     }
                 }
-            }
-
-            AnimatedVisibility(visible = uiState is LoginState.Success) {
-                Text("✅ Logging you in...", color = Color(0xFF00E676), modifier = Modifier.padding(bottom = 16.dp))
-                // Note: Your navigation to the FeedScreen should happen via a LaunchedEffect!
             }
 
             // --- PRIMARY LOGIN BUTTON ---
@@ -182,7 +193,7 @@ fun LoginScreen(
                 if (uiState is LoginState.Loading) {
                     CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
                 } else {
-                    Text("LOG IN", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    Text(stringResource(SharedRes.string.login).uppercase(), color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                 }
             }
 
@@ -194,7 +205,7 @@ fun LoginScreen(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 HorizontalDivider(modifier = Modifier.weight(1f), color = Color.DarkGray)
-                Text(" OR ", color = Color.Gray, fontSize = 14.sp, modifier = Modifier.padding(horizontal = 16.dp))
+                Text(" ${stringResource(SharedRes.string.or)} ", color = Color.Gray, fontSize = 14.sp, modifier = Modifier.padding(horizontal = 16.dp))
                 HorizontalDivider(modifier = Modifier.weight(1f), color = Color.DarkGray)
             }
 
@@ -221,7 +232,7 @@ fun LoginScreen(
                     modifier = Modifier.padding(end = 12.dp)
                 )
                 Text(
-                    text = "Continue with Google",
+                    text = stringResource(SharedRes.string.continue_with_google),
                     color = Color.White,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Medium
