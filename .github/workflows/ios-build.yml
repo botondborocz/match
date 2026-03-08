@@ -31,6 +31,8 @@ jobs:
       # leaving a safe 2GB for macOS and Xcode to operate without crashing.
       - name: Configure Gradle Memory limits for 7GB GitHub Runner
         run: |
+          # The empty echo ensures we start on a brand new line!
+          echo "" >> gradle.properties 
           echo "org.gradle.jvmargs=-Xmx1g -XX:MaxMetaspaceSize=512m" >> gradle.properties
           echo "kotlin.native.jvmArgs=-Xmx4g" >> gradle.properties
           echo "kotlin.native.cacheKind=none" >> gradle.properties
