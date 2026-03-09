@@ -15,14 +15,12 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.toUpperCase
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import org.jetbrains.compose.resources.painterResource
@@ -42,7 +40,6 @@ import org.ttproject.shared.resources.password
 
 @Composable
 fun LoginScreen(
-    // 👇 Using koinViewModel() here so it survives screen rotations!
     viewModel: LoginViewModel = koinViewModel(),
     onLoginSuccess: () -> Unit
 ) {
@@ -51,7 +48,6 @@ fun LoginScreen(
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
 
-    // Used to hide the keyboard when tapping outside the text fields
     val focusManager = LocalFocusManager.current
 
     LaunchedEffect(uiState) {
@@ -61,14 +57,11 @@ fun LoginScreen(
         }
     }
 
-    val backgroundGradient = Brush.verticalGradient(
-        colors = listOf(Color(0xFF151C2C), Color(0xFF0A0D14)) // Deep dark blue to almost black
-    )
-
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(backgroundGradient)
+            // 👇 1. Replaced hardcoded gradient with dynamic background
+            .background(AppColors.Background)
             .pointerInput(Unit) {
                 detectTapGestures(onTap = { focusManager.clearFocus() })
             },
@@ -81,20 +74,6 @@ fun LoginScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
 
-            // --- LOGO & HEADER ---
-//            Text(
-//                text = "MATCH",
-//                color = Color.White,
-//                fontSize = 42.sp,
-//                fontWeight = FontWeight.ExtraBold,
-//                letterSpacing = 2.sp
-//            )
-//            Spacer(modifier = Modifier.height(8.dp))
-//            Text(
-//                text = "Find your partner today",
-//                color = Color.LightGray,
-//                fontSize = 16.sp
-//            )
             Image(
                 painter = painterResource(Res.drawable.match_logo_long),
                 contentDescription = "App Logo",
@@ -113,11 +92,13 @@ fun LoginScreen(
                 shape = RoundedCornerShape(16.dp),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = AppColors.AccentOrange,
-                    unfocusedBorderColor = Color.DarkGray,
+                    // 👇 2. Mapped unfocused elements to TextGray
+                    unfocusedBorderColor = AppColors.TextGray.copy(alpha = 0.5f),
                     focusedLabelColor = AppColors.AccentOrange,
-                    unfocusedLabelColor = Color.Gray,
-                    focusedTextColor = Color.White,
-                    unfocusedTextColor = Color.White,
+                    unfocusedLabelColor = AppColors.TextGray,
+                    // 👇 3. Mapped input text to TextPrimary
+                    focusedTextColor = AppColors.TextPrimary,
+                    unfocusedTextColor = AppColors.TextPrimary,
                     cursorColor = AppColors.AccentOrange
                 )
             )
@@ -127,26 +108,26 @@ fun LoginScreen(
             OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
-                label = { Text(stringResource( SharedRes.string.password)) },
+                label = { Text(stringResource(SharedRes.string.password)) },
                 singleLine = true,
-                visualTransformation = PasswordVisualTransformation(), // Hides the password text!
+                visualTransformation = PasswordVisualTransformation(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = AppColors.AccentOrange,
-                    unfocusedBorderColor = Color.DarkGray,
+                    unfocusedBorderColor = AppColors.TextGray.copy(alpha = 0.5f),
                     focusedLabelColor = AppColors.AccentOrange,
-                    unfocusedLabelColor = Color.Gray,
-                    focusedTextColor = Color.White,
-                    unfocusedTextColor = Color.White,
+                    unfocusedLabelColor = AppColors.TextGray,
+                    focusedTextColor = AppColors.TextPrimary,
+                    unfocusedTextColor = AppColors.TextPrimary,
                     cursorColor = AppColors.AccentOrange
                 )
             )
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Forgot Password (Placeholder)
+            // Forgot Password
             Text(
                 text = stringResource(SharedRes.string.forgot_password),
                 color = AppColors.AccentOrange,
@@ -193,6 +174,7 @@ fun LoginScreen(
                 if (uiState is LoginState.Loading) {
                     CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
                 } else {
+                    // Note: Kept text white here because white text on an orange button looks great in both themes!
                     Text(stringResource(SharedRes.string.login).uppercase(), color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                 }
             }
@@ -204,9 +186,10 @@ fun LoginScreen(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                HorizontalDivider(modifier = Modifier.weight(1f), color = Color.DarkGray)
-                Text(" ${stringResource(SharedRes.string.or)} ", color = Color.Gray, fontSize = 14.sp, modifier = Modifier.padding(horizontal = 16.dp))
-                HorizontalDivider(modifier = Modifier.weight(1f), color = Color.DarkGray)
+                // 👇 4. Softened dividers for both themes
+                HorizontalDivider(modifier = Modifier.weight(1f), color = AppColors.TextGray.copy(alpha = 0.3f))
+                Text(" ${stringResource(SharedRes.string.or)} ", color = AppColors.TextGray, fontSize = 14.sp, modifier = Modifier.padding(horizontal = 16.dp))
+                HorizontalDivider(modifier = Modifier.weight(1f), color = AppColors.TextGray.copy(alpha = 0.3f))
             }
 
             Spacer(modifier = Modifier.height(32.dp))
@@ -218,22 +201,21 @@ fun LoginScreen(
                     .fillMaxWidth()
                     .height(56.dp),
                 shape = RoundedCornerShape(28.dp),
-                border = BorderStroke(1.dp, Color.DarkGray),
+                border = BorderStroke(1.dp, AppColors.TextGray.copy(alpha = 0.5f)), // 👇 5. Dynamic border
                 colors = ButtonDefaults.outlinedButtonColors(
                     containerColor = Color.Transparent
                 )
             ) {
-                // We use a simple text placeholder for the icon until you import the Google drawable
                 Text(
                     text = "G",
-                    color = Color.White,
+                    color = AppColors.TextPrimary,
                     fontSize = 20.sp,
                     fontWeight = FontWeight.ExtraBold,
                     modifier = Modifier.padding(end = 12.dp)
                 )
                 Text(
                     text = stringResource(SharedRes.string.continue_with_google),
-                    color = Color.White,
+                    color = AppColors.TextPrimary,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Medium
                 )

@@ -8,4 +8,6 @@ interface TokenStorage {
     fun saveLanguage(languageCode: String)
     fun getLanguage(): String?
     fun clearLanguage()
+    fun saveThemeMode(mode: String)
+    fun getThemeMode(): String
 }

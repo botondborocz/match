@@ -6,7 +6,7 @@ import kotlin.js.JsExport
 @OptIn(ExperimentalJsExport::class)
 @JsExport
 object SharedTheme {
-    // Define colors as Hex Strings so both React and Compose can read them
+    // --- DARK THEME COLORS ---
     val hexBackground = "#0F172A"
     val hexSurfaceDark = "#162032"
     val hexAccentCyan = "#00D2FF"
@@ -18,6 +18,25 @@ object SharedTheme {
     val hexErrorText = "#FF4B4B"
     val hexSuccessText = "#00E676"
     val hexButtonBackground = "#151C2C"
+
+    // --- LIGHT THEME COLORS ---
+    val hexBackgroundLight = "#F8FAFC" // Soft off-white/light slate
+    val hexSurfaceLight = "#FFFFFF" // Pure white for cards
+
+    // Accents (slightly darkened for better contrast on white backgrounds)
+    val hexAccentCyanLight = "#0284C7"
+    val hexAccentOrangeLight = "#E85D04"
+
+    // Text
+    val hexTextPrimaryLight = "#0F172A" // Almost black (inverts the dark background)
+    val hexTextSecondaryLight = "#475569" // Slate gray
+    val hexTextGrayLight = "#64748B" // Medium gray
+
+    // UI Elements
+    val hexProBadgeBgLight = "#E0F2FE" // Very light blue for the badge background
+    val hexErrorTextLight = "#DC2626" // Deeper red for legibility
+    val hexSuccessTextLight = "#16A34A" // Deeper green for legibility
+    val hexButtonBackgroundLight = "#E2E8F0" // Light gray for inactive/standard buttons
 }
 
 @OptIn(ExperimentalJsExport::class)

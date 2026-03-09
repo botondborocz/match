@@ -95,7 +95,7 @@ fun MatchScreen(
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = stringResource(SharedRes.string.find_your_match),
-                        color = Color.White,
+                        color = AppColors.TextPrimary,
                         fontSize = 22.sp,
                         fontWeight = FontWeight.Bold
                     )
@@ -174,7 +174,7 @@ fun MatchScreen(
                             ) {
                                 Box(contentAlignment = Alignment.Center) {
                                     if (players.isEmpty()) {
-                                        Text("No more matches nearby!", color = Color.White)
+                                        Text("No more matches nearby!", color = AppColors.TextPrimary)
                                     } else {
                                         // Background Card
                                         if (players.size > 1) {
@@ -492,7 +492,7 @@ fun MatchCelebrationOverlay(
 
             Text(
                 text = "You and ${player.username} liked each other.",
-                color = Color.White,
+                color = AppColors.TextPrimary,
                 fontSize = 16.sp
             )
 
@@ -502,7 +502,7 @@ fun MatchCelebrationOverlay(
             Row(horizontalArrangement = Arrangement.Center) {
                 Box(modifier = Modifier.size(100.dp).clip(CircleShape).background(Color.Gray).border(3.dp, AppColors.AccentOrange, CircleShape))
                 Spacer(modifier = Modifier.width(16.dp))
-                Box(modifier = Modifier.size(100.dp).clip(CircleShape).background(Color.White.copy(alpha=0.5f)).border(3.dp, AppColors.AccentOrange, CircleShape))
+                Box(modifier = Modifier.size(100.dp).clip(CircleShape).background(AppColors.TextPrimary.copy(alpha=0.5f)).border(3.dp, AppColors.AccentOrange, CircleShape))
             }
 
             Spacer(modifier = Modifier.height(48.dp))
@@ -515,7 +515,7 @@ fun MatchCelebrationOverlay(
                     .clickable { onSendMessage() }
                     .padding(horizontal = 48.dp, vertical = 16.dp)
             ) {
-                Text("SEND MESSAGE", color = Color.White, fontWeight = FontWeight.Bold)
+                Text("SEND MESSAGE", color = AppColors.TextPrimary, fontWeight = FontWeight.Bold)
             }
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -524,11 +524,11 @@ fun MatchCelebrationOverlay(
             Box(
                 modifier = Modifier
                     .clip(RoundedCornerShape(24.dp))
-                    .border(2.dp, Color.White, RoundedCornerShape(24.dp))
+                    .border(2.dp, AppColors.TextPrimary, RoundedCornerShape(24.dp))
                     .clickable { onKeepSwiping() }
                     .padding(horizontal = 48.dp, vertical = 16.dp)
             ) {
-                Text("KEEP SWIPING", color = Color.White, fontWeight = FontWeight.Bold)
+                Text("KEEP SWIPING", color = AppColors.TextPrimary, fontWeight = FontWeight.Bold)
             }
         }
     }

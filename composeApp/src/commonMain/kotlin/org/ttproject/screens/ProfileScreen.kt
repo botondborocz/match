@@ -40,20 +40,33 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 import org.ttproject.AppColors
+import org.ttproject.AppColors.TextGray
 import org.ttproject.data.UserProfile
+import org.ttproject.shared.resources.backhand
+import org.ttproject.shared.resources.blade
+import org.ttproject.shared.resources.dark
+import org.ttproject.shared.resources.forehand
+import org.ttproject.shared.resources.language
+import org.ttproject.shared.resources.light
+import org.ttproject.shared.resources.logout
+import org.ttproject.shared.resources.my_gear
+import org.ttproject.shared.resources.system_default
+import org.ttproject.shared.resources.theme
 import org.ttproject.viewmodel.ProfileState
 import org.ttproject.viewmodel.ProfileViewModel
-
-private val DarkBackground = AppColors.Background
-private val TextGray = AppColors.TextGray
+import org.ttproject.util.ThemeMode
+import org.ttproject.shared.resources.Res as SharedRes
 
 @Composable
 fun ProfileScreen(
     currentLanguage: String = "en",
+    currentThemeMode: ThemeMode = ThemeMode.System,
     onLogoutClick: () -> Unit = {},
     onChangeLanguage: (String) -> Unit = {},
+    onChangeTheme: (ThemeMode) -> Unit = {},
     viewModel: ProfileViewModel = koinViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -98,7 +111,7 @@ fun ProfileScreen(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(DarkBackground) // Use AppColors.Background if available
+                    .background(AppColors.Background) // Use AppColors.Background if available
                     .verticalScroll(scrollState)
                     .padding(horizontal = 24.dp, vertical = 32.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
@@ -134,11 +147,13 @@ fun ProfileScreen(
                     Column {
                         SettingsAndLogout(
                             currentLanguage = currentLanguage,
+                            currentThemeMode = currentThemeMode,
                             onLogoutClick = {
                                 viewModel.clearProfile()
                                 onLogoutClick()
                             },
                             onChangeLanguage = onChangeLanguage,
+                            onChangeTheme = onChangeTheme,
                             viewModel = viewModel
                         )
                         Spacer(modifier = Modifier.height(80.dp))
@@ -170,7 +185,7 @@ private fun ProfileHeader(
         ) {
             Text(
                 text = "JD",
-                color = Color.White,
+                color = AppColors.TextPrimary,
                 fontSize = 28.sp,
                 fontWeight = FontWeight.Bold
             )
@@ -181,7 +196,7 @@ private fun ProfileHeader(
         // Name
         Text(
             text = username,
-            color = Color.White,
+            color = AppColors.TextPrimary,
             fontSize = 28.sp,
             fontWeight = FontWeight.ExtraBold
         )
@@ -210,7 +225,7 @@ private fun ProfileHeader(
 
             Text(
                 text = "Member since 2023",
-                color = TextGray,
+                color = AppColors.TextGray,
                 fontSize = 14.sp
             )
         }
@@ -278,9 +293,9 @@ private fun StatCard(
     ) {
         Icon(imageVector = icon, contentDescription = null, tint = iconTint, modifier = Modifier.size(28.dp))
         Spacer(modifier = Modifier.height(12.dp))
-        Text(text = value, color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Bold)
+        Text(text = value, color = AppColors.TextPrimary, fontSize = 24.sp, fontWeight = FontWeight.Bold)
         Spacer(modifier = Modifier.height(4.dp))
-        Text(text = label, color = TextGray, fontSize = 12.sp, fontWeight = FontWeight.Medium)
+        Text(text = label, color = AppColors.TextGray, fontSize = 12.sp, fontWeight = FontWeight.Medium)
     }
 }
 
@@ -288,27 +303,27 @@ private fun StatCard(
 private fun GearSection() {
     Column(modifier = Modifier.fillMaxWidth()) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(Icons.Default.Build, contentDescription = null, tint = TextGray, modifier = Modifier.size(20.dp))
+            Icon(Icons.Default.Build, contentDescription = null, tint = AppColors.TextGray, modifier = Modifier.size(20.dp))
             Spacer(modifier = Modifier.width(8.dp))
-            Text("My Gear", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+            Text(stringResource(SharedRes.string.my_gear), color = AppColors.TextPrimary, fontSize = 20.sp, fontWeight = FontWeight.Bold)
         }
 
         Spacer(modifier = Modifier.height(16.dp))
 
         GearItem(
-            label = "BLADE",
+            label = stringResource(SharedRes.string.blade).uppercase(),
             value = "Butterfly Viscaria",
             iconContent = { Text("🏓", fontSize = 16.sp) } // Using an emoji/text block as a placeholder for paddle
         )
         Spacer(modifier = Modifier.height(12.dp))
         GearItem(
-            label = "FOREHAND",
+            label = stringResource(SharedRes.string.forehand).uppercase(),
             value = "Tenergy 05",
             iconContent = { Box(modifier = Modifier.size(12.dp).clip(CircleShape).background(Color(0xFFFF4B4B))) }
         )
         Spacer(modifier = Modifier.height(12.dp))
         GearItem(
-            label = "BACKHAND",
+            label = stringResource(SharedRes.string.backhand).uppercase(),
             value = "Dignics 09C",
             iconContent = { Box(modifier = Modifier.size(12.dp).clip(CircleShape).background(Color.Black)) }
         )
@@ -342,9 +357,9 @@ private fun GearItem(
         Spacer(modifier = Modifier.width(16.dp))
 
         Column {
-            Text(text = label, color = TextGray, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+            Text(text = label, color = AppColors.TextGray, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
             Spacer(modifier = Modifier.height(2.dp))
-            Text(text = value, color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+            Text(text = value, color = AppColors.TextPrimary, fontSize = 16.sp, fontWeight = FontWeight.Bold)
         }
     }
 }
@@ -352,12 +367,18 @@ private fun GearItem(
 @Composable
 private fun SettingsAndLogout(
     currentLanguage: String,
+    currentThemeMode: ThemeMode,
     onLogoutClick: () -> Unit,
     onChangeLanguage: (String) -> Unit,
+    onChangeTheme: (ThemeMode) -> Unit,
     viewModel: ProfileViewModel
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
         LanguageSelector(currentLanguage, onChangeLanguage, viewModel)
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        ThemeSelector(currentThemeMode, onChangeTheme)
 
         Spacer(modifier = Modifier.height(12.dp))
 
@@ -373,7 +394,7 @@ private fun SettingsAndLogout(
         ) {
             Icon(Icons.Default.Settings, contentDescription = null, tint = TextGray, modifier = Modifier.size(24.dp))
             Spacer(modifier = Modifier.width(16.dp))
-            Text("Account Settings", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+            Text("Account Settings", color = AppColors.TextPrimary, fontSize = 16.sp, fontWeight = FontWeight.Bold)
             Spacer(modifier = Modifier.weight(1f))
             Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = TextGray)
         }
@@ -394,7 +415,7 @@ private fun SettingsAndLogout(
         ) {
             Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = "Logout", tint = Color(0xFFFF4B4B), modifier = Modifier.size(20.dp))
             Spacer(modifier = Modifier.width(8.dp))
-            Text("Logout", color = Color(0xFFFF4B4B), fontSize = 16.sp, fontWeight = FontWeight.Bold)
+            Text(stringResource(SharedRes.string.logout), color = Color(0xFFFF4B4B), fontSize = 16.sp, fontWeight = FontWeight.Bold)
         }
     }
 }
@@ -433,7 +454,7 @@ private fun LanguageSelector(
         ) {
             Icon(Icons.Default.Language, contentDescription = null, tint = TextGray, modifier = Modifier.size(24.dp))
             Spacer(modifier = Modifier.width(16.dp))
-            Text("Language", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+            Text(stringResource(SharedRes.string.language), color = AppColors.TextPrimary, fontSize = 16.sp, fontWeight = FontWeight.Bold)
 
             Spacer(modifier = Modifier.weight(1f))
 
@@ -461,7 +482,7 @@ private fun LanguageSelector(
             ) {
                 // Subtle divider line
                 HorizontalDivider(
-                    color = Color.White.copy(alpha = 0.05f),
+                    color = AppColors.TextPrimary.copy(alpha = 0.05f),
                     modifier = Modifier.padding(horizontal = 16.dp)
                 )
 
@@ -500,7 +521,7 @@ private fun LanguageOptionRow(
     onClick: () -> Unit
 ) {
 
-    val textColor = if (isSelected) AppColors.AccentOrange else Color.White
+    val textColor = if (isSelected) AppColors.AccentOrange else AppColors.TextPrimary
     val fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
 
     Row(
@@ -517,5 +538,115 @@ private fun LanguageOptionRow(
         if (isSelected) {
             Icon(Icons.Default.Check, contentDescription = "Selected", tint = AppColors.AccentOrange, modifier = Modifier.size(18.dp))
         }
+    }
+}
+@Composable
+private fun ThemeSelector(
+    currentThemeMode: ThemeMode,
+    onChangeTheme: (ThemeMode) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val rotation by animateFloatAsState(targetValue = if (expanded) 180f else 0f)
+
+    val displayTheme = when (currentThemeMode) {
+        ThemeMode.Light -> stringResource(SharedRes.string.light)
+        ThemeMode.Dark -> stringResource(SharedRes.string.dark)
+        ThemeMode.System -> stringResource(SharedRes.string.system_default)
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .background(AppColors.SurfaceDark)
+            .animateContentSize()
+    ) {
+        // --- HEADER ROW ---
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { expanded = !expanded }
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(Icons.Default.Palette, contentDescription = null, tint = AppColors.TextGray, modifier = Modifier.size(24.dp))
+            Spacer(modifier = Modifier.width(16.dp))
+            Text(stringResource(SharedRes.string.theme), color = AppColors.TextPrimary, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+
+            Spacer(modifier = Modifier.weight(1f))
+
+            Text(displayTheme, color = AppColors.TextGray, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+            Spacer(modifier = Modifier.width(4.dp))
+            Icon(
+                imageVector = Icons.Default.KeyboardArrowDown,
+                contentDescription = null,
+                tint = AppColors.TextGray,
+                modifier = Modifier.rotate(rotation)
+            )
+        }
+
+        // --- EXPANDED OPTIONS ---
+        AnimatedVisibility(
+            visible = expanded,
+            enter = expandVertically(expandFrom = Alignment.Top),
+            exit = shrinkVertically(shrinkTowards = Alignment.Top)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clipToBounds()
+                    .padding(bottom = 8.dp)
+            ) {
+                HorizontalDivider(
+                    color = AppColors.TextPrimary.copy(alpha = 0.05f),
+                    modifier = Modifier.padding(horizontal = 16.dp)
+                )
+
+                ThemeOptionRow(stringResource(SharedRes.string.system_default), currentThemeMode == ThemeMode.System) {
+                    onChangeTheme(ThemeMode.System)
+//                    expanded = false
+                }
+                ThemeOptionRow(stringResource(SharedRes.string.light), currentThemeMode == ThemeMode.Light) {
+                    onChangeTheme(ThemeMode.Light)
+//                    expanded = false
+                }
+                ThemeOptionRow(stringResource(SharedRes.string.dark), currentThemeMode == ThemeMode.Dark) {
+                    onChangeTheme(ThemeMode.Dark)
+//                    expanded = false
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ThemeOptionRow(
+    text: String,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    val textColor = if (isSelected) AppColors.AccentOrange else AppColors.TextPrimary
+    val fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() }
+            .padding(horizontal = 24.dp, vertical = 8.dp), // Adjusted padding to fit the radio button
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // Radio Button on the left (or you can move it to the right if you prefer!)
+        RadioButton(
+            selected = isSelected,
+            onClick = null, // Handled by the Row's clickable modifier
+            colors = RadioButtonDefaults.colors(
+                selectedColor = AppColors.AccentOrange,
+                unselectedColor = AppColors.TextGray
+            )
+        )
+
+        Spacer(modifier = Modifier.width(16.dp))
+
+        Text(text = text, color = textColor, fontSize = 15.sp, fontWeight = fontWeight)
     }
 }

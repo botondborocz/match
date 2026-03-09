@@ -15,8 +15,12 @@ import platform.MapKit.MKMapView
 import platform.MapKit.MKMapViewDelegateProtocol
 import platform.MapKit.MKPointAnnotation
 import platform.MapKit.MKCoordinateRegionMakeWithDistance
-import platform.MapKit.MKUserTrackingButton
-import platform.UIKit.NSLayoutConstraint
+import platform.MapKit.MKUserLocation
+import platform.MapKit.MKMarkerAnnotationView
+import platform.UIKit.UIColor
+import platform.UIKit.UIImage
+import platform.UIKit.UIImageSymbolConfiguration
+import platform.UIKit.UIImageSymbolWeightBold
 import platform.darwin.NSObject
 
 @OptIn(ExperimentalComposeUiApi::class, ExperimentalForeignApi::class)
@@ -42,27 +46,50 @@ actual fun NativeMap(
     val mapDelegate = remember {
         object : NSObject(), MKMapViewDelegateProtocol {
 
-            // 1. Handle the Click (You already have this)
+            // 1. Handle the Click
             override fun mapView(mapView: MKMapView, didSelectAnnotationView: MKAnnotationView) {
                 val tappedTitle = didSelectAnnotationView.annotation?.title
-                val clickedClub = currentLocations.find { it.id == tappedTitle } // Using ID now!
+                val clickedClub = currentLocations.find { it.id == tappedTitle }
                 if (clickedClub != null) currentOnMarkerClick(clickedClub)
             }
 
             // 2. CUSTOMIZE THE PIN APPEARANCE
             override fun mapView(
                 mapView: MKMapView,
-                viewForAnnotation: platform.MapKit.MKAnnotationProtocol
+                viewForAnnotation: MKAnnotationProtocol
             ): MKAnnotationView? {
-                // If this is the blue "User Location" dot, leave it alone!
-                if (viewForAnnotation is platform.MapKit.MKUserLocation) return null
 
+                // 👇 A. CUSTOM USER LOCATION MARKER
+                if (viewForAnnotation is MKUserLocation) {
+                    val userIdentifier = "CustomUserLocation"
+                    var userView = mapView.dequeueReusableAnnotationViewWithIdentifier(userIdentifier)
+
+                    if (userView == null) {
+                        userView = MKAnnotationView(
+                            annotation = viewForAnnotation,
+                            reuseIdentifier = userIdentifier
+                        )
+                    } else {
+                        userView.annotation = viewForAnnotation
+                    }
+
+                    // Use the built-in Apple Table Tennis SF Symbol!
+                    val config = UIImageSymbolConfiguration.configurationWithPointSize(28.0, UIImageSymbolWeightBold)
+                    userView.image = UIImage.systemImageNamed("figure.table.tennis", withConfiguration = config)
+
+                    // Tint it to match your AccentCyan (Color(0xFF00D2FF))
+                    userView.tintColor = UIColor.colorWithRed(0.0, 0.824, 1.0, 1.0)
+
+                    return userView
+                }
+
+                // 👇 B. CUSTOM CLUB PINS
                 val identifier = "CustomOrangePin"
                 var annotationView = mapView.dequeueReusableAnnotationViewWithIdentifier(identifier)
-                        as? platform.MapKit.MKMarkerAnnotationView
+                        as? MKMarkerAnnotationView
 
                 if (annotationView == null) {
-                    annotationView = platform.MapKit.MKMarkerAnnotationView(
+                    annotationView = MKMarkerAnnotationView(
                         annotation = viewForAnnotation,
                         reuseIdentifier = identifier
                     )
@@ -71,10 +98,8 @@ actual fun NativeMap(
                     annotationView.annotation = viewForAnnotation
                 }
 
-                // MOVED OUTSIDE: Always apply styling, even to recycled pins!
-                annotationView.markerTintColor = platform.UIKit.UIColor.colorWithRed(
-                    red = 1.0, green = 0.482, blue = 0.259, alpha = 1.0
-                )
+                // Apply styling to the club pins (AccentOrange)
+                annotationView.markerTintColor = UIColor.colorWithRed(1.0, 0.482, 0.259, 1.0)
                 annotationView.glyphText = "🏓"
 
                 return annotationView
@@ -88,19 +113,8 @@ actual fun NativeMap(
             val mapView = MKMapView()
             mapView.delegate = mapDelegate
 
-            // 2. Turn on the iOS Blue Dot
+            // Turn on the iOS Blue Dot (so our custom delegate can intercept and restyle it!)
             mapView.showsUserLocation = true
-
-//            // 3. Add the native Apple "Center on Me" button
-//            val trackingButton = MKUserTrackingButton.userTrackingButtonWithMapView(mapView)
-//            trackingButton.translatesAutoresizingMaskIntoConstraints = false
-//            mapView.addSubview(trackingButton)
-//
-//            // 4. Anchor the button to the bottom right (Offset by -100 to sit above our 76dp bottom sheet!)
-//            NSLayoutConstraint.activateConstraints(listOf(
-//                trackingButton.trailingAnchor.constraintEqualToAnchor(mapView.trailingAnchor, constant = -16.0),
-//                trackingButton.bottomAnchor.constraintEqualToAnchor(mapView.bottomAnchor, constant = -100.0)
-//            ))
 
             val budapestCoord = CLLocationCoordinate2DMake(47.4979, 19.0402)
             val region = MKCoordinateRegionMakeWithDistance(budapestCoord, 8000.0, 8000.0)
@@ -112,47 +126,50 @@ actual fun NativeMap(
             interactionMode = UIKitInteropInteractionMode.NonCooperative
         ),
         update = { mapView ->
-            // 1. PLOT MARKERS (Only if they aren't already there!)
-            // Filter out the MKUserLocation so we only count our custom pins
-            val existingCustomPins = mapView.annotations.filter { it !is platform.MapKit.MKUserLocation }
+            // 1. PLOT MARKERS (Filter out the MKUserLocation so we don't accidentally delete our ping pong player!)
+            val existingCustomPins = mapView.annotations.filter { it !is MKUserLocation }
 
             if (existingCustomPins.size != locations.size) {
                 mapView.removeAnnotations(existingCustomPins)
 
                 locations.forEach { club ->
-                    val annotation = platform.MapKit.MKPointAnnotation().apply {
-                        setCoordinate(platform.CoreLocation.CLLocationCoordinate2DMake(club.lat, club.lng))
+                    val annotation = MKPointAnnotation().apply {
+                        setCoordinate(CLLocationCoordinate2DMake(club.lat, club.lng))
                         setTitle(club.id)
                     }
                     mapView.addAnnotation(annotation)
                 }
             }
 
+            // 2. ZOOM TO SELECTED CLUB
             if (selectedClub != null) {
-                // Find the Apple pin that matches the selected Compose club
                 val annotationToSelect = mapView.annotations.firstOrNull {
                     (it as? MKAnnotationProtocol)?.title == selectedClub.id
                 } as? MKAnnotationProtocol
 
                 if (annotationToSelect != null) {
                     mapView.selectAnnotation(annotationToSelect, animated = true)
+
+                    // Pan and zoom beautifully to 1000m altitude
                     val centerCoord = CLLocationCoordinate2DMake(selectedClub.lat, selectedClub.lng)
-                    mapView.setCenterCoordinate(centerCoord, animated = true)
+                    val region = MKCoordinateRegionMakeWithDistance(centerCoord, 1000.0, 1000.0)
+                    mapView.setRegion(region, animated = true)
                 }
             } else {
-                // If selectedClub is null (user closed the card), deselect everything natively
                 mapView.selectedAnnotations.forEach {
                     mapView.deselectAnnotation(it as MKAnnotationProtocol, animated = true)
                 }
             }
 
+            // 3. ZOOM TO USER LOCATION
             if (userLocationTrigger > lastHandledTrigger) {
                 lastHandledTrigger = userLocationTrigger
 
-                // Ask Apple Maps where the user is, and pan there!
                 val userLoc = mapView.userLocation.location
                 if (userLoc != null) {
-                    mapView.setCenterCoordinate(userLoc.coordinate, animated = true)
+                    // Pan and zoom beautifully to the user's location at 1000m altitude
+                    val region = MKCoordinateRegionMakeWithDistance(userLoc.coordinate, 1000.0, 1000.0)
+                    mapView.setRegion(region, animated = true)
                 }
             }
         }

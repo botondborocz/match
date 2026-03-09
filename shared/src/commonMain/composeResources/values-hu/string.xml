@@ -15,8 +15,22 @@
     <string name="password">Jelszó</string>
     <string name="forgot_password">Elfelejtett jelszó?</string>
     <string name="login">Bejelentkezés</string>
+    <string name="logout">Kijelentkezés</string>
     <string name="or">VAGY</string>
     <string name="continue_with_google">Folytatás Google-lal</string>
     <string name="english">Angol</string>
     <string name="hungarian">Magyar</string>
+    <string name="language">Nyelv</string>
+    <string name="theme">Téma</string>
+    <string name="light">Világos</string>
+    <string name="dark">Sötét</string>
+    <string name="system_default">Rendszer alapértelmezett</string>
+    <string name="my_gear">Felszerelésem</string>
+    <string name="blade">Fa</string>
+    <string name="forehand">Tenyeres</string>
+    <string name="backhand">Fonák</string>
+    <string name="indoor">Beltéri</string>
+    <string name="outdoor">Szabadtéri</string>
+    <string name="free">Ingyenes</string>
+    <string name="nearby_clubs">Közeli klubok</string>
 </resources>

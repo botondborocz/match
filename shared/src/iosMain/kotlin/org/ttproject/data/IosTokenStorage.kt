@@ -13,4 +13,6 @@ class IosTokenStorage : TokenStorage {
     override fun saveLanguage(languageCode: String) { vault.set("language", languageCode) }
     override fun getLanguage(): String? = vault.string("language")
     override fun clearLanguage() { vault.deleteObject("language") }
+    override fun saveThemeMode(mode: String) { vault.set("theme_mode", mode) }
+    override fun getThemeMode(): String = vault.string("theme_mode") ?: "system"
 }

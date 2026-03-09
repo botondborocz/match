@@ -30,7 +30,13 @@ import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.zIndex
+import org.jetbrains.compose.resources.stringResource
 import org.ttproject.AppColors
+import org.ttproject.shared.resources.free
+import org.ttproject.shared.resources.indoor
+import org.ttproject.shared.resources.nearby_clubs
+import org.ttproject.shared.resources.outdoor
+import org.ttproject.shared.resources.Res as SharedRes
 
 data class TTClub(
     val id: String, val name: String, val distance: String, val tables: Int,
@@ -70,142 +76,150 @@ fun MapScreen() {
             selectedClub = clickedClub
         }
     }
-
-    BottomSheetScaffold(
-        scaffoldState = scaffoldState,
-        sheetContainerColor = sheetBg,
-        sheetPeekHeight = 90.dp,
-        sheetShape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
-        sheetContent = {
-            // BOTTOM SHEET IS NOW ONLY FOR THE LIST
-            NearbyClubsList(
-                clubs = sampleClubs,
-                cardBg = cardBg,
-                brandOrange = brandOrange,
-                onClubClick = handleClubSelection
-            )
-        },
-        content = { innerPadding ->
-            Box(modifier = Modifier.fillMaxSize()) {
-
-                NativeMap(
-                    modifier = Modifier.fillMaxSize(),
-                    locations = sampleClubs,
-                    selectedClub = selectedClub,
-                    userLocationTrigger = userLocationTrigger,
-                    onMarkerClick = handleClubSelection
-                )
-
-                // FLOATING FILTER CHIPS (Top)
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .align(Alignment.TopCenter)
-                        // 1. Dynamically clear the status bar/notch!
-                        .windowInsetsPadding(WindowInsets.systemBars.only(WindowInsetsSides.Top))
-                        // 2. Add just a tiny bit of breathing room
-                        .padding(top = 12.dp, start = 16.dp, end = 16.dp)
-                        .horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    FilterChip("Indoor", false, cardBg)
-                    FilterChip("Outdoor", true, brandOrange)
-                    FilterChip("Free", false, cardBg)
+    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+        // 👇 2. Grab the max height of the current screen (works on iOS & Android!)
+        val screenHeight = this.maxHeight
+        BottomSheetScaffold(
+            scaffoldState = scaffoldState,
+            sheetContainerColor = sheetBg,
+            sheetPeekHeight = 90.dp,
+            sheetShape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+            sheetContent = {
+                Box(modifier = Modifier.heightIn(max = screenHeight - 500.dp)) {
+                    NearbyClubsList(
+                        clubs = sampleClubs,
+                        cardBg = cardBg,
+                        brandOrange = brandOrange,
+                        onClubClick = handleClubSelection
+                    )
                 }
+            },
+            content = { innerPadding ->
+                Box(modifier = Modifier.fillMaxSize()) {
 
-                // 3. THE CUSTOM "MY LOCATION" BUTTON
-                // 3. THE FLOATING ACTION BUTTONS
-                AnimatedVisibility(
-                    visible = selectedClub == null, // Hide both when a club is selected
-                    enter = fadeIn() + scaleIn(),
-                    exit = fadeOut() + scaleOut(),
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(end = 16.dp)
-                        .graphicsLayer {
-                            val sheetY = try {
-                                scaffoldState.bottomSheetState.requireOffset()
-                            } catch (e: Exception) {
-                                10000f
-                            }
-                            translationY = sheetY - size.height - 16.dp.toPx()
-                        }
-                ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(12.dp) // Tighter gap for smaller buttons
+                    NativeMap(
+                        modifier = Modifier.fillMaxSize(),
+                        locations = sampleClubs,
+                        selectedClub = selectedClub,
+                        userLocationTrigger = userLocationTrigger,
+                        onMarkerClick = handleClubSelection
+                    )
+
+                    // FLOATING FILTER CHIPS (Top)
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .align(Alignment.TopCenter)
+                            // 1. Dynamically clear the status bar/notch!
+                            .windowInsetsPadding(WindowInsets.systemBars.only(WindowInsetsSides.Top))
+                            // 2. Add just a tiny bit of breathing room
+                            .padding(top = 12.dp, start = 16.dp, end = 16.dp)
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
+                        FilterChip(stringResource(SharedRes.string.indoor), false, cardBg)
+                        FilterChip(stringResource(SharedRes.string.outdoor), true, brandOrange)
+                        FilterChip(stringResource(SharedRes.string.free), false, cardBg)
+                    }
 
-                        FloatingActionButton(
-                            onClick = { /* TODO: Add new club action */ },
-                            containerColor = cardBg,
-                            contentColor = brandOrange,
-                            modifier = Modifier.size(48.dp)
+                    // 3. THE CUSTOM "MY LOCATION" BUTTON
+                    // 3. THE FLOATING ACTION BUTTONS
+                    AnimatedVisibility(
+                        visible = selectedClub == null, // Hide both when a club is selected
+                        enter = fadeIn() + scaleIn(),
+                        exit = fadeOut() + scaleOut(),
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(end = 16.dp)
+                            .graphicsLayer {
+                                val sheetY = try {
+                                    scaffoldState.bottomSheetState.requireOffset()
+                                } catch (e: Exception) {
+                                    10000f
+                                }
+                                translationY = sheetY - size.height - 16.dp.toPx()
+                            }
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(12.dp) // Tighter gap for smaller buttons
                         ) {
-                            Icon(Icons.Default.Add, contentDescription = "Add Club")
-                        }
 
-                        FloatingActionButton(
-                            onClick = { userLocationTrigger++ },
-                            containerColor = cardBg,
-                            contentColor = brandOrange,
-                            modifier = Modifier.size(48.dp)
-                        ) {
-                            Icon(Icons.Default.MyLocation, contentDescription = "Center on me")
+                            FloatingActionButton(
+                                onClick = { /* TODO: Add new club action */ },
+                                containerColor = cardBg,
+                                contentColor = brandOrange,
+                                modifier = Modifier.size(48.dp)
+                            ) {
+                                Icon(Icons.Default.Add, contentDescription = "Add Club")
+                            }
+
+                            FloatingActionButton(
+                                onClick = { userLocationTrigger++ },
+                                containerColor = cardBg,
+                                contentColor = brandOrange,
+                                modifier = Modifier.size(48.dp)
+                            ) {
+                                Icon(Icons.Default.MyLocation, contentDescription = "Center on me")
+                            }
                         }
                     }
-                }
 
-                // FLOATING SELECTED CLUB CARD (Bottom, above the peek sheet)
-                AnimatedContent(
-                    targetState = selectedClub,
-                    transitionSpec = {
-                        if (targetState != null && initialState == null) {
-                            // 1. OPENING: Slide up with a bouncy spring
-                            (slideInVertically(
-                                initialOffsetY = { it },
-                                animationSpec = spring(
-                                    dampingRatio = Spring.DampingRatioMediumBouncy,
-                                    stiffness = Spring.StiffnessLow
-                                )
-                            ) + fadeIn()).togetherWith(fadeOut())
-                        } else if (targetState == null && initialState != null) {
-                            // 2. CLOSING: Slide smoothly down and fade out
-                            fadeIn().togetherWith(
-                                slideOutVertically(
-                                    targetOffsetY = { it },
-                                    animationSpec = tween(250)
-                                ) + fadeOut(tween(250))
+                    // FLOATING SELECTED CLUB CARD (Bottom, above the peek sheet)
+                    AnimatedContent(
+                        targetState = selectedClub,
+                        transitionSpec = {
+                            if (targetState != null && initialState == null) {
+                                // 1. OPENING: Slide up with a bouncy spring
+                                (slideInVertically(
+                                    initialOffsetY = { it },
+                                    animationSpec = spring(
+                                        dampingRatio = Spring.DampingRatioMediumBouncy,
+                                        stiffness = Spring.StiffnessLow
+                                    )
+                                ) + fadeIn())
+                                    .togetherWith(fadeOut())
+                                    .using(SizeTransform(clip = false))
+                            } else if (targetState == null && initialState != null) {
+                                // 2. CLOSING: Slide smoothly down and fade out
+                                fadeIn().togetherWith(
+                                    slideOutVertically(
+                                        targetOffsetY = { it },
+                                        animationSpec = tween(250)
+                                    ) + fadeOut(tween(250))
+                                ).using(SizeTransform(clip = false))
+                            } else {
+                                // 3. SWAPPING (Club A -> Club B): Smooth crossfade
+                                fadeIn(tween(300))
+                                    .togetherWith(fadeOut(tween(300)))
+                                    .using(SizeTransform(clip = false))
+                            }
+                        },
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .padding(bottom = 104.dp, start = 16.dp, end = 16.dp)
+                            .zIndex(1f)
+                            .graphicsLayer(clip = false),
+                        label = "ClubCardAnimation"
+                    ) { currentClub ->
+
+                        if (currentClub != null) {
+                            FloatingClubCard(
+                                club = currentClub,
+                                cardBg = cardBg,
+                                brandOrange = brandOrange,
+                                onClose = { selectedClub = null }
                             )
                         } else {
-                            // 3. SWAPPING (Club A -> Club B): Smooth crossfade
-                            fadeIn(tween(300)).togetherWith(fadeOut(tween(300)))
+                            // CRITICAL: An empty box gives the card something to visually
+                            // collapse into during the closing animation!
+                            Box(modifier = Modifier.fillMaxWidth())
                         }
-                    },
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .padding(bottom = 90.dp, start = 16.dp, end = 16.dp)
-                        .zIndex(1f)
-                        .graphicsLayer(clip = false),
-                    label = "ClubCardAnimation"
-                ) { currentClub ->
-
-                    if (currentClub != null) {
-                        FloatingClubCard(
-                            club = currentClub,
-                            cardBg = cardBg,
-                            brandOrange = brandOrange,
-                            onClose = { selectedClub = null }
-                        )
-                    } else {
-                        // CRITICAL: An empty box gives the card something to visually
-                        // collapse into during the closing animation!
-                        Box(modifier = Modifier.fillMaxWidth())
                     }
                 }
             }
-        }
-    )
+        )
+    }
 }
 
 @Composable
@@ -221,7 +235,7 @@ fun FloatingClubCard(club: TTClub, cardBg: Color, brandOrange: Color, onClose: (
         Column(modifier = Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.Top) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(club.name, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                    Text(club.name, color = AppColors.TextPrimary, fontWeight = FontWeight.Bold, fontSize = 18.sp)
                     Spacer(modifier = Modifier.height(4.dp))
                     Text("${club.distance} • ${club.tables} Tables", color = Color.Gray, fontSize = 14.sp)
                 }
@@ -243,7 +257,7 @@ fun FloatingClubCard(club: TTClub, cardBg: Color, brandOrange: Color, onClose: (
                     colors = ButtonDefaults.buttonColors(containerColor = brandOrange),
                     contentPadding = PaddingValues(0.dp)
                 ) {
-                    Text("Navigate", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                    Text("Navigate", color = AppColors.TextPrimary, fontSize = 14.sp, fontWeight = FontWeight.Bold)
                 }
             }
         }
@@ -252,7 +266,7 @@ fun FloatingClubCard(club: TTClub, cardBg: Color, brandOrange: Color, onClose: (
 
 @Composable
 fun FilterChip(text: String, isSelected: Boolean, bgColor: Color) {
-    Surface(shape = RoundedCornerShape(20.dp), color = bgColor, contentColor = Color.White) {
+    Surface(shape = RoundedCornerShape(20.dp), color = bgColor, contentColor = AppColors.TextPrimary) {
         Text(text = text, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp), fontSize = 14.sp)
     }
 }
@@ -262,7 +276,7 @@ fun FilterChip(text: String, isSelected: Boolean, bgColor: Color) {
 fun NearbyClubsList(clubs: List<TTClub>, cardBg: Color, brandOrange: Color, onClubClick: (TTClub) -> Unit) {
     LazyColumn(contentPadding = PaddingValues(bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         item {
-            Text("Nearby Clubs", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 16.dp, top = 0.dp, end = 16.dp, bottom = 8.dp))
+            Text(stringResource(SharedRes.string.nearby_clubs), color = AppColors.TextPrimary, fontSize = 20.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 16.dp, top = 0.dp, end = 16.dp, bottom = 8.dp))
         }
         items(clubs) { club ->
             // Pass the specific club to the click handler
@@ -285,7 +299,7 @@ fun ClubCard(club: TTClub, cardBg: Color, brandOrange: Color, onClick: () -> Uni
             Box(modifier = Modifier.size(50.dp).background(Color(0xFF333947), RoundedCornerShape(8.dp)))
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text(club.name, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                Text(club.name, color = AppColors.TextPrimary, fontWeight = FontWeight.Bold, fontSize = 16.sp)
                 Text("${club.distance} • ${club.tables} Tables", color = Color.Gray, fontSize = 14.sp)
             }
         }
