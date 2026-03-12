@@ -6,6 +6,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
+import androidx.compose.material3.Button
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
@@ -147,8 +148,21 @@ fun App() {
                             popExitTransition = { fadeOut(animationSpec = tween(200)) }
                         ) {
                             composable<NavRoute.Home> {
-                                Box(modifier = Modifier.fillMaxSize().padding(innerPadding).padding(16.dp)) {
+                                Box(
+                                    modifier = Modifier.fillMaxSize().padding(innerPadding)
+                                        .padding(16.dp)
+                                ) {
                                     Text("Home Screen", color = AppColors.TextPrimary)
+                                    Button(
+                                        onClick = {
+                                            tokenStorage.clearToken()
+                                            tokenStorage.clearLanguage()
+                                            isLoggedIn = false
+                                        },
+                                        modifier = Modifier.padding(top = 16.dp)
+                                    ) {
+                                        Text("Logout")
+                                    }
                                 }
                             }
                             composable<NavRoute.Map> {
