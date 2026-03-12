@@ -20,14 +20,17 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.MapStyleOptions
 import com.google.maps.android.compose.*
 
 @Composable
@@ -36,6 +39,8 @@ actual fun NativeMap(
     locations: List<TTClub>,
     selectedClub: TTClub?,
     userLocationTrigger: Int,
+    bottomPadding: Dp, // 👈 Added Bottom Padding
+    isDark: Boolean,   // 👈 Added Theme State
     onMarkerClick: (TTClub) -> Unit
 ) {
     val context = LocalContext.current
@@ -60,11 +65,10 @@ actual fun NativeMap(
         permissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
     }
 
-    // --- LIVE LOCATION TRACKING FOR CUSTOM MARKER ---
+    // --- LIVE LOCATION TRACKING ---
     DisposableEffect(hasLocationPermission) {
         val locationManager = ContextCompat.getSystemService(context, LocationManager::class.java)
 
-        // Create the listener safely
         val locationListener = object : LocationListener {
             override fun onLocationChanged(loc: Location) {
                 userLocation = LatLng(loc.latitude, loc.longitude)
@@ -73,7 +77,6 @@ actual fun NativeMap(
 
         if (hasLocationPermission && locationManager != null) {
             try {
-                // Request location updates every 2 seconds or 2 meters
                 locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 2000L, 2f, locationListener)
                 locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 2000L, 2f, locationListener)
             } catch (e: SecurityException) {
@@ -82,7 +85,6 @@ actual fun NativeMap(
         }
 
         onDispose {
-            // Stop tracking when the map screen is closed to save battery
             locationManager?.removeUpdates(locationListener)
         }
     }
@@ -118,13 +120,39 @@ actual fun NativeMap(
         }
     }
 
+    // --- GOOGLE MAPS DARK MODE JSON ---
+    val darkMapStyle = """
+        [
+          {"elementType": "geometry", "stylers": [{"color": "#242f3e"}]},
+          {"elementType": "labels.text.fill", "stylers": [{"color": "#746855"}]},
+          {"elementType": "labels.text.stroke", "stylers": [{"color": "#242f3e"}]},
+          {"featureType": "administrative.locality", "elementType": "labels.text.fill", "stylers": [{"color": "#d59563"}]},
+          {"featureType": "poi", "elementType": "labels.text.fill", "stylers": [{"color": "#d59563"}]},
+          {"featureType": "poi.park", "elementType": "geometry", "stylers": [{"color": "#263c3f"}]},
+          {"featureType": "poi.park", "elementType": "labels.text.fill", "stylers": [{"color": "#6b9a76"}]},
+          {"featureType": "road", "elementType": "geometry", "stylers": [{"color": "#38414e"}]},
+          {"featureType": "road", "elementType": "geometry.stroke", "stylers": [{"color": "#212a37"}]},
+          {"featureType": "road", "elementType": "labels.text.fill", "stylers": [{"color": "#9ca5b3"}]},
+          {"featureType": "road.highway", "elementType": "geometry", "stylers": [{"color": "#746855"}]},
+          {"featureType": "road.highway", "elementType": "geometry.stroke", "stylers": [{"color": "#1f2835"}]},
+          {"featureType": "road.highway", "elementType": "labels.text.fill", "stylers": [{"color": "#f3d19c"}]},
+          {"featureType": "water", "elementType": "geometry", "stylers": [{"color": "#17263c"}]},
+          {"featureType": "water", "elementType": "labels.text.fill", "stylers": [{"color": "#515c6d"}]},
+          {"featureType": "water", "elementType": "labels.text.stroke", "stylers": [{"color": "#17263c"}]}
+        ]
+    """.trimIndent()
+
     // --- THE MAP ---
     GoogleMap(
         modifier = modifier,
         cameraPositionState = cameraPositionState,
-        contentPadding = PaddingValues(top = 72.dp, bottom = 90.dp),
-        // Force the native Google blue dot OFF so we can use our custom one
-        properties = MapProperties(isMyLocationEnabled = false),
+        // 👇 Dynamic Bottom Padding applied here!
+        contentPadding = PaddingValues(top = 72.dp, bottom = bottomPadding),
+        properties = MapProperties(
+            isMyLocationEnabled = false,
+            // 👇 Apply Dark Mode JSON if app is in dark mode
+            mapStyleOptions = if (isDark) MapStyleOptions(darkMapStyle) else null
+        ),
         uiSettings = MapUiSettings(
             myLocationButtonEnabled = false,
             zoomControlsEnabled = false,
@@ -135,19 +163,26 @@ actual fun NativeMap(
         // 1. DRAW CUSTOM USER LOCATION MARKER
         userLocation?.let { loc ->
             MarkerComposable(
-                keys = arrayOf(loc), // Update when location changes
+                keys = arrayOf(loc),
                 state = MarkerState(position = loc),
-                zIndex = 2f, // Ensure user stays on top of unselected clubs
+                zIndex = 2f,
                 title = "Me"
             ) {
+                // Outer Box acts as the touch target and the soft translucent "halo"
                 Box(
                     modifier = Modifier
-                        .size(36.dp)
-                        .background(color = Color(0xFF00D2FF), shape = CircleShape)
-                        .border(3.dp, Color.White, CircleShape),
+                        .size(48.dp)
+                        .background(color = Color(0xFF00D2FF).copy(alpha = 0.2f), shape = CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text("🧍", fontSize = 18.sp)
+                    // Inner Box is the crisp, physical dot
+                    Box(
+                        modifier = Modifier
+                            .size(22.dp) // The size of the actual dot
+                            .shadow(elevation = 4.dp, shape = CircleShape) // Drop shadow so it pops over roads
+                            .background(color = Color(0xFF00D2FF), shape = CircleShape)
+                            .border(width = 3.dp, color = Color.White, shape = CircleShape)
+                    )
                 }
             }
         }
@@ -156,22 +191,15 @@ actual fun NativeMap(
         locations.forEach { club ->
             val isSelected = club.id == selectedClub?.id
 
-            // Animations
             val animatedPinSize by animateDpAsState(
                 targetValue = if (isSelected) 48.dp else 36.dp,
-                animationSpec = spring(
-                    dampingRatio = Spring.DampingRatioMediumBouncy,
-                    stiffness = Spring.StiffnessLow
-                ),
+                animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow),
                 label = "PinSize"
             )
 
             val animatedEmojiSize by animateFloatAsState(
                 targetValue = if (isSelected) 22f else 16f,
-                animationSpec = spring(
-                    dampingRatio = Spring.DampingRatioMediumBouncy,
-                    stiffness = Spring.StiffnessLow
-                ),
+                animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow),
                 label = "EmojiSize"
             )
 
@@ -179,7 +207,6 @@ actual fun NativeMap(
                 keys = arrayOf(isSelected, animatedPinSize),
                 state = MarkerState(position = LatLng(club.lat, club.lng)),
                 title = club.id,
-                // Push selected marker to the absolute front (zIndex 3 outranks the user's 2)
                 zIndex = if (isSelected) 3f else 1f,
                 onClick = {
                     onMarkerClick(club)

@@ -1,0 +1,41 @@
+workflows:
+  ios-unsigned-workflow:
+    name: Build KMP iOS App (Unsigned)
+    instance_type: mac_mini_m2 # The free macOS runner
+    max_build_duration: 120
+
+    environment:
+      java: 17
+      # This connects to the secrets you configure in the Codemagic UI
+      groups:
+        - api_keys
+
+    scripts:
+      - name: Make Gradle Wrapper Executable
+        script: chmod +x gradlew
+
+      - name: Inject API Key into local.properties
+        script: echo "MAPS_API_KEY=$MAPS_API_KEY" >> local.properties
+
+      - name: Build Unsigned iOS App
+        script: |
+          # 1. Ask Xcode to build the app, but explicitly disable code signing
+          xcodebuild clean build \
+            -project iosApp/iosApp.xcodeproj \
+            -scheme iosApp \
+            -configuration Release \
+            -sdk iphoneos \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            CONFIGURATION_BUILD_DIR=build/Release-iphoneos \
+            OTHER_LDFLAGS="-framework MapKit -framework CoreLocation"
+
+          # 2. Package the resulting .app folder into an .ipa file
+          mkdir -p Payload
+          mv iosApp/build/Release-iphoneos/*.app Payload/
+          zip -r KmpApp.ipa Payload
+
+    artifacts:
+      # Uploads the file so you can download it from the build summary
+      - KmpApp.ipa

@@ -22,6 +22,7 @@ import org.ttproject.security.JwtConfig
 import kotlin.collections.map
 import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.serialization.gson.*
+import org.ttproject.routes.locationRoutes
 import org.ttproject.routes.userRoutes
 
 fun main() {
@@ -55,6 +56,7 @@ fun Application.module() {
     routing {
         authRoutes()
         userRoutes()
+        locationRoutes()
 
         get("/") {
             call.respondText("Ktor Server is Online!")

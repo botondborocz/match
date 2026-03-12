@@ -1,0 +1,8186 @@
+{
+  "type": "FeatureCollection",
+  "generator": "overpass-turbo",
+  "copyright": "The data included in this document is from www.openstreetmap.org. The data is made available under ODbL.",
+  "timestamp": "2026-03-11T16:01:20Z",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "relation/3904010",
+        "contact:email": "info@topspin-ac.hu",
+        "contact:mobile": "+36 30 999 3129",
+        "contact:website": "https://topspin-ac.hu/",
+        "description": "A pingpong club címe: 1097 Budapest, Koppány utca 2-4. TESCO üzletsoron, a Közvágóhíd mellett. Asztalfoglalás, információ 06-30-999-3129-es számon vagy az info@topspin-ac.hu – A pingpong terem játékterülete: 250 nm – Gerflor Taraflex 6.2 ízületkímélő as",
+        "image": "https://topspin-ac.hu/kepgaleria/",
+        "indoor": "room",
+        "landuse": "retail",
+        "name": "TopSpin Asztalitenisz Club és Pingpong bolt",
+        "shop": "sports",
+        "sport": "table_tennis",
+        "type": "multipolygon",
+        "@geometry": "center"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0787769,
+          47.465683
+        ]
+      },
+      "id": "relation/3904010"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/163857258",
+        "addr:city": "Sopron",
+        "addr:housenumber": "16",
+        "addr:postcode": "9400",
+        "addr:street": "Kőszegi út",
+        "building": "yes",
+        "leisure": "sports_centre",
+        "name": "TURRIS SE Asztalitenisz Csarnok",
+        "sport": "table_tennis",
+        "@geometry": "center"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          16.5937207,
+          47.6750607
+        ]
+      },
+      "id": "way/163857258"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/223110890",
+        "leisure": "pitch",
+        "sport": "table_tennis",
+        "@geometry": "center"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0763864,
+          47.4044193
+        ]
+      },
+      "id": "way/223110890"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/244224069",
+        "leisure": "pitch",
+        "lit": "yes",
+        "sport": "table_tennis",
+        "table_tennis:net": "yes",
+        "table_tennis:tables": "4",
+        "@geometry": "center"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0855291,
+          47.5085808
+        ]
+      },
+      "id": "way/244224069"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/259213554",
+        "building": "yes",
+        "leisure": "sports_centre",
+        "name": "Ormai László Asztalitenisz Csarnok",
+        "operator": "Nemzeti Sportközpontok",
+        "sport": "table_tennis",
+        "wheelchair": "no",
+        "@geometry": "center"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0222144,
+          47.51227
+        ]
+      },
+      "id": "way/259213554"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/279407501",
+        "leisure": "pitch",
+        "lit": "no",
+        "sport": "table_tennis",
+        "surface": "paved",
+        "@geometry": "center"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          21.6165473,
+          47.5456544
+        ]
+      },
+      "id": "way/279407501"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/296170926",
+        "access": "private",
+        "leisure": "pitch",
+        "sport": "table_tennis",
+        "@geometry": "center"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.036081,
+          47.5044734
+        ]
+      },
+      "id": "way/296170926"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/304426082",
+        "leisure": "pitch",
+        "sport": "table_tennis",
+        "@geometry": "center"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          18.9599092,
+          47.4960997
+        ]
+      },
+      "id": "way/304426082"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/308379217",
+        "capacity": "3",
+        "leisure": "pitch",
+        "sport": "table_tennis",
+        "@geometry": "center"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0307287,
+          47.4667726
+        ]
+      },
+      "id": "way/308379217"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/313050449",
+        "leisure": "pitch",
+        "lit": "no",
+        "sport": "table_tennis",
+        "wheelchair": "no",
+        "@geometry": "center"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          21.0296546,
+          47.9356389
+        ]
+      },
+      "id": "way/313050449"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/313863377",
+        "leisure": "pitch",
+        "lit": "no",
+        "sport": "table_tennis",
+        "@geometry": "center"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          21.0287816,
+          47.9346562
+        ]
+      },
+      "id": "way/313863377"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/313863378",
+        "leisure": "pitch",
+        "lit": "no",
+        "sport": "table_tennis",
+        "@geometry": "center"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          21.0301843,
+          47.931261
+        ]
+      },
+      "id": "way/313863378"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/315070988",
+        "leisure": "pitch",
+        "lit": "no",
+        "sport": "table_tennis",
+        "@geometry": "center"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          21.0301508,
+          47.9311941
+        ]
+      },
+      "id": "way/315070988"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/317268307",
+        "leisure": "pitch",
+        "sport": "table_tennis",
+        "@geometry": "center"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          21.0267543,
+          47.9318416
+        ]
+      },
+      "id": "way/317268307"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/317268326",
+        "leisure": "pitch",
+        "sport": "table_tennis",
+        "@geometry": "center"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          21.0268214,
+          47.9318286
+        ]
+      },
+      "id": "way/317268326"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/317268327",
+        "leisure": "pitch",
+        "sport": "table_tennis",
+        "@geometry": "center"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          21.026888,
+          47.9318184
+        ]
+      },
+      "id": "way/317268327"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/343264141",
+        "access": "yes",
+        "leisure": "pitch",
+        "lit": "no",
+        "sport": "table_tennis",
+        "toilets:wheelchair": "no",
+        "wheelchair": "limited",
+        "@geometry": "center"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.1118941,
+          47.5277701
+        ]
+      },
+      "id": "way/343264141"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/368414418",
+        "leisure": "pitch",
+        "sport": "table_tennis",
+        "@geometry": "center"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          17.7403603,
+          46.8796398
+        ]
+      },
+      "id": "way/368414418"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/380583663",
+        "leisure": "pitch",
+        "sport": "table_tennis",
+        "@geometry": "center"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          21.6114846,
+          47.5489164
+        ]
+      },
+      "id": "way/380583663"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/432933792",
+        "building": "yes",
+        "leisure": "pitch",
+        "sport": "table_tennis",
+        "@geometry": "center"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          17.7925551,
+          46.8191239
+        ]
+      },
+      "id": "way/432933792"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/460199638",
+        "leisure": "pitch",
+        "pitch:net": "no",
+        "sport": "table_tennis",
+        "wheelchair": "limited",
+        "@geometry": "center"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0315183,
+          47.4626523
+        ]
+      },
+      "id": "way/460199638"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/461995760",
+        "capacity": "2",
+        "leisure": "pitch",
+        "lit": "no",
+        "sport": "table_tennis",
+        "surface": "fine_gravel",
+        "@geometry": "center"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0341208,
+          47.4431
+        ]
+      },
+      "id": "way/461995760"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/512378004",
+        "addr:city": "Szeged",
+        "addr:housenumber": "5-7",
+        "addr:postcode": "6723",
+        "addr:street": "Budapesti körút",
+        "building": "yes",
+        "charge": "2000Ft/óra asztalonként",
+        "contact:email": "info@atsk.hu",
+        "contact:facebook": "https://www.facebook.com/people/ATSK-Szeged/100057204349999",
+        "contact:mobile": "+36 30 852 6556",
+        "contact:phone": "+36 62 491 703",
+        "contact:website": "http://atsk.hu",
+        "description": "Asztalitenisz Sport Klub Szeged",
+        "fee": "yes",
+        "image": "http://atsk.hu/wp-content/uploads/2021/04/ATSK-Pingpong-Terem-2020-5-1536x1152.jpg",
+        "leisure": "sports_centre",
+        "name": "ATSK Asztalitenisz Terem",
+        "opening_hours": "Mo,We,Fr 18:00-21:00; PH off",
+        "sport": "table_tennis",
+        "start_date": "1996-10-31",
+        "@geometry": "center"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          20.1670858,
+          46.268676
+        ]
+      },
+      "id": "way/512378004"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/517017223",
+        "leisure": "pitch",
+        "sport": "table_tennis",
+        "@geometry": "center"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          18.2111498,
+          45.8042927
+        ]
+      },
+      "id": "way/517017223"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/661196274",
+        "leisure": "pitch",
+        "sport": "table_tennis",
+        "@geometry": "center"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0319001,
+          47.5441058
+        ]
+      },
+      "id": "way/661196274"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/667108217",
+        "leisure": "pitch",
+        "sport": "table_tennis",
+        "@geometry": "center"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          16.5943028,
+          47.0101788
+        ]
+      },
+      "id": "way/667108217"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/671826408",
+        "leisure": "pitch",
+        "lit": "no",
+        "sport": "table_tennis",
+        "@geometry": "center"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0368512,
+          47.4782268
+        ]
+      },
+      "id": "way/671826408"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/671826409",
+        "leisure": "pitch",
+        "lit": "no",
+        "sport": "table_tennis",
+        "@geometry": "center"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0368851,
+          47.4782915
+        ]
+      },
+      "id": "way/671826409"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/676603301",
+        "leisure": "pitch",
+        "sport": "table_tennis",
+        "surface": "concrete",
+        "@geometry": "center"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          18.2128357,
+          46.0456126
+        ]
+      },
+      "id": "way/676603301"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/680927165",
+        "name": "ping-pong",
+        "sport": "table_tennis",
+        "@geometry": "center"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          18.2261963,
+          46.0407007
+        ]
+      },
+      "id": "way/680927165"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/680927171",
+        "name": "ping-pong",
+        "sport": "table_tennis",
+        "@geometry": "center"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          18.2268669,
+          46.0408068
+        ]
+      },
+      "id": "way/680927171"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/681243798",
+        "name": "ping-pong",
+        "sport": "table_tennis",
+        "@geometry": "center"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          18.2146286,
+          46.0310415
+        ]
+      },
+      "id": "way/681243798"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/685263606",
+        "addr:city": "Budapest",
+        "addr:housenumber": "2",
+        "addr:postcode": "1151",
+        "addr:street": "Kert köz",
+        "building": "yes",
+        "contact:email": "elnok@kinizsittk.eu",
+        "contact:facebook": "https://www.facebook.com/KinizsiTTK/",
+        "contact:phone": "+36 70 440 4022",
+        "contact:website": "http://www.kinizsittk.eu/",
+        "leisure": "sports_centre",
+        "name": "Kinizsi TTK",
+        "opening_hours": "Mo 19:00-21:00; Tu 18:00-20:00; We 19:00-21:00; Th 19:00-21:00",
+        "sport": "table_tennis",
+        "@geometry": "center"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.1224092,
+          47.5670967
+        ]
+      },
+      "id": "way/685263606"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/688004778",
+        "leisure": "pitch",
+        "sport": "table_tennis",
+        "@geometry": "center"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          18.9575605,
+          47.2309437
+        ]
+      },
+      "id": "way/688004778"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/689666182",
+        "barrier": "fence",
+        "fence_type": "bars",
+        "height": "2",
+        "sport": "table_tennis",
+        "@geometry": "center"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          18.2136309,
+          46.0818943
+        ]
+      },
+      "id": "way/689666182"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/692686513",
+        "access": "yes",
+        "addr:suburb": "Újlipótváros",
+        "leisure": "pitch",
+        "lit": "yes",
+        "sport": "table_tennis",
+        "surface": "paved",
+        "@geometry": "center"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0612286,
+          47.5215663
+        ]
+      },
+      "id": "way/692686513"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/693774636",
+        "access": "yes",
+        "addr:city": "Budapest",
+        "addr:housenumber": "65-67",
+        "addr:postcode": "1041",
+        "addr:street": "Erzsébet utca",
+        "capacity": "3",
+        "covered": "no",
+        "fee": "no",
+        "indoor": "no",
+        "leisure": "pitch",
+        "lit": "no",
+        "mapillary": "1113078473245343",
+        "material": "metal",
+        "pitch:net": "yes",
+        "pitch:net:material": "metal",
+        "playability": "good",
+        "sport": "table_tennis",
+        "start_date": "2017-05-05",
+        "surface": "asphalt",
+        "website": "https://www.freesportparks.hu/budapest-kozossegi-sport",
+        "@geometry": "center"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0957825,
+          47.5632398
+        ]
+      },
+      "id": "way/693774636"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/713925452",
+        "leisure": "pitch",
+        "lit": "no",
+        "opening_hours": "07:00-20:00",
+        "sport": "table_tennis",
+        "@geometry": "center"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          18.9986107,
+          47.4698576
+        ]
+      },
+      "id": "way/713925452"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/713925453",
+        "leisure": "pitch",
+        "lit": "no",
+        "opening_hours": "07:00-20:00",
+        "sport": "table_tennis",
+        "@geometry": "center"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          18.9986591,
+          47.4698472
+        ]
+      },
+      "id": "way/713925453"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/732094422",
+        "leisure": "pitch",
+        "sport": "table_tennis",
+        "@geometry": "center"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          18.9995543,
+          47.4711209
+        ]
+      },
+      "id": "way/732094422"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/732094423",
+        "leisure": "pitch",
+        "sport": "table_tennis",
+        "@geometry": "center"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          18.999515,
+          47.471142
+        ]
+      },
+      "id": "way/732094423"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/732094424",
+        "leisure": "pitch",
+        "lit": "no",
+        "opening_hours": "07:00-20:00",
+        "sport": "table_tennis",
+        "@geometry": "center"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          18.9985211,
+          47.4698775
+        ]
+      },
+      "id": "way/732094424"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/732094425",
+        "leisure": "pitch",
+        "lit": "no",
+        "opening_hours": "07:00-20:00",
+        "sport": "table_tennis",
+        "@geometry": "center"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          18.9985671,
+          47.4698674
+        ]
+      },
+      "id": "way/732094425"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/760392211",
+        "leisure": "pitch",
+        "sport": "table_tennis",
+        "surface": "concrete",
+        "@geometry": "center"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          20.1674473,
+          46.2633821
+        ]
+      },
+      "id": "way/760392211"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/775676119",
+        "access": "yes",
+        "covered": "no",
+        "fee": "no",
+        "indoor": "no",
+        "leisure": "pitch",
+        "sport": "table_tennis",
+        "@geometry": "center"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          21.0327286,
+          47.9321109
+        ]
+      },
+      "id": "way/775676119"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/775676120",
+        "access": "yes",
+        "covered": "no",
+        "fee": "no",
+        "indoor": "no",
+        "leisure": "pitch",
+        "lit": "no",
+        "sport": "table_tennis",
+        "@geometry": "center"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          21.0335299,
+          47.9343682
+        ]
+      },
+      "id": "way/775676120"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/775676121",
+        "access": "yes",
+        "covered": "no",
+        "fee": "no",
+        "indoor": "no",
+        "leisure": "pitch",
+        "lit": "no",
+        "sport": "table_tennis",
+        "@geometry": "center"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          21.033605,
+          47.9345386
+        ]
+      },
+      "id": "way/775676121"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/788660173",
+        "leisure": "pitch",
+        "lit": "no",
+        "sport": "table_tennis",
+        "@geometry": "center"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          21.6238442,
+          47.5420239
+        ]
+      },
+      "id": "way/788660173"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/839139025",
+        "leisure": "pitch",
+        "sport": "table_tennis",
+        "@geometry": "center"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          17.9725604,
+          47.6410185
+        ]
+      },
+      "id": "way/839139025"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/839139026",
+        "leisure": "pitch",
+        "sport": "table_tennis",
+        "@geometry": "center"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          17.9727374,
+          47.640902
+        ]
+      },
+      "id": "way/839139026"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/839139027",
+        "leisure": "pitch",
+        "sport": "table_tennis",
+        "@geometry": "center"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          17.972736,
+          47.641098
+        ]
+      },
+      "id": "way/839139027"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/903415580",
+        "building": "yes",
+        "leisure": "sports_hall",
+        "name": "Asztalitenisz csarnok",
+        "sport": "table_tennis",
+        "@geometry": "center"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          17.7966876,
+          46.3724131
+        ]
+      },
+      "id": "way/903415580"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/958188921",
+        "leisure": "pitch",
+        "lit": "no",
+        "sport": "table_tennis",
+        "@geometry": "center"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.1456603,
+          47.5403922
+        ]
+      },
+      "id": "way/958188921"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/958188922",
+        "leisure": "pitch",
+        "sport": "table_tennis",
+        "@geometry": "center"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.1462384,
+          47.5407519
+        ]
+      },
+      "id": "way/958188922"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/959061213",
+        "access": "yes",
+        "blind": "limited",
+        "fitness_station": "fitness_station",
+        "leisure": "pitch",
+        "lit": "no",
+        "sport": "table_tennis",
+        "wheelchair": "limited",
+        "@geometry": "center"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          18.395367,
+          47.1912136
+        ]
+      },
+      "id": "way/959061213"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/970988158",
+        "capacity": "2",
+        "leisure": "pitch",
+        "sport": "table_tennis",
+        "@geometry": "center"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0376445,
+          47.4566834
+        ]
+      },
+      "id": "way/970988158"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/993320549",
+        "building": "yes",
+        "leisure": "sports_centre",
+        "name": "Asztalitenisz csarnok",
+        "sport": "table_tennis",
+        "@geometry": "center"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0894472,
+          47.5238451
+        ]
+      },
+      "id": "way/993320549"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/1059573852",
+        "access": "yes",
+        "leisure": "pitch",
+        "sport": "table_tennis",
+        "@geometry": "center"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0918313,
+          47.559039
+        ]
+      },
+      "id": "way/1059573852"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/1059586872",
+        "leisure": "pitch",
+        "lit": "yes",
+        "sport": "table_tennis",
+        "@geometry": "center"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0981582,
+          47.5574168
+        ]
+      },
+      "id": "way/1059586872"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/1078120168",
+        "leisure": "pitch",
+        "length": "2.75",
+        "lit": "yes",
+        "pitch:net": "yes",
+        "sport": "table_tennis",
+        "width": "1.5",
+        "@geometry": "center"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0402189,
+          47.4460482
+        ]
+      },
+      "id": "way/1078120168"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/1099839143",
+        "access": "yes",
+        "capacity": "3",
+        "leisure": "pitch",
+        "lit": "no",
+        "sport": "table_tennis",
+        "@geometry": "center"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          18.9527985,
+          47.5648867
+        ]
+      },
+      "id": "way/1099839143"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/1110784703",
+        "leisure": "pitch",
+        "sport": "table_tennis",
+        "@geometry": "center"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.1055836,
+          47.5786643
+        ]
+      },
+      "id": "way/1110784703"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/1110784704",
+        "leisure": "pitch",
+        "sport": "table_tennis",
+        "@geometry": "center"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.1056322,
+          47.578681
+        ]
+      },
+      "id": "way/1110784704"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/1160549896",
+        "leisure": "pitch",
+        "lit": "yes",
+        "sport": "table_tennis",
+        "@geometry": "center"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          20.6138942,
+          48.2455807
+        ]
+      },
+      "id": "way/1160549896"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/1167395834",
+        "capacity": "3",
+        "leisure": "pitch",
+        "material": "concrete",
+        "pitch:net": "yes",
+        "pitch:net:material": "metal",
+        "sport": "table_tennis",
+        "surface": "tartan",
+        "@geometry": "center"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.029774,
+          47.4986133
+        ]
+      },
+      "id": "way/1167395834"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/1174575988",
+        "access": "yes",
+        "leisure": "pitch",
+        "lit": "yes",
+        "sport": "table_tennis",
+        "@geometry": "center"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.1680032,
+          47.4643055
+        ]
+      },
+      "id": "way/1174575988"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/1186084601",
+        "leisure": "pitch",
+        "sport": "table_tennis",
+        "surface": "concrete",
+        "@geometry": "center"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          18.2126773,
+          46.045615
+        ]
+      },
+      "id": "way/1186084601"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/1200482632",
+        "building": "yes",
+        "leisure": "sports_centre",
+        "name": "OPÁL Asztalitenisz csarnok",
+        "sport": "table_tennis",
+        "@geometry": "center"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          17.1464223,
+          47.2545939
+        ]
+      },
+      "id": "way/1200482632"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/1205283145",
+        "leisure": "pitch",
+        "source": "survey",
+        "sport": "table_tennis",
+        "survey:date": "2023-09-05",
+        "@geometry": "center"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          18.9131207,
+          47.4305972
+        ]
+      },
+      "id": "way/1205283145"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/1205283146",
+        "leisure": "pitch",
+        "source": "survey",
+        "sport": "table_tennis",
+        "survey:date": "2023-09-05",
+        "@geometry": "center"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          18.9130528,
+          47.4305601
+        ]
+      },
+      "id": "way/1205283146"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/1214747440",
+        "leisure": "pitch",
+        "sport": "table_tennis",
+        "@geometry": "center"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.079298,
+          47.5181191
+        ]
+      },
+      "id": "way/1214747440"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/1238066161",
+        "leisure": "pitch",
+        "sport": "table_tennis",
+        "@geometry": "center"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          21.5555245,
+          47.5956884
+        ]
+      },
+      "id": "way/1238066161"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1243164334",
+        "capacity": "3",
+        "fee": "no",
+        "leisure": "pitch",
+        "sport": "table_tennis",
+        "url": "https://www.freesportparks.hu/"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0516773,
+          47.5998167
+        ]
+      },
+      "id": "node/1243164334"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1248409028",
+        "leisure": "pitch",
+        "net": "no",
+        "sport": "table_tennis",
+        "table_tennis:tables": "2"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.1822778,
+          47.5195568
+        ]
+      },
+      "id": "node/1248409028"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1248842113",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          18.3853768,
+          47.5836914
+        ]
+      },
+      "id": "node/1248842113"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/1297145275",
+        "colour": "blue",
+        "count": "2",
+        "leisure": "pitch",
+        "lit": "yes",
+        "sport": "table_tennis",
+        "surface": "tartan",
+        "@geometry": "center"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0901011,
+          47.5132371
+        ]
+      },
+      "id": "way/1297145275"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/1334188893",
+        "leisure": "pitch",
+        "lit": "no",
+        "sport": "table_tennis",
+        "@geometry": "center"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          20.7711336,
+          48.1058417
+        ]
+      },
+      "id": "way/1334188893"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/1366782314",
+        "leisure": "pitch",
+        "sport": "table_tennis",
+        "@geometry": "center"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          20.7902312,
+          48.0993061
+        ]
+      },
+      "id": "way/1366782314"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/1423102359",
+        "leisure": "pitch",
+        "sport": "table_tennis",
+        "@geometry": "center"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          21.6521233,
+          47.5375576
+        ]
+      },
+      "id": "way/1423102359"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/1455932558",
+        "building": "yes",
+        "leisure": "sports_hall",
+        "sport": "table_tennis",
+        "@geometry": "center"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          20.7704137,
+          48.0816328
+        ]
+      },
+      "id": "way/1455932558"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/1458304361",
+        "leisure": "pitch",
+        "sport": "table_tennis",
+        "@geometry": "center"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0501682,
+          47.5097777
+        ]
+      },
+      "id": "way/1458304361"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/2932886227",
+        "check_date": "2021-10-05",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0658365,
+          47.4859497
+        ]
+      },
+      "id": "node/2932886227"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/2935352995",
+        "contact:website": "https://asztaliteniszcentrum.hupont.hu",
+        "fixme": "resurvey",
+        "leisure": "sports_centre",
+        "name": "Asztalitenisz Centrum",
+        "operator": "Magyar - Kínai Asztalitenisz Klub",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.1454512,
+          47.5469991
+        ]
+      },
+      "id": "node/2935352995"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/2935352996",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0269196,
+          47.4439898
+        ]
+      },
+      "id": "node/2935352996"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/2936152424",
+        "count": "3",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.1141018,
+          47.5411885
+        ]
+      },
+      "id": "node/2936152424"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/2936191127",
+        "capacity": "2",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.2499269,
+          47.490366
+        ]
+      },
+      "id": "node/2936191127"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/2936694687",
+        "leisure": "sports_centre",
+        "name": "Budai Pingpong Klub",
+        "opening_hours": "Mo-Fr 08:00-20:00; Sa-Su 14:00-18:00",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0106279,
+          47.5148605
+        ]
+      },
+      "id": "node/2936694687"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/2939123180",
+        "check_date": "2025-06-11",
+        "leisure": "pitch",
+        "net": "yes",
+        "number_of_tables": "2",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0671376,
+          47.5062335
+        ]
+      },
+      "id": "node/2939123180"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/2939603977",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0795341,
+          47.4967534
+        ]
+      },
+      "id": "node/2939603977"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/2962303964",
+        "leisure": "pitch",
+        "sport": "table_tennis",
+        "table_tennis:net": "no",
+        "table_tennis:tables": "2"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.1170602,
+          47.6744965
+        ]
+      },
+      "id": "node/2962303964"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/2967253449",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          18.9945657,
+          47.8083523
+        ]
+      },
+      "id": "node/2967253449"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/2968958271",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.1444261,
+          47.5127563
+        ]
+      },
+      "id": "node/2968958271"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/2981931040",
+        "leisure": "pitch",
+        "lit": "no",
+        "sport": "table_tennis",
+        "table_tennis:net": "yes",
+        "table_tennis:tables": "1"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.056437,
+          47.5695845
+        ]
+      },
+      "id": "node/2981931040"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/2983760184",
+        "access": "yes",
+        "capacity": "5",
+        "leisure": "pitch",
+        "material": "concrete",
+        "pitch:net": "yes",
+        "pitch:net:material": "metal",
+        "playability": "good",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0522109,
+          47.5181816
+        ]
+      },
+      "id": "node/2983760184"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/3110257719",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          18.8947284,
+          46.0050026
+        ]
+      },
+      "id": "node/3110257719"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/3134683092",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          18.9265292,
+          47.581526
+        ]
+      },
+      "id": "node/3134683092"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/3437115886",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          20.1671207,
+          46.2685738
+        ]
+      },
+      "id": "node/3437115886"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/3499179851",
+        "check_date": "2022-04-18",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.2567958,
+          47.4781689
+        ]
+      },
+      "id": "node/3499179851"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/3561588475",
+        "check_date": "2025-05-25",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.1075623,
+          47.5117081
+        ]
+      },
+      "id": "node/3561588475"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/3755158911",
+        "leisure": "pitch",
+        "source": "survey",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          21.6068415,
+          48.4092663
+        ]
+      },
+      "id": "node/3755158911"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/3835739957",
+        "addr:city": "Csömör",
+        "addr:housenumber": "40/a",
+        "addr:postcode": "2141",
+        "addr:street": "Széchenyi utca",
+        "air_conditioning": "yes",
+        "amenity": "fast_food",
+        "contact:email": "burgerbarcsomor@gmail.com",
+        "contact:facebook": "https://www.facebook.com/burgerbarcsomor",
+        "contact:phone": "+36 30 957 9681",
+        "contact:website": "https://www.burgerbarcsomor.hu/",
+        "cuisine": "burger;grill",
+        "delivery": "yes @ (Sep-May)",
+        "internet_access": "wlan",
+        "internet_access:fee": "no",
+        "internet_access:password": "fagyifagyi",
+        "internet_access:ssid": "hambiWLAN",
+        "kids_area": "yes",
+        "name": "Burger Bár",
+        "old_name": "Kemencés Pizzeria & Grill",
+        "opening_hours": "Tu-Su 11:00-20:00",
+        "operator": "Jánosi Anett",
+        "operator:addr": "2141 Csömör, Kacsóh Pongrác utca 31",
+        "outdoor_seating": "yes",
+        "payment:debit_cards": "yes",
+        "payment:szep": "yes",
+        "ref:HU:vatin": "56636204-2-30",
+        "sport": "table_tennis",
+        "start_date": "2018"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.2268464,
+          47.5515185
+        ]
+      },
+      "id": "node/3835739957"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/4095417756",
+        "access": "yes",
+        "capacity": "2",
+        "fee": "no",
+        "leisure": "pitch",
+        "opening_hours": "24/7",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.1463037,
+          47.4813334
+        ]
+      },
+      "id": "node/4095417756"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/4216837547",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.1934814,
+          47.5287132
+        ]
+      },
+      "id": "node/4216837547"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/4322912674",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          21.7301471,
+          48.0046751
+        ]
+      },
+      "id": "node/4322912674"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/4322915480",
+        "shop": "sports",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          21.7300699,
+          48.0048006
+        ]
+      },
+      "id": "node/4322915480"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/4558759293",
+        "check_date": "2022-04-16",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0418051,
+          47.4719327
+        ]
+      },
+      "id": "node/4558759293"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/4564423698",
+        "check_date": "2022-12-23",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0389033,
+          47.4715872
+        ]
+      },
+      "id": "node/4564423698"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/4610077365",
+        "check_date": "2023-11-01",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.1226209,
+          47.6505229
+        ]
+      },
+      "id": "node/4610077365"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/4874735730",
+        "leisure": "pitch",
+        "lit": "no",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          16.7256367,
+          46.4378138
+        ]
+      },
+      "id": "node/4874735730"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/4894949549",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          18.1593274,
+          46.0340518
+        ]
+      },
+      "id": "node/4894949549"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/4935230035",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          20.0158519,
+          46.2677924
+        ]
+      },
+      "id": "node/4935230035"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/5000084822",
+        "access": "yes",
+        "leisure": "pitch",
+        "lit": "no",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          17.4869718,
+          46.716912
+        ]
+      },
+      "id": "node/5000084822"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/5007879175",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          18.8192719,
+          47.5513799
+        ]
+      },
+      "id": "node/5007879175"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/5009207521",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          17.383006,
+          46.7066927
+        ]
+      },
+      "id": "node/5009207521"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/5071783087",
+        "leisure": "pitch",
+        "material": "concrete",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          20.1390729,
+          46.2423396
+        ]
+      },
+      "id": "node/5071783087"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/5071783090",
+        "check_date": "2024-04-27",
+        "leisure": "pitch",
+        "material": "concrete",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          20.1391552,
+          46.2424488
+        ]
+      },
+      "id": "node/5071783090"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/5282196131",
+        "check_date": "2024-10-18",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.1681421,
+          47.5145442
+        ]
+      },
+      "id": "node/5282196131"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/5282196132",
+        "check_date": "2024-10-18",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.1682494,
+          47.5145732
+        ]
+      },
+      "id": "node/5282196132"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/5368451214",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          18.4428058,
+          47.2063469
+        ]
+      },
+      "id": "node/5368451214"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/5409775909",
+        "capacity": "1",
+        "fee": "no",
+        "leisure": "pitch",
+        "lit": "yes",
+        "sport": "table_tennis",
+        "url": "https://www.freesportparks.hu/"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0590614,
+          47.5320139
+        ]
+      },
+      "id": "node/5409775909"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/5409775910",
+        "check_date": "2024-06-05",
+        "leisure": "pitch",
+        "lit": "yes",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0612162,
+          47.5333738
+        ]
+      },
+      "id": "node/5409775910"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/5444554882",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.3517673,
+          47.3914487
+        ]
+      },
+      "id": "node/5444554882"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/5519752929",
+        "access": "yes",
+        "leisure": "pitch",
+        "lit": "no",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.3536883,
+          47.383718
+        ]
+      },
+      "id": "node/5519752929"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/5523223468",
+        "leisure": "pitch",
+        "lit": "no",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.2429789,
+          47.4793808
+        ]
+      },
+      "id": "node/5523223468"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/5538720819",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          18.6796375,
+          47.3596771
+        ]
+      },
+      "id": "node/5538720819"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/5575777722",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.1684799,
+          47.4539319
+        ]
+      },
+      "id": "node/5575777722"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/5575777723",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.1683958,
+          47.4539538
+        ]
+      },
+      "id": "node/5575777723"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/5577172137",
+        "access": "yes",
+        "leisure": "pitch",
+        "lit": "yes",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          20.7704889,
+          48.0960131
+        ]
+      },
+      "id": "node/5577172137"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/5577172138",
+        "access": "yes",
+        "check_date": "2022-09-18",
+        "leisure": "pitch",
+        "lit": "yes",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          20.7706794,
+          48.0973325
+        ]
+      },
+      "id": "node/5577172138"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/5577172139",
+        "access": "yes",
+        "check_date": "2022-09-18",
+        "leisure": "pitch",
+        "lit": "yes",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          20.7708135,
+          48.0973862
+        ]
+      },
+      "id": "node/5577172139"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/5577172140",
+        "access": "yes",
+        "check_date": "2022-09-18",
+        "leisure": "pitch",
+        "lit": "yes",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          20.7709382,
+          48.0974391
+        ]
+      },
+      "id": "node/5577172140"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/5685919901",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          18.9217289,
+          47.5139648
+        ]
+      },
+      "id": "node/5685919901"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/5893611151",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.1442158,
+          47.5458667
+        ]
+      },
+      "id": "node/5893611151"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/5893611152",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.144141,
+          47.5458061
+        ]
+      },
+      "id": "node/5893611152"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/5893611161",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.1455927,
+          47.5451223
+        ]
+      },
+      "id": "node/5893611161"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/5893611162",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.1456856,
+          47.5450694
+        ]
+      },
+      "id": "node/5893611162"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/5893611163",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.145732,
+          47.5450432
+        ]
+      },
+      "id": "node/5893611163"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/5938360714",
+        "access": "yes",
+        "capacity": "2",
+        "fee": "no",
+        "leisure": "pitch",
+        "opening_hours": "24/7",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0241496,
+          47.5214028
+        ]
+      },
+      "id": "node/5938360714"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/5963646839",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          21.3605534,
+          48.4851789
+        ]
+      },
+      "id": "node/5963646839"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/6050539624",
+        "access": "private",
+        "addr:city": "Pécs",
+        "addr:housenumber": "2",
+        "addr:postcode": "7621",
+        "addr:street": "Mária utca",
+        "description": "Csak diákok számára!",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          18.2291012,
+          46.0770867
+        ]
+      },
+      "id": "node/6050539624"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/6245710273",
+        "access": "yes",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          18.9008889,
+          47.4398823
+        ]
+      },
+      "id": "node/6245710273"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/6247907920",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.1498558,
+          47.5060177
+        ]
+      },
+      "id": "node/6247907920"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/6247907921",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.1498142,
+          47.5061862
+        ]
+      },
+      "id": "node/6247907921"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/6247907922",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.1498243,
+          47.5061453
+        ]
+      },
+      "id": "node/6247907922"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/6247907923",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.1498357,
+          47.5060991
+        ]
+      },
+      "id": "node/6247907923"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/6247907924",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.1498457,
+          47.5060586
+        ]
+      },
+      "id": "node/6247907924"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/6274314153",
+        "check_date": "2024-01-03",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.079992,
+          47.547825
+        ]
+      },
+      "id": "node/6274314153"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/6315531329",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0111374,
+          47.4739639
+        ]
+      },
+      "id": "node/6315531329"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/6408777379",
+        "capacity": "3",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          18.2238952,
+          46.0361145
+        ]
+      },
+      "id": "node/6408777379"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/6408777459",
+        "capacity": "2",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          18.2252843,
+          46.0359732
+        ]
+      },
+      "id": "node/6408777459"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/6440817761",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          18.1970353,
+          46.0644667
+        ]
+      },
+      "id": "node/6440817761"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/6491301777",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          18.2136208,
+          46.081908
+        ]
+      },
+      "id": "node/6491301777"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/6499637641",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0354824,
+          47.4674674
+        ]
+      },
+      "id": "node/6499637641"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/6510482583",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          18.200143,
+          46.0664786
+        ]
+      },
+      "id": "node/6510482583"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/6518870972",
+        "leisure": "pitch",
+        "name": "Lábtenisz asztal",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          18.8814507,
+          47.7835787
+        ]
+      },
+      "id": "node/6518870972"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/6533609618",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.6759258,
+          46.9126667
+        ]
+      },
+      "id": "node/6533609618"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/6537158240",
+        "club": "sport",
+        "name": "Kecskeméti Spartacus Sportkör",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.6760009,
+          46.9124497
+        ]
+      },
+      "id": "node/6537158240"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/6681787606",
+        "check_date": "2024-06-29",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          17.564887,
+          47.104222
+        ]
+      },
+      "id": "node/6681787606"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/6770672755",
+        "access": "yes",
+        "capacity": "1",
+        "fee": "no",
+        "leisure": "pitch",
+        "opening_hours": "24/7",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.143432,
+          47.4803137
+        ]
+      },
+      "id": "node/6770672755"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/6770672756",
+        "access": "yes",
+        "capacity": "2",
+        "fee": "no",
+        "leisure": "pitch",
+        "opening_hours": "24/7",
+        "pitch:net": "yes",
+        "pitch:net:material": "metal",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0184383,
+          47.5076338
+        ]
+      },
+      "id": "node/6770672756"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/6772383763",
+        "capacity": "1",
+        "fee": "no",
+        "leisure": "pitch",
+        "sport": "table_tennis",
+        "table_tennis:net": "yes",
+        "url": "https://www.freesportparks.hu/"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0319933,
+          47.5804795
+        ]
+      },
+      "id": "node/6772383763"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/6772383772",
+        "capacity": "1",
+        "fee": "no",
+        "leisure": "pitch",
+        "sport": "table_tennis",
+        "url": "https://www.freesportparks.hu/"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0379696,
+          47.5452222
+        ]
+      },
+      "id": "node/6772383772"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/6772484855",
+        "addr:city": "Budapest",
+        "addr:housenumber": "7",
+        "addr:postcode": "1033",
+        "addr:street": "Laktanya utca",
+        "capacity": "2",
+        "fee": "no",
+        "leisure": "pitch",
+        "sport": "table_tennis",
+        "url": "https://www.freesportparks.hu/"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0457138,
+          47.5428441
+        ]
+      },
+      "id": "node/6772484855"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/6772819732",
+        "addr:city": "Budapest",
+        "addr:housenumber": "25",
+        "addr:postcode": "1134",
+        "addr:street": "Gidófalvy Lajos utca",
+        "alt_name": "Asztalitenisz pálya",
+        "capacity": "1",
+        "fee": "no",
+        "leisure": "pitch",
+        "sport": "table_tennis",
+        "url": "https://www.freesportparks.hu/"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0716694,
+          47.5266933
+        ]
+      },
+      "id": "node/6772819732"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/6772819746",
+        "capacity": "1",
+        "fee": "no",
+        "leisure": "pitch",
+        "sport": "table_tennis",
+        "url": "https://www.freesportparks.hu/"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0704069,
+          47.5262537
+        ]
+      },
+      "id": "node/6772819746"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/6778238563",
+        "leisure": "pitch",
+        "level": "-1",
+        "opening_hours": "10:00-22:00",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0559068,
+          47.5034131
+        ]
+      },
+      "id": "node/6778238563"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/6828528496",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          18.2056433,
+          46.0670074
+        ]
+      },
+      "id": "node/6828528496"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/6871671453",
+        "access": "yes",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.1424261,
+          47.5146698
+        ]
+      },
+      "id": "node/6871671453"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/6871671454",
+        "access": "yes",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.1424798,
+          47.5146725
+        ]
+      },
+      "id": "node/6871671454"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/6893420892",
+        "check_date": "2025-02-17",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.037779,
+          47.4650041
+        ]
+      },
+      "id": "node/6893420892"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/6893420893",
+        "check_date": "2025-02-17",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.037765,
+          47.4649518
+        ]
+      },
+      "id": "node/6893420893"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/6920852427",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0404682,
+          47.4429516
+        ]
+      },
+      "id": "node/6920852427"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/6922320813",
+        "check_date": "2025-01-26",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0411217,
+          47.4414955
+        ]
+      },
+      "id": "node/6922320813"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/6922320814",
+        "check_date": "2025-01-26",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0411331,
+          47.4415645
+        ]
+      },
+      "id": "node/6922320814"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/7063878353",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          16.7239313,
+          46.4259206
+        ]
+      },
+      "id": "node/7063878353"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/7242299262",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          20.1646583,
+          46.2657976
+        ]
+      },
+      "id": "node/7242299262"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/7242299263",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          20.1645872,
+          46.265799
+        ]
+      },
+      "id": "node/7242299263"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/7379993898",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.107229,
+          47.5318815
+        ]
+      },
+      "id": "node/7379993898"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/7379993899",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.1072939,
+          47.5319499
+        ]
+      },
+      "id": "node/7379993899"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/7475967700",
+        "check_date": "2023-09-19",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0309083,
+          47.5453382
+        ]
+      },
+      "id": "node/7475967700"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/7475967705",
+        "check_date": "2023-09-19",
+        "leisure": "pitch",
+        "name": "Hidasi Pingpongasztal",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0309336,
+          47.5453446
+        ]
+      },
+      "id": "node/7475967705"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/7690458532",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          18.6213846,
+          46.3390721
+        ]
+      },
+      "id": "node/7690458532"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/7690458548",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          18.6214067,
+          46.3390929
+        ]
+      },
+      "id": "node/7690458548"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/7721149112",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          18.9023722,
+          47.3129721
+        ]
+      },
+      "id": "node/7721149112"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/7721149113",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          18.9023544,
+          47.3129923
+        ]
+      },
+      "id": "node/7721149113"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/7721158316",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          18.9078767,
+          47.3130722
+        ]
+      },
+      "id": "node/7721158316"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/7906105157",
+        "access": "yes",
+        "leisure": "pitch",
+        "lit": "no",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0690678,
+          47.5292981
+        ]
+      },
+      "id": "node/7906105157"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/7973530907",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          18.5941603,
+          47.186191
+        ]
+      },
+      "id": "node/7973530907"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/7973530910",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          18.5941364,
+          47.1861828
+        ]
+      },
+      "id": "node/7973530910"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/8043227213",
+        "covered": "no",
+        "fee": "no",
+        "indoor": "no",
+        "leisure": "pitch",
+        "lit": "yes",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          18.8394992,
+          46.6180304
+        ]
+      },
+      "id": "node/8043227213"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/8188344571",
+        "check_date": "2025-12-18",
+        "covered": "no",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.1417277,
+          47.5125835
+        ]
+      },
+      "id": "node/8188344571"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/8220886483",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0062283,
+          47.4804386
+        ]
+      },
+      "id": "node/8220886483"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/8254885953",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          18.6539037,
+          47.2838367
+        ]
+      },
+      "id": "node/8254885953"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/8403351518",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          18.9836699,
+          47.5101984
+        ]
+      },
+      "id": "node/8403351518"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/8403351519",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          18.9837033,
+          47.5102627
+        ]
+      },
+      "id": "node/8403351519"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/8430940601",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.017834,
+          47.4625778
+        ]
+      },
+      "id": "node/8430940601"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/8430940602",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0177634,
+          47.4625774
+        ]
+      },
+      "id": "node/8430940602"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/8437623551",
+        "leisure": "pitch",
+        "mapillary": "298152731782193",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.203084,
+          47.4176453
+        ]
+      },
+      "id": "node/8437623551"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/8437623552",
+        "leisure": "pitch",
+        "mapillary": "895627114618194",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.2032084,
+          47.4176376
+        ]
+      },
+      "id": "node/8437623552"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/8443111634",
+        "access": "yes",
+        "leisure": "pitch",
+        "lit": "no",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.1440897,
+          47.5131499
+        ]
+      },
+      "id": "node/8443111634"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/8597690569",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          18.9393756,
+          47.5472228
+        ]
+      },
+      "id": "node/8597690569"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/8607473196",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.3506504,
+          47.6028626
+        ]
+      },
+      "id": "node/8607473196"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/8639301135",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          18.9672752,
+          47.4400284
+        ]
+      },
+      "id": "node/8639301135"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/8715494575",
+        "check_date": "2025-07-18",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0431042,
+          47.5314476
+        ]
+      },
+      "id": "node/8715494575"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/8715494576",
+        "check_date": "2025-07-18",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.042976,
+          47.5314734
+        ]
+      },
+      "id": "node/8715494576"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/8730274738",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0272602,
+          47.4675721
+        ]
+      },
+      "id": "node/8730274738"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/8730274739",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0271039,
+          47.4675934
+        ]
+      },
+      "id": "node/8730274739"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/8746248434",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          18.9947031,
+          47.4732007
+        ]
+      },
+      "id": "node/8746248434"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/8780892936",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          21.7219027,
+          47.9782145
+        ]
+      },
+      "id": "node/8780892936"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/8826046011",
+        "access": "yes",
+        "covered": "no",
+        "fee": "no",
+        "indoor": "no",
+        "leisure": "pitch",
+        "lit": "no",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.1256319,
+          47.4561184
+        ]
+      },
+      "id": "node/8826046011"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/8836884574",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0349757,
+          47.464907
+        ]
+      },
+      "id": "node/8836884574"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/8836884575",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0349816,
+          47.4649396
+        ]
+      },
+      "id": "node/8836884575"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/8841486059",
+        "access": "yes",
+        "capacity": "2",
+        "fee": "no",
+        "leisure": "pitch",
+        "pitch:net": "yes",
+        "pitch:net:material": "metal",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0799374,
+          47.4799584
+        ]
+      },
+      "id": "node/8841486059"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/8849760529",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.1441784,
+          47.5458364
+        ]
+      },
+      "id": "node/8849760529"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/8850072837",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.1456645,
+          47.54052
+        ]
+      },
+      "id": "node/8850072837"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/8864507929",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          18.9988993,
+          47.4295163
+        ]
+      },
+      "id": "node/8864507929"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/8874848133",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.7334588,
+          47.1978141
+        ]
+      },
+      "id": "node/8874848133"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/8880059228",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          17.6541004,
+          46.7815659
+        ]
+      },
+      "id": "node/8880059228"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/8883935405",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.7030529,
+          46.9202575
+        ]
+      },
+      "id": "node/8883935405"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/8911820508",
+        "count": "2",
+        "leisure": "pitch",
+        "lit": "no",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          17.6060995,
+          47.6246852
+        ]
+      },
+      "id": "node/8911820508"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/8931203231",
+        "access": "yes",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0799069,
+          47.4239068
+        ]
+      },
+      "id": "node/8931203231"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/8931203232",
+        "access": "yes",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0799609,
+          47.4239068
+        ]
+      },
+      "id": "node/8931203232"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/8981538272",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0395789,
+          47.4304933
+        ]
+      },
+      "id": "node/8981538272"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/8989865084",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          18.0124296,
+          47.0255827
+        ]
+      },
+      "id": "node/8989865084"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/8999151101",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          18.1610294,
+          46.1381326
+        ]
+      },
+      "id": "node/8999151101"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/9006999237",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          20.1670486,
+          46.2687817
+        ]
+      },
+      "id": "node/9006999237"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/9006999238",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          20.167063,
+          46.2687401
+        ]
+      },
+      "id": "node/9006999238"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/9006999239",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          20.1670774,
+          46.2686985
+        ]
+      },
+      "id": "node/9006999239"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/9006999240",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          20.1670919,
+          46.2686569
+        ]
+      },
+      "id": "node/9006999240"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/9006999241",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          20.1671063,
+          46.2686154
+        ]
+      },
+      "id": "node/9006999241"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/9009870339",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.8123005,
+          48.1290781
+        ]
+      },
+      "id": "node/9009870339"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/9009870340",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.812389,
+          48.1290513
+        ]
+      },
+      "id": "node/9009870340"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/9018511160",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          17.7686757,
+          46.8039917
+        ]
+      },
+      "id": "node/9018511160"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/9033121838",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          17.7840972,
+          46.8053058
+        ]
+      },
+      "id": "node/9033121838"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/9100730069",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          18.2464465,
+          47.0521419
+        ]
+      },
+      "id": "node/9100730069"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/9103977492",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.037619,
+          47.4457965
+        ]
+      },
+      "id": "node/9103977492"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/9118203278",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          18.7378719,
+          47.7932126
+        ]
+      },
+      "id": "node/9118203278"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/9124367712",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          17.97688,
+          46.991948
+        ]
+      },
+      "id": "node/9124367712"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/9165850681",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0382722,
+          47.4639003
+        ]
+      },
+      "id": "node/9165850681"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/9183961961",
+        "access": "yes",
+        "capacity": "1",
+        "fee": "no",
+        "leisure": "pitch",
+        "pitch:net": "yes",
+        "pitch:net:material": "metal",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0295003,
+          47.4889197
+        ]
+      },
+      "id": "node/9183961961"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/9183961962",
+        "access": "yes",
+        "capacity": "1",
+        "fee": "no",
+        "leisure": "pitch",
+        "pitch:net": "yes",
+        "pitch:net:material": "metal",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0294399,
+          47.4888924
+        ]
+      },
+      "id": "node/9183961962"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/9207830259",
+        "leisure": "pitch",
+        "material": "stone",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0563985,
+          47.4096845
+        ]
+      },
+      "id": "node/9207830259"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/9216145498",
+        "access": "yes",
+        "leisure": "pitch",
+        "lit": "no",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.3436336,
+          47.377964
+        ]
+      },
+      "id": "node/9216145498"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/9230193782",
+        "access": "yes",
+        "indoor": "no",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          21.5383296,
+          47.2219611
+        ]
+      },
+      "id": "node/9230193782"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/9230193783",
+        "access": "yes",
+        "indoor": "no",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          21.5383671,
+          47.2219023
+        ]
+      },
+      "id": "node/9230193783"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/9236008797",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          20.279863,
+          48.218115
+        ]
+      },
+      "id": "node/9236008797"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/9236008798",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          20.280385,
+          48.2182241
+        ]
+      },
+      "id": "node/9236008798"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/9260351371",
+        "access": "yes",
+        "leisure": "pitch",
+        "lit": "yes",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          18.3400627,
+          47.6416289
+        ]
+      },
+      "id": "node/9260351371"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/9260351372",
+        "access": "yes",
+        "leisure": "pitch",
+        "lit": "yes",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          18.3400701,
+          47.6416753
+        ]
+      },
+      "id": "node/9260351372"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/9288863623",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0652684,
+          47.5361652
+        ]
+      },
+      "id": "node/9288863623"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/9447968266",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          21.6521235,
+          47.537557
+        ]
+      },
+      "id": "node/9447968266"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/9558238232",
+        "leisure": "pitch",
+        "operator": "SZTE Egyetemi Sportközpont",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          20.1404487,
+          46.2357209
+        ]
+      },
+      "id": "node/9558238232"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/9579235619",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0544978,
+          47.6013718
+        ]
+      },
+      "id": "node/9579235619"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/9587391480",
+        "description": "Concrete surface, no net.",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.5921493,
+          47.2527222
+        ]
+      },
+      "id": "node/9587391480"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/9592810745",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          18.9097349,
+          47.4494897
+        ]
+      },
+      "id": "node/9592810745"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/9657608862",
+        "fixme": "position",
+        "leisure": "pitch",
+        "material": "concrete",
+        "sport": "table_tennis",
+        "table_tennis:net": "yes"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0855023,
+          47.514574
+        ]
+      },
+      "id": "node/9657608862"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/9657608863",
+        "fixme": "position",
+        "leisure": "pitch",
+        "material": "concrete",
+        "sport": "table_tennis",
+        "table_tennis:net": "yes"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0856633,
+          47.5146483
+        ]
+      },
+      "id": "node/9657608863"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/9657712141",
+        "count": "2",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          18.95602,
+          47.5691731
+        ]
+      },
+      "id": "node/9657712141"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/9657740775",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.014193,
+          47.4616187
+        ]
+      },
+      "id": "node/9657740775"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/9657740776",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0141882,
+          47.461671
+        ]
+      },
+      "id": "node/9657740776"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/9670857960",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0444057,
+          47.4642051
+        ]
+      },
+      "id": "node/9670857960"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/9670857961",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0444183,
+          47.4642445
+        ]
+      },
+      "id": "node/9670857961"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/9671698597",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0376552,
+          47.4523852
+        ]
+      },
+      "id": "node/9671698597"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/9705261945",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.7916182,
+          47.1610383
+        ]
+      },
+      "id": "node/9705261945"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/9717043253",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0465394,
+          47.4723169
+        ]
+      },
+      "id": "node/9717043253"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/9724109005",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0278562,
+          47.4656086
+        ]
+      },
+      "id": "node/9724109005"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/9752987091",
+        "capacity": "2",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0404992,
+          47.461415
+        ]
+      },
+      "id": "node/9752987091"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/9780114719",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0435486,
+          47.4683706
+        ]
+      },
+      "id": "node/9780114719"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/9791276215",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0444611,
+          47.4735607
+        ]
+      },
+      "id": "node/9791276215"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/9795024058",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0397586,
+          47.4588954
+        ]
+      },
+      "id": "node/9795024058"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/9795024076",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0398244,
+          47.4588849
+        ]
+      },
+      "id": "node/9795024076"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/9795096262",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.040296,
+          47.4597152
+        ]
+      },
+      "id": "node/9795096262"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/9795096263",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0401931,
+          47.459719
+        ]
+      },
+      "id": "node/9795096263"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/9795443543",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0389002,
+          47.4604923
+        ]
+      },
+      "id": "node/9795443543"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/9797091737",
+        "leisure": "pitch",
+        "lit": "no",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          18.9776952,
+          47.3968253
+        ]
+      },
+      "id": "node/9797091737"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/9797091738",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          18.9775963,
+          47.3968925
+        ]
+      },
+      "id": "node/9797091738"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/9797235082",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0274305,
+          47.4630902
+        ]
+      },
+      "id": "node/9797235082"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/9797235083",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.02735,
+          47.4631051
+        ]
+      },
+      "id": "node/9797235083"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/9798049159",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          18.8247362,
+          47.5566689
+        ]
+      },
+      "id": "node/9798049159"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/9839650041",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0310286,
+          47.4674879
+        ]
+      },
+      "id": "node/9839650041"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/9852440230",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0192554,
+          47.4565068
+        ]
+      },
+      "id": "node/9852440230"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/9852440237",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.019213,
+          47.4565213
+        ]
+      },
+      "id": "node/9852440237"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/9867312274",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          17.645321,
+          46.7787992
+        ]
+      },
+      "id": "node/9867312274"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/9867342425",
+        "leisure": "pitch",
+        "lit": "no",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0508435,
+          47.4725244
+        ]
+      },
+      "id": "node/9867342425"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/9870564524",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.1392001,
+          47.5487807
+        ]
+      },
+      "id": "node/9870564524"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/9894951104",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0159433,
+          47.4929004
+        ]
+      },
+      "id": "node/9894951104"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/9896144867",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          18.3400608,
+          47.6416414
+        ]
+      },
+      "id": "node/9896144867"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/9896144869",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          18.340075,
+          47.6416822
+        ]
+      },
+      "id": "node/9896144869"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/9907079320",
+        "access": "yes",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          18.1688551,
+          46.9757025
+        ]
+      },
+      "id": "node/9907079320"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/9907474372",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0374007,
+          47.4575717
+        ]
+      },
+      "id": "node/9907474372"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/9907474374",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0376306,
+          47.4576545
+        ]
+      },
+      "id": "node/9907474374"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/9908296168",
+        "access": "yes",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0387853,
+          47.4548143
+        ]
+      },
+      "id": "node/9908296168"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/9908296183",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0378512,
+          47.4549631
+        ]
+      },
+      "id": "node/9908296183"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/9908296184",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0377935,
+          47.4549743
+        ]
+      },
+      "id": "node/9908296184"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/9908296194",
+        "access": "yes",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.038798,
+          47.4548476
+        ]
+      },
+      "id": "node/9908296194"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/9939017612",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.2340172,
+          47.5462844
+        ]
+      },
+      "id": "node/9939017612"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/9943565714",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.2126055,
+          47.5492659
+        ]
+      },
+      "id": "node/9943565714"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/9948172691",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          18.1462973,
+          46.950942
+        ]
+      },
+      "id": "node/9948172691"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/9952071338",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0319052,
+          47.4545415
+        ]
+      },
+      "id": "node/9952071338"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/9952071339",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0319108,
+          47.45461
+        ]
+      },
+      "id": "node/9952071339"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/9960977302",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          20.4870392,
+          46.8657212
+        ]
+      },
+      "id": "node/9960977302"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/9976297409",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          17.6457086,
+          46.5796657
+        ]
+      },
+      "id": "node/9976297409"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/9990166402",
+        "access": "yes",
+        "capacity": "1",
+        "fee": "no",
+        "leisure": "pitch",
+        "opening_hours": "24/7",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0549833,
+          47.5485197
+        ]
+      },
+      "id": "node/9990166402"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/9992905947",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          17.6444641,
+          47.679676
+        ]
+      },
+      "id": "node/9992905947"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/9992905948",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          17.6350594,
+          47.6779214
+        ]
+      },
+      "id": "node/9992905948"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/10040392870",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0361602,
+          47.4494307
+        ]
+      },
+      "id": "node/10040392870"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/10040434170",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0404043,
+          47.4429392
+        ]
+      },
+      "id": "node/10040434170"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/10069990067",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          18.2257525,
+          46.0371188
+        ]
+      },
+      "id": "node/10069990067"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/10069990068",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          18.2257448,
+          46.0370511
+        ]
+      },
+      "id": "node/10069990068"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/10089492288",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          17.3550238,
+          46.7547826
+        ]
+      },
+      "id": "node/10089492288"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/10089492289",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          17.3549841,
+          46.7547771
+        ]
+      },
+      "id": "node/10089492289"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/10110285943",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.2834317,
+          47.4749584
+        ]
+      },
+      "id": "node/10110285943"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/10110353443",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.3014486,
+          47.4697375
+        ]
+      },
+      "id": "node/10110353443"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/10276214200",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          20.2669126,
+          48.224656
+        ]
+      },
+      "id": "node/10276214200"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/10276214201",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          20.2668807,
+          48.2244783
+        ]
+      },
+      "id": "node/10276214201"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/10294794079",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.143624,
+          47.5127655
+        ]
+      },
+      "id": "node/10294794079"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/10294794080",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.1436106,
+          47.5128235
+        ]
+      },
+      "id": "node/10294794080"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/10307478738",
+        "access": "customers",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          17.898826,
+          46.8632859
+        ]
+      },
+      "id": "node/10307478738"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/10307478739",
+        "access": "customers",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          17.8987844,
+          46.8633042
+        ]
+      },
+      "id": "node/10307478739"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/10554801016",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0343372,
+          47.5241385
+        ]
+      },
+      "id": "node/10554801016"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/10557266539",
+        "leisure": "pitch",
+        "lit": "no",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          18.0280698,
+          47.0310499
+        ]
+      },
+      "id": "node/10557266539"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/10577729288",
+        "capacity": "2",
+        "leisure": "pitch",
+        "lit": "yes",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.1292225,
+          47.4282119
+        ]
+      },
+      "id": "node/10577729288"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/10648255542",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          17.7800158,
+          46.3719802
+        ]
+      },
+      "id": "node/10648255542"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/10679415635",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0218481,
+          47.4216168
+        ]
+      },
+      "id": "node/10679415635"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/10693018998",
+        "access": "yes",
+        "capacity": "1",
+        "fee": "no",
+        "leisure": "pitch",
+        "pitch:net": "yes",
+        "pitch:net:material": "metal",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0270221,
+          47.4937513
+        ]
+      },
+      "id": "node/10693018998"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/10693056477",
+        "fee": "no",
+        "leisure": "pitch",
+        "pitch:net": "yes",
+        "pitch:net:material": "metal",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0223403,
+          47.5131936
+        ]
+      },
+      "id": "node/10693056477"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/10693069115",
+        "access": "yes",
+        "capacity": "1",
+        "fee": "no",
+        "leisure": "pitch",
+        "pitch:net:material": "metal",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0372455,
+          47.5086943
+        ]
+      },
+      "id": "node/10693069115"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/10720622355",
+        "access": "private",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0668728,
+          47.536097
+        ]
+      },
+      "id": "node/10720622355"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/10727589130",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          20.1421995,
+          46.2706912
+        ]
+      },
+      "id": "node/10727589130"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/10729328478",
+        "leisure": "pitch",
+        "lit": "yes",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.1117698,
+          47.6066934
+        ]
+      },
+      "id": "node/10729328478"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/10733058267",
+        "access": "yes",
+        "leisure": "pitch",
+        "reservation": "no",
+        "sport": "table_tennis",
+        "surface": "fine_gravel"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          17.433852,
+          46.7062655
+        ]
+      },
+      "id": "node/10733058267"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/10761197133",
+        "access": "yes",
+        "leisure": "pitch",
+        "lit": "no",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.216953,
+          47.5507444
+        ]
+      },
+      "id": "node/10761197133"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/10771887401",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0101245,
+          47.4692834
+        ]
+      },
+      "id": "node/10771887401"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/10778619345",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          20.1491222,
+          46.2702966
+        ]
+      },
+      "id": "node/10778619345"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/10788629954",
+        "access": "private",
+        "leisure": "pitch",
+        "lit": "no",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.1116465,
+          47.4922391
+        ]
+      },
+      "id": "node/10788629954"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/10796810696",
+        "access": "yes",
+        "leisure": "pitch",
+        "lit": "no",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0690699,
+          47.5292621
+        ]
+      },
+      "id": "node/10796810696"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/10846949008",
+        "capacity": "1",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0609509,
+          47.4757816
+        ]
+      },
+      "id": "node/10846949008"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/10846949009",
+        "capacity": "1",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.06088,
+          47.4758173
+        ]
+      },
+      "id": "node/10846949009"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/10860175804",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0620336,
+          47.5324867
+        ]
+      },
+      "id": "node/10860175804"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/10860191005",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.062019,
+          47.5324491
+        ]
+      },
+      "id": "node/10860191005"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/10884747133",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          18.9988683,
+          47.4117438
+        ]
+      },
+      "id": "node/10884747133"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/10914356227",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.1679774,
+          47.4642489
+        ]
+      },
+      "id": "node/10914356227"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/10914356228",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.1680002,
+          47.4642963
+        ]
+      },
+      "id": "node/10914356228"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/10914356229",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.1680195,
+          47.4643379
+        ]
+      },
+      "id": "node/10914356229"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/10938327372",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.1951767,
+          47.5415289
+        ]
+      },
+      "id": "node/10938327372"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/11006930639",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.081412,
+          47.3595278
+        ]
+      },
+      "id": "node/11006930639"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/11006930641",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0814401,
+          47.3596132
+        ]
+      },
+      "id": "node/11006930641"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/11033818201",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          16.8488518,
+          46.8439169
+        ]
+      },
+      "id": "node/11033818201"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/11104023095",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0653335,
+          47.5748094
+        ]
+      },
+      "id": "node/11104023095"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/11123864283",
+        "covered": "yes",
+        "description": "háló nincs",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          16.5996943,
+          47.2383428
+        ]
+      },
+      "id": "node/11123864283"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/11123864284",
+        "description": "háló nincs",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          16.6190563,
+          47.2420399
+        ]
+      },
+      "id": "node/11123864284"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/11143587944",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          17.2883624,
+          46.7605413
+        ]
+      },
+      "id": "node/11143587944"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/11143800111",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          17.2899342,
+          46.7607546
+        ]
+      },
+      "id": "node/11143800111"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/11145561974",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          17.9606899,
+          46.9819943
+        ]
+      },
+      "id": "node/11145561974"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/11172655968",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.6214345,
+          47.9163672
+        ]
+      },
+      "id": "node/11172655968"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/11179071229",
+        "count": "2",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.1840635,
+          47.4507917
+        ]
+      },
+      "id": "node/11179071229"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/11184130677",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0254339,
+          47.8327008
+        ]
+      },
+      "id": "node/11184130677"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/11186513942",
+        "access": "customers",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.8766112,
+          47.9126194
+        ]
+      },
+      "id": "node/11186513942"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/11227171208",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          20.1362609,
+          46.2416746
+        ]
+      },
+      "id": "node/11227171208"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/11254686028",
+        "count": "3",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.079344,
+          47.5180607
+        ]
+      },
+      "id": "node/11254686028"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/11254686029",
+        "count": "2",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0792568,
+          47.5181612
+        ]
+      },
+      "id": "node/11254686029"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/11269165571",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          18.8229865,
+          47.4745035
+        ]
+      },
+      "id": "node/11269165571"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/11282068357",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0363,
+          47.4344938
+        ]
+      },
+      "id": "node/11282068357"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/11365320466",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          16.9861297,
+          46.4498977
+        ]
+      },
+      "id": "node/11365320466"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/11371593983",
+        "access": "yes",
+        "leisure": "pitch",
+        "lit": "no",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          16.9927221,
+          46.452659
+        ]
+      },
+      "id": "node/11371593983"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/11377609340",
+        "access": "yes",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          17.6558086,
+          47.6767949
+        ]
+      },
+      "id": "node/11377609340"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/11382441120",
+        "leisure": "pitch",
+        "lit": "no",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0508873,
+          47.4724915
+        ]
+      },
+      "id": "node/11382441120"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/11399291278",
+        "access": "yes",
+        "leisure": "pitch",
+        "lit": "no",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.1482844,
+          47.5413321
+        ]
+      },
+      "id": "node/11399291278"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/11399291279",
+        "access": "yes",
+        "leisure": "pitch",
+        "lit": "no",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.1483233,
+          47.5413078
+        ]
+      },
+      "id": "node/11399291279"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/11399291280",
+        "access": "yes",
+        "leisure": "pitch",
+        "lit": "no",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.148243,
+          47.541358
+        ]
+      },
+      "id": "node/11399291280"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/11410909309",
+        "check_date": "2021-10-05",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0658578,
+          47.4859814
+        ]
+      },
+      "id": "node/11410909309"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/11443803908",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0804008,
+          47.5585363
+        ]
+      },
+      "id": "node/11443803908"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/11443803909",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0804424,
+          47.5585842
+        ]
+      },
+      "id": "node/11443803909"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/11448958250",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0796725,
+          47.4967877
+        ]
+      },
+      "id": "node/11448958250"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/11449087249",
+        "alt_name": "Üjlipót Sport- és Tehetségkutató Központ",
+        "contact:email": "info@ujlipotstk.hu",
+        "contact:phone": "+36 70 660 2291",
+        "contact:website": "https://ujlipotstk.hu/",
+        "leisure": "sports_centre",
+        "name": "Újlipót Pingpong Klub és Rendezvényterem",
+        "opening_hours": "Mo-Fr 13:00-21:00; Sa 10:00-18:00",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0572288,
+          47.5148321
+        ]
+      },
+      "id": "node/11449087249"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/11453246107",
+        "count": "2",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0854903,
+          47.5445189
+        ]
+      },
+      "id": "node/11453246107"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/11536672541",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0357166,
+          47.4506387
+        ]
+      },
+      "id": "node/11536672541"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/11559941095",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0243768,
+          47.4730295
+        ]
+      },
+      "id": "node/11559941095"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/11559941096",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0243763,
+          47.4729893
+        ]
+      },
+      "id": "node/11559941096"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/11579340019",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.1026982,
+          47.5568604
+        ]
+      },
+      "id": "node/11579340019"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/11639023182",
+        "leisure": "pitch",
+        "lit": "no",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          18.9774971,
+          47.3971082
+        ]
+      },
+      "id": "node/11639023182"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/11639896124",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.1015612,
+          47.5627959
+        ]
+      },
+      "id": "node/11639896124"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/11659812608",
+        "access": "yes",
+        "fee": "no",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.1815622,
+          47.437102
+        ]
+      },
+      "id": "node/11659812608"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/11810973236",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          17.7820869,
+          46.3674393
+        ]
+      },
+      "id": "node/11810973236"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/11810973237",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          17.781993,
+          46.3674329
+        ]
+      },
+      "id": "node/11810973237"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/11816021219",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          21.7218888,
+          47.9782209
+        ]
+      },
+      "id": "node/11816021219"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/11907994464",
+        "leisure": "pitch",
+        "lit": "no",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.1220503,
+          47.5152974
+        ]
+      },
+      "id": "node/11907994464"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/11907994465",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.1219884,
+          47.5152556
+        ]
+      },
+      "id": "node/11907994465"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/11920878055",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0385389,
+          47.4186376
+        ]
+      },
+      "id": "node/11920878055"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/11939399579",
+        "leisure": "pitch",
+        "lit": "yes",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.1379163,
+          47.6530463
+        ]
+      },
+      "id": "node/11939399579"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/11939399590",
+        "leisure": "pitch",
+        "lit": "yes",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.1398078,
+          47.6519299
+        ]
+      },
+      "id": "node/11939399590"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/11939399591",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.1395512,
+          47.6520106
+        ]
+      },
+      "id": "node/11939399591"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/11939399700",
+        "leisure": "pitch",
+        "lit": "yes",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.1377287,
+          47.6528902
+        ]
+      },
+      "id": "node/11939399700"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/11942357667",
+        "access": "private",
+        "count": "2",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          18.1262867,
+          46.1654086
+        ]
+      },
+      "id": "node/11942357667"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/11944267110",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.065857,
+          47.5210265
+        ]
+      },
+      "id": "node/11944267110"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/12020659432",
+        "access": "yes",
+        "leisure": "pitch",
+        "manufacturer": "Sponeta",
+        "pitch:net": "yes",
+        "pitch:net:material": "metal",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0000572,
+          47.5208966
+        ]
+      },
+      "id": "node/12020659432"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/12026678042",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.1094242,
+          47.5356003
+        ]
+      },
+      "id": "node/12026678042"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/12056032693",
+        "access": "yes",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          17.8749614,
+          46.9528271
+        ]
+      },
+      "id": "node/12056032693"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/12077108725",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          20.2122296,
+          46.6782546
+        ]
+      },
+      "id": "node/12077108725"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/12084932611",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          18.2269256,
+          46.953011
+        ]
+      },
+      "id": "node/12084932611"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/12127477872",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          16.5693207,
+          46.8522307
+        ]
+      },
+      "id": "node/12127477872"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/12137667152",
+        "access": "yes",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          18.7939887,
+          47.6549762
+        ]
+      },
+      "id": "node/12137667152"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/12139687043",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          17.8929273,
+          46.9589173
+        ]
+      },
+      "id": "node/12139687043"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/12151063855",
+        "count": "2",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.1355309,
+          47.5446148
+        ]
+      },
+      "id": "node/12151063855"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/12162572861",
+        "leisure": "pitch",
+        "lit": "no",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          17.5849288,
+          47.6382018
+        ]
+      },
+      "id": "node/12162572861"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/12173035107",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0417493,
+          47.5383753
+        ]
+      },
+      "id": "node/12173035107"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/12173045261",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0417574,
+          47.5384033
+        ]
+      },
+      "id": "node/12173045261"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/12184019417",
+        "count": "2",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.1178851,
+          47.5447939
+        ]
+      },
+      "id": "node/12184019417"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/12192686970",
+        "access": "private",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0502836,
+          47.4559819
+        ]
+      },
+      "id": "node/12192686970"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/12277089047",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.1243939,
+          47.508634
+        ]
+      },
+      "id": "node/12277089047"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/12297610463",
+        "access": "yes",
+        "leisure": "pitch",
+        "lit": "no",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.1244303,
+          47.510417
+        ]
+      },
+      "id": "node/12297610463"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/12327287876",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          18.7173141,
+          47.5480357
+        ]
+      },
+      "id": "node/12327287876"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/12327287877",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          18.7172223,
+          47.5480063
+        ]
+      },
+      "id": "node/12327287877"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/12405100269",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.137232,
+          47.5365392
+        ]
+      },
+      "id": "node/12405100269"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/12412479858",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          18.9109126,
+          47.7975056
+        ]
+      },
+      "id": "node/12412479858"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/12423231984",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.1388632,
+          47.5474179
+        ]
+      },
+      "id": "node/12423231984"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/12423231985",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.1389205,
+          47.5474156
+        ]
+      },
+      "id": "node/12423231985"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/12423232087",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.1479009,
+          47.5434699
+        ]
+      },
+      "id": "node/12423232087"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/12448410075",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0627493,
+          47.603063
+        ]
+      },
+      "id": "node/12448410075"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/12512854814",
+        "access": "yes",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0452342,
+          47.5485248
+        ]
+      },
+      "id": "node/12512854814"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/12618449160",
+        "access": "yes",
+        "covered": "no",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0722074,
+          47.5076001
+        ]
+      },
+      "id": "node/12618449160"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/12643686854",
+        "addr:city": "Alsónyék",
+        "addr:housenumber": "6",
+        "addr:postcode": "7148",
+        "addr:street": "Fő utca",
+        "amenity": "community_centre",
+        "contact:email": "kulturhaz.alsonyek@gmail.com",
+        "contact:phone": "+36 74 491 364;+36 30 866 3109",
+        "contact:website": "https://alsonyek.hu/integralt-kozossegi-es-szolgaltato-ter/",
+        "fixme": "position",
+        "image": "https://alsonyek.hu/wp-content/uploads/2020/04/ikszt2-400x270.jpg",
+        "internet_access": "wlan",
+        "internet_access:fee": "no",
+        "name": "Integrált közösségi és szolgáltató tér",
+        "sport": "table_tennis",
+        "television": "yes"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          18.7368098,
+          46.2024366
+        ]
+      },
+      "id": "node/12643686854"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/12683844789",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.1025038,
+          47.5600668
+        ]
+      },
+      "id": "node/12683844789"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/12766445680",
+        "count": "2",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0876536,
+          47.5154459
+        ]
+      },
+      "id": "node/12766445680"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/12810756332",
+        "covered": "no",
+        "leisure": "pitch",
+        "lit": "no",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0079233,
+          47.3749576
+        ]
+      },
+      "id": "node/12810756332"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/12840592851",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          18.1249939,
+          46.3499529
+        ]
+      },
+      "id": "node/12840592851"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/12862423449",
+        "access": "yes",
+        "capacity": "2",
+        "leisure": "pitch",
+        "lit": "no",
+        "pitch:net": "yes",
+        "pitch:net:material": "metal",
+        "playability": "good",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0709824,
+          47.6020787
+        ]
+      },
+      "id": "node/12862423449"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/12864375006",
+        "leisure": "pitch",
+        "pitch:net:material": "metal",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0146524,
+          47.5304258
+        ]
+      },
+      "id": "node/12864375006"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/12864375007",
+        "leisure": "pitch",
+        "pitch:net:material": "metal",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0147165,
+          47.5303862
+        ]
+      },
+      "id": "node/12864375007"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/12875041137",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.2609771,
+          47.4753443
+        ]
+      },
+      "id": "node/12875041137"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/12878601966",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0631804,
+          47.5370161
+        ]
+      },
+      "id": "node/12878601966"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/12878611927",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0631549,
+          47.5369561
+        ]
+      },
+      "id": "node/12878611927"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/12900247692",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          16.5261814,
+          47.375784
+        ]
+      },
+      "id": "node/12900247692"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/12911292705",
+        "access": "yes",
+        "leisure": "pitch",
+        "lit": "no",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0595547,
+          47.4919418
+        ]
+      },
+      "id": "node/12911292705"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/12921509301",
+        "access": "yes",
+        "leisure": "pitch",
+        "lit": "no",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.1822715,
+          47.6177556
+        ]
+      },
+      "id": "node/12921509301"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/12922970688",
+        "access": "yes",
+        "fee": "no",
+        "leisure": "pitch",
+        "lit": "yes",
+        "pitch:net": "yes",
+        "pitch:net:material": "metal",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.1090307,
+          47.5791502
+        ]
+      },
+      "id": "node/12922970688"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/12922970689",
+        "access": "yes",
+        "fee": "no",
+        "leisure": "pitch",
+        "lit": "yes",
+        "pitch:net": "yes",
+        "pitch:net:material": "metal",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.1089918,
+          47.5791095
+        ]
+      },
+      "id": "node/12922970689"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/12927895709",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0885562,
+          47.5809854
+        ]
+      },
+      "id": "node/12927895709"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/12946644855",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.2491674,
+          47.4804537
+        ]
+      },
+      "id": "node/12946644855"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/12946644856",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.2490467,
+          47.4803024
+        ]
+      },
+      "id": "node/12946644856"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/12946961955",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.7916714,
+          47.161015
+        ]
+      },
+      "id": "node/12946961955"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/12952089291",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.1301196,
+          47.7927512
+        ]
+      },
+      "id": "node/12952089291"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/12956016360",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0856115,
+          47.5571998
+        ]
+      },
+      "id": "node/12956016360"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/12959805723",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0264206,
+          47.4910572
+        ]
+      },
+      "id": "node/12959805723"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/12969509073",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.2567453,
+          47.47818
+        ]
+      },
+      "id": "node/12969509073"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/12973739401",
+        "capacity": "1",
+        "leisure": "pitch",
+        "pitch:net:material": "metal",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0037885,
+          47.5149451
+        ]
+      },
+      "id": "node/12973739401"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/13001726203",
+        "access": "yes",
+        "leisure": "pitch",
+        "name": "teqball asztal",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0609108,
+          47.4730163
+        ]
+      },
+      "id": "node/13001726203"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/13002626473",
+        "colour": "green",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.070334,
+          47.3504579
+        ]
+      },
+      "id": "node/13002626473"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/13002626474",
+        "colour": "green",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0703336,
+          47.3504306
+        ]
+      },
+      "id": "node/13002626474"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/13014369393",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          20.8445428,
+          48.0078939
+        ]
+      },
+      "id": "node/13014369393"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/13014369394",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          20.8444725,
+          48.0067418
+        ]
+      },
+      "id": "node/13014369394"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/13017988652",
+        "access": "yes",
+        "leisure": "pitch",
+        "lit": "yes",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0717724,
+          47.5017298
+        ]
+      },
+      "id": "node/13017988652"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/13027387339",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          17.5583814,
+          46.7510765
+        ]
+      },
+      "id": "node/13027387339"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/13063506427",
+        "access": "yes",
+        "covered": "no",
+        "fee": "no",
+        "indoor": "no",
+        "leisure": "pitch",
+        "lit": "no",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          21.0336306,
+          47.9350795
+        ]
+      },
+      "id": "node/13063506427"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/13084312366",
+        "access": "yes",
+        "leisure": "pitch",
+        "lit": "no",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.3677612,
+          47.6115596
+        ]
+      },
+      "id": "node/13084312366"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/13128215083",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          18.1637678,
+          46.9790305
+        ]
+      },
+      "id": "node/13128215083"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/13202987754",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0511697,
+          47.5160445
+        ]
+      },
+      "id": "node/13202987754"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/13311093241",
+        "access": "yes",
+        "leisure": "pitch",
+        "lit": "no",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.230632,
+          47.4731266
+        ]
+      },
+      "id": "node/13311093241"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/13317762804",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          20.1725215,
+          46.271642
+        ]
+      },
+      "id": "node/13317762804"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/13333989762",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.1292132,
+          47.4519183
+        ]
+      },
+      "id": "node/13333989762"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/13333989763",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.1292499,
+          47.4518939
+        ]
+      },
+      "id": "node/13333989763"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/13333989764",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.1292886,
+          47.451866
+        ]
+      },
+      "id": "node/13333989764"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/13344990747",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          20.6815173,
+          48.5198245
+        ]
+      },
+      "id": "node/13344990747"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/13391110032",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.1477249,
+          47.4800313
+        ]
+      },
+      "id": "node/13391110032"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/13391151755",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.1475677,
+          47.4800484
+        ]
+      },
+      "id": "node/13391151755"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/13426929224",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.1027488,
+          47.3435865
+        ]
+      },
+      "id": "node/13426929224"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/13426929225",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.102801,
+          47.3435591
+        ]
+      },
+      "id": "node/13426929225"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/13426929226",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.1028523,
+          47.3435303
+        ]
+      },
+      "id": "node/13426929226"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/13431127753",
+        "leisure": "pitch",
+        "material": "concrete",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          17.8194608,
+          47.3591908
+        ]
+      },
+      "id": "node/13431127753"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/13511630446",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          18.4428213,
+          47.2063012
+        ]
+      },
+      "id": "node/13511630446"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/13541834918",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.0579656,
+          47.3495862
+        ]
+      },
+      "id": "node/13541834918"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/13613338092",
+        "capacity": "1",
+        "leisure": "pitch",
+        "name": "ping-pong",
+        "pitch:net": "yes",
+        "pitch:net:material": "metal",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.1202684,
+          47.5968005
+        ]
+      },
+      "id": "node/13613338092"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/13622259199",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.1405801,
+          47.4565139
+        ]
+      },
+      "id": "node/13622259199"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/13622282231",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          19.1406604,
+          47.4564439
+        ]
+      },
+      "id": "node/13622282231"
+    }
+  ]
+}
