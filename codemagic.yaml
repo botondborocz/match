@@ -17,6 +17,14 @@ workflows:
       - name: Inject API Key into local.properties
         script: echo "MAPS_API_KEY=$MAPS_API_KEY" >> local.properties
 
+      - name: Configure Gradle Memory limits for 8GB Mac
+        script: |
+          echo "" >> gradle.properties 
+          echo "org.gradle.jvmargs=-Xmx2g -XX:MaxMetaspaceSize=512m" >> gradle.properties
+          echo "kotlin.native.jvmArgs=-Xmx3g" >> gradle.properties
+          echo "kotlin.native.cacheKind=none" >> gradle.properties
+          echo "org.gradle.daemon=false" >> gradle.properties
+
       - name: Build Unsigned iOS App
         script: |
           set -e
