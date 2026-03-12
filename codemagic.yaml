@@ -19,6 +19,7 @@ workflows:
 
       - name: Build Unsigned iOS App
         script: |
+          set -e
           # 1. Ask Xcode to build the app, but explicitly disable code signing
           xcodebuild clean build \
             -project iosApp/iosApp.xcodeproj \
