@@ -26,6 +26,7 @@ import platform.UIKit.UIImageSymbolWeightBold
 import platform.UIKit.UIUserInterfaceStyle
 import platform.darwin.NSObject
 import kotlinx.cinterop.useContents
+import platform.CoreLocation.kCLAuthorizationStatusNotDetermined
 
 @OptIn(ExperimentalComposeUiApi::class, ExperimentalForeignApi::class)
 @Composable
@@ -34,36 +35,29 @@ actual fun NativeMap(
     locations: List<TTClub>,
     selectedClub: TTClub?,
     userLocationTrigger: Int,
-    bottomPadding: Dp, // 👈 Added Bottom Padding
-    isDark: Boolean,   // 👈 Added Theme State
+    bottomPadding: Dp,
+    isDark: Boolean,
     onMarkerClick: (TTClub) -> Unit,
     onBoundsChanged: (MapBounds) -> Unit
 ) {
     val currentLocations by rememberUpdatedState(locations)
     val currentOnMarkerClick by rememberUpdatedState(onMarkerClick)
-
     val currentOnBoundsChanged by rememberUpdatedState(onBoundsChanged)
 
     var lastHandledTrigger by remember { mutableStateOf(0) }
 
-    // 1. Request iOS Location Permission
+    // 👇 1. Just initialize the manager, DO NOT request permission yet!
     val locationManager = remember { CLLocationManager() }
-    LaunchedEffect(Unit) {
-        locationManager.requestWhenInUseAuthorization()
-    }
 
     val mapDelegate = remember {
         object : NSObject(), MKMapViewDelegateProtocol {
 
-            // 👇 3. ADD THIS: Fires when the map stops moving!
             override fun mapView(mapView: MKMapView, regionDidChangeAnimated: Boolean) {
                 mapView.region.useContents {
-                    // Calculate the 4 edges of the screen using the center point and the "span" (zoom level)
                     val north = center.latitude + (span.latitudeDelta / 2.0)
                     val south = center.latitude - (span.latitudeDelta / 2.0)
                     val east = center.longitude + (span.longitudeDelta / 2.0)
                     val west = center.longitude - (span.longitudeDelta / 2.0)
-
                     currentOnBoundsChanged(MapBounds(north = north, south = south, east = east, west = west))
                 }
             }
@@ -76,47 +70,10 @@ actual fun NativeMap(
 
             override fun mapView(mapView: MKMapView, viewForAnnotation: MKAnnotationProtocol): MKAnnotationView? {
 
-                // A. CUSTOM USER LOCATION MARKER
+                // 👇 2. THE FIX: Return null for the User Location.
+                // This tells iOS to use the native, animated, pulsing blue dot with the halo!
                 if (viewForAnnotation is MKUserLocation) {
-                    val userIdentifier = "CustomUserLocation"
-                    var userView = mapView.dequeueReusableAnnotationViewWithIdentifier(userIdentifier)
-
-                    if (userView == null) {
-                        userView = MKAnnotationView(annotation = viewForAnnotation, reuseIdentifier = userIdentifier)
-                    } else {
-                        userView.annotation = viewForAnnotation
-                    }
-
-                    // Use "circle.circle.fill" - it looks like a solid dot with an outer ring
-                    val config = UIImageSymbolConfiguration.configurationWithPointSize(22.0, UIImageSymbolWeightBold)
-                    userView.image = UIImage.systemImageNamed("circle.circle.fill", withConfiguration = config)
-
-                    // Match the exact Android Cyan color!
-                    userView.tintColor = UIColor.colorWithRed(0.0, 0.824, 1.0, 1.0)
-
-                    // Add a native shadow so it pops off the map
-//                    userView.layer.shadowColor = UIColor.blackColor.CGColor
-//                    userView.layer.shadowOpacity = 0.3f
-//                    userView.layer.shadowRadius = 4.0
-//                    userView.layer.shadowOffset = CGSizeMake(0.0, 2.0)
-
-                    return userView
-                }
-                if (viewForAnnotation is MKUserLocation) {
-                    val userIdentifier = "CustomUserLocation"
-                    var userView = mapView.dequeueReusableAnnotationViewWithIdentifier(userIdentifier)
-
-                    if (userView == null) {
-                        userView = MKAnnotationView(annotation = viewForAnnotation, reuseIdentifier = userIdentifier)
-                    } else {
-                        userView.annotation = viewForAnnotation
-                    }
-
-                    val config = UIImageSymbolConfiguration.configurationWithPointSize(28.0, UIImageSymbolWeightBold)
-                    userView.image = UIImage.systemImageNamed("figure.table.tennis", withConfiguration = config)
-                    userView.tintColor = UIColor.colorWithRed(0.0, 0.824, 1.0, 1.0)
-
-                    return userView
+                    return null
                 }
 
                 // B. CUSTOM CLUB PINS
@@ -156,15 +113,8 @@ actual fun NativeMap(
         ),
         update = { mapView ->
 
-            // 👇 1. Apply Dynamic Bottom Padding to shift the map center
             mapView.layoutMargins = UIEdgeInsetsMake(0.0, 0.0, bottomPadding.value.toDouble(), 0.0)
-
-            // 👇 2. Apply Dynamic Theme to iOS Map
-            mapView.overrideUserInterfaceStyle = if (isDark) {
-                UIUserInterfaceStyle.UIUserInterfaceStyleDark
-            } else {
-                UIUserInterfaceStyle.UIUserInterfaceStyleLight
-            }
+            mapView.overrideUserInterfaceStyle = if (isDark) UIUserInterfaceStyle.UIUserInterfaceStyleDark else UIUserInterfaceStyle.UIUserInterfaceStyleLight
 
             // 3. PLOT MARKERS
             val existingCustomPins = mapView.annotations.filter { it !is MKUserLocation }
@@ -189,7 +139,6 @@ actual fun NativeMap(
 
                 if (annotationToSelect != null) {
                     mapView.selectAnnotation(annotationToSelect, animated = true)
-
                     val centerCoord = CLLocationCoordinate2DMake(selectedClub.lat, selectedClub.lng)
                     val region = MKCoordinateRegionMakeWithDistance(centerCoord, 1000.0, 1000.0)
                     mapView.setRegion(region, animated = true)
@@ -200,14 +149,20 @@ actual fun NativeMap(
                 }
             }
 
-            // 5. ZOOM TO USER LOCATION
+            // 👇 5. DEFERRED LOCATION PROMPT & ZOOM
             if (userLocationTrigger > lastHandledTrigger) {
                 lastHandledTrigger = userLocationTrigger
 
-                val userLoc = mapView.userLocation.location
-                if (userLoc != null) {
-                    val region = MKCoordinateRegionMakeWithDistance(userLoc.coordinate, 1000.0, 1000.0)
-                    mapView.setRegion(region, animated = true)
+                // If they haven't been asked yet, prompt them!
+                if (locationManager.authorizationStatus == kCLAuthorizationStatusNotDetermined) {
+                    locationManager.requestWhenInUseAuthorization()
+                } else {
+                    // If they already said yes, zoom to them!
+                    val userLoc = mapView.userLocation.location
+                    if (userLoc != null) {
+                        val region = MKCoordinateRegionMakeWithDistance(userLoc.coordinate, 1000.0, 1000.0)
+                        mapView.setRegion(region, animated = true)
+                    }
                 }
             }
         }
