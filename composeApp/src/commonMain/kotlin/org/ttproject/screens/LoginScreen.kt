@@ -27,6 +27,7 @@ import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 import org.ttproject.AppColors
+import org.ttproject.isDark
 import org.ttproject.shared.resources.continue_with_google
 import org.ttproject.shared.resources.forgot_password
 import org.ttproject.shared.resources.login
@@ -34,8 +35,9 @@ import org.ttproject.shared.resources.or
 import org.ttproject.viewmodel.LoginState
 import org.ttproject.viewmodel.LoginViewModel
 import ttproject.composeapp.generated.resources.Res
-import ttproject.composeapp.generated.resources.match_logo_long
 import org.ttproject.shared.resources.Res as SharedRes
+import ttproject.composeapp.generated.resources.match_logo_long
+import ttproject.composeapp.generated.resources.match_logo_long_dark
 import org.ttproject.shared.resources.password
 
 @Composable
@@ -73,12 +75,20 @@ fun LoginScreen(
                 .padding(horizontal = 32.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-
-            Image(
-                painter = painterResource(Res.drawable.match_logo_long),
-                contentDescription = "App Logo",
-                modifier = Modifier.height(64.dp)
-            )
+            if (isDark) {
+                Image(
+                    painter = painterResource(Res.drawable.match_logo_long),
+                    contentDescription = "App Logo",
+                    modifier = Modifier.height(64.dp)
+                )
+            }
+            else {
+                Image(
+                    painter = painterResource(Res.drawable.match_logo_long_dark),
+                    contentDescription = "App Logo",
+                    modifier = Modifier.height(64.dp)
+                )
+            }
             Spacer(modifier = Modifier.height(48.dp))
 
             // --- INPUT FIELDS ---

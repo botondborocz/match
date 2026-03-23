@@ -55,8 +55,10 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.unit.Velocity
 import org.koin.compose.viewmodel.koinViewModel
+import org.ttproject.isIosPlatform
 import org.ttproject.viewmodel.LocationViewModel
 import org.ttproject.viewmodel.LocationsUiState
 
@@ -450,6 +452,9 @@ fun MapScreen(
 
 @Composable
 fun FloatingClubCard(club: TTClub, cardBg: Color, brandOrange: Color, onClose: () -> Unit) {
+    val uriHandler = LocalUriHandler.current
+    var showMapChoice by remember { mutableStateOf(false) }
+
     Surface(
         shape = RoundedCornerShape(16.dp),
         color = cardBg,
@@ -471,19 +476,84 @@ fun FloatingClubCard(club: TTClub, cardBg: Color, brandOrange: Color, onClose: (
             }
 
             Spacer(modifier = Modifier.height(16.dp))
-
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Surface(color = Color(0xFF1E3A4C), shape = RoundedCornerShape(6.dp)) {
-                    Text("★ ${club.rating}", color = Color(0xFF4AC4F3), modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp), fontSize = 14.sp, fontWeight = FontWeight.Bold)
-                }
-                Spacer(modifier = Modifier.width(12.dp))
-                Button(
-                    onClick = { /* Navigate */ },
-                    modifier = Modifier.weight(1f).height(36.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = brandOrange),
-                    contentPadding = PaddingValues(0.dp)
+            // --- BOTTOM ROW (Conditional UI) ---
+            if (showMapChoice) {
+                // THE iOS CHOICE MENU
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text("Navigate", color = AppColors.TextPrimary, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                    // Cancel Button
+                    TextButton(
+                        onClick = { showMapChoice = false },
+                        contentPadding = PaddingValues(horizontal = 8.dp)
+                    ) {
+                        Text("Cancel", color = Color.Gray, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                    }
+
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        // Apple Maps Button (Dark Gray)
+                        Button(
+                            onClick = {
+                                // TODO: Save preference to DataStore/Settings here
+                                uriHandler.openUri("https://maps.apple.com/?q=${club.lat},${club.lng}")
+                                showMapChoice = false
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2A2D34)),
+                            shape = RoundedCornerShape(10.dp),
+                            modifier = Modifier.height(36.dp),
+                            contentPadding = PaddingValues(horizontal = 16.dp)
+                        ) {
+                            Text("Apple", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                        }
+
+                        // Google Maps Button (Brand Orange)
+                        Button(
+                            onClick = {
+                                // TODO: Save preference to DataStore/Settings here
+                                uriHandler.openUri("https://maps.google.com/?q=${club.lat},${club.lng}")
+                                showMapChoice = false
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = brandOrange),
+                            shape = RoundedCornerShape(10.dp),
+                            modifier = Modifier.height(36.dp),
+                            contentPadding = PaddingValues(horizontal = 16.dp)
+                        ) {
+                            Text("Google", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+            } else {
+                // THE STANDARD MENU (Rating + Navigate)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Surface(color = Color(0xFF1E3A4C), shape = RoundedCornerShape(6.dp)) {
+                        Text(
+                            text = "★ ${club.rating}",
+                            color = Color(0xFF4AC4F3),
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Button(
+                        onClick = {
+                            // 👇 2. iOS checks for preference, Android forces Google!
+                            if (isIosPlatform) {
+                                // In the future, check your local storage here first!
+                                showMapChoice = true
+                            } else {
+                                uriHandler.openUri("https://maps.google.com/?q=${club.lat},${club.lng}")
+                            }
+                        },
+                        modifier = Modifier.weight(1f).height(36.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = brandOrange),
+                        shape = RoundedCornerShape(10.dp),
+                        contentPadding = PaddingValues(0.dp)
+                    ) {
+                        Text("Navigate", color = AppColors.TextPrimary, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                    }
                 }
             }
         }

@@ -10,7 +10,7 @@ import org.ttproject.SharedTheme
 import org.ttproject.util.LocalThemeMode
 import org.ttproject.util.ThemeMode
 
-private val isDark: Boolean
+val isDark: Boolean
     @Composable
     get() = when (LocalThemeMode.current) {
         ThemeMode.Dark -> true
