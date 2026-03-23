@@ -30,7 +30,7 @@ class MatchRepositoryImpl(
     override suspend fun getNearbyPlayers(): List<Player> {
         // Make the GET request and automatically parse the JSON array into a List<Player>
         return try {
-            httpClient.get("${SERVER_IP}/users/nearby"){
+            httpClient.get("${SERVER_IP}/api/users/nearby"){
                 bearerAuth(tokenStorage.getToken()!!)
             }.body<List<Player>>()
         } catch (e: Exception) {
@@ -43,7 +43,7 @@ class MatchRepositoryImpl(
     override suspend fun recordSwipeAction(playerId: String, isLiked: Boolean): Boolean {
         return try {
             // Ask the backend if this was a match
-            val response = httpClient.post("${SERVER_IP}/users/$playerId/swipe") {
+            val response = httpClient.post("${SERVER_IP}/api/users/$playerId/swipe") {
                 contentType(ContentType.Application.Json)
                 bearerAuth(tokenStorage.getToken()!!)
                 setBody(SwipeRequest(isLiked = isLiked))

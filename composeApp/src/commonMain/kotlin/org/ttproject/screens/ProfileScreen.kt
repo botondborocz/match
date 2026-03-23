@@ -121,7 +121,7 @@ fun ProfileScreen(
                     enter = fadeIn(tween(400)) + slideInVertically(tween(400)) { 50 }
                 ) {
                     Column {
-                        ProfileHeader(userData.name)
+                        ProfileHeader(userData.name ?: "Player")
                         Spacer(modifier = Modifier.height(32.dp))
                     }
                 }

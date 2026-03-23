@@ -35,7 +35,7 @@ class UserRepositoryImpl(
             ?: throw Exception("No auth token found! User should be logged out.")
 
         // Step 2: Make the GET request to your /me endpoint
-        val response = httpClient.get("${SERVER_IP}/users/me") {
+        val response = httpClient.get("${SERVER_IP}/api/users/me") {
             // 👇 THIS IS THE CRITICAL LINE! It attaches your token to the request.
             bearerAuth(tokenStorage.getToken()!!)
         }
@@ -54,7 +54,7 @@ class UserRepositoryImpl(
 
     override suspend fun updateLanguage(language: String): Result<Boolean> {
         return try {
-            val response = httpClient.put("${SERVER_IP}/users/language") {
+            val response = httpClient.put("${SERVER_IP}/api/users/language") {
                 contentType(ContentType.Application.Json)
                 setBody(UpdateLanguageRequest(language))
                 bearerAuth(tokenStorage.getToken()!!)

@@ -54,17 +54,3 @@ object SharedTheme {
     val hexButtonBackgroundLight = "#F1F5F9"
 // Világosszürke a másodlagos (nem narancssárga) gombok és beviteli mezők (TextField) hátterének.
 }
-
-@OptIn(ExperimentalJsExport::class)
-@JsExport
-object SharedStrings {
-    val appName = "SpinSync"
-    val home = "Home"
-    val map = "Map"
-    val aiCoach = "AI Coach"
-    val match = "Match"
-    val profile = "Profile"
-    val pro = "PRO"
-    val userName = "John Doe"
-    val userTitle = "Semi-Pro Player"
-}

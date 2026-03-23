@@ -9,8 +9,8 @@ enum class PlayStyle { Offensive, Defensive, AllRound }
 
 object Users : Table("users") {
     val id = uuid("id").clientDefault { UUID.randomUUID() }
-    val username = varchar("username", 50).uniqueIndex()
-    val fullName = varchar("full_name", 100)
+    val username = varchar("username", 50).uniqueIndex().nullable()
+    val fullName = varchar("full_name", 100).nullable()
     val avatarUrl = text("avatar_url").nullable()
 
     val email = varchar("email", 255).uniqueIndex()

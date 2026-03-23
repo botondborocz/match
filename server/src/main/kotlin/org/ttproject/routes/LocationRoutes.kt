@@ -7,6 +7,7 @@ import io.ktor.server.auth.principal
 import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.get
+import io.ktor.server.routing.route
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.ttproject.data.Location
@@ -14,16 +15,15 @@ import org.ttproject.database.tables.Locations
 import org.ttproject.utils.calculateDistanceKm
 
 fun Route.locationRoutes() {
-    authenticate("auth-jwt") {
-
+    route("/api") {
         get("/locations/nearby") {
-            val principal = call.principal<JWTPrincipal>()
-            val currentUserId = principal?.payload?.getClaim("userId")?.asString()
-
-            if (currentUserId == null) {
-                call.respond(HttpStatusCode.Unauthorized, "Invalid token")
-                return@get
-            }
+//            val principal = call.principal<JWTPrincipal>()
+//            val currentUserId = principal?.payload?.getClaim("userId")?.asString()
+//
+//            if (currentUserId == null) {
+//                call.respond(HttpStatusCode.Unauthorized, "Invalid token")
+//                return@get
+//            }
 
             // Read the coordinates from the URL (e.g., /locations/nearby?lat=47.5&lng=19.1)
             val userLat = call.request.queryParameters["lat"]?.toDoubleOrNull()
@@ -57,5 +57,8 @@ fun Route.locationRoutes() {
                 call.respond(allLocations)
             }
         }
+    }
+    authenticate("auth-jwt") {
+
     }
 }

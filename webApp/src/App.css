@@ -1,22 +1,52 @@
-/* --- Global Resets & Layout --- */
-:root {
-  --bg-dark: #0F172A;
-  --surface-dark: #162032;
-  --surface-hover: #1a263f;
-  --surface-active: #0F172A;
-  --accent-orange: #FF6B35;
-  --text-primary: #FFFFFF;
-  --text-secondary: #94A3B8;
-  --border-color: #1F2937;
+@import "tailwindcss";
+
+/* --- THEME VARIABLES --- */
+/* Combine :root and .light so the light theme is the default AND explicitly selectable */
+:root, .light {
+  /* LIGHT THEME */
+  --bg-dark: var(--hexBackgroundLight);
+  --surface-dark: var(--hexSurfaceLight);
+  --surface-hover: var(--hexButtonBackgroundLight);
+  --surface-active: var(--hexBackgroundLight);
+
+  --accent-orange: var(--hexAccentOrangeLight);
+  --text-primary: var(--hexTextPrimaryLight);
+  --text-secondary: var(--hexTextSecondaryLight);
+
+  /* Using color-mix with standard vars! */
+  --border-color: color-mix(in srgb, var(--hexTextGrayLight) 50%, transparent);
+
   --header-height: 60px;
   --bottom-nav-height: 70px;
+  --error-color: #EF4444;
 }
 
-*, *::before, *::after {
+/* Trigger dark mode manually via class injected by ThemeContext.tsx */
+.dark {
+  /* DARK THEME */
+  --bg-dark: var(--hexBackground);
+  --surface-dark: var(--hexSurfaceDark);
+  --surface-hover: color-mix(in srgb, var(--hexButtonBackground) 70%, white);
+  --surface-active: var(--hexBackground);
+
+  --accent-orange: var(--hexAccentOrange);
+  --text-primary: var(--hexTextPrimary);
+  --text-secondary: var(--hexTextSecondary);
+  --border-color: color-mix(in srgb, var(--hexTextGray) 50%, transparent);
+  --error-color: #EF4444;
+}
+
+/* REMOVED @media (prefers-color-scheme: dark) because React handles it now! */
+
+/* --- Global Resets & Layout --- */
+*,
+*::before,
+*::after {
   box-sizing: border-box;
 }
 
-html, body {
+html,
+body {
   margin: 0;
   padding: 0;
   height: 100%;
@@ -25,6 +55,8 @@ html, body {
   color: var(--text-primary);
   font-family: 'Inter', sans-serif;
   overflow: hidden;
+  /* Smooth transition when swapping Light/Dark mode! */
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 #root {
@@ -34,7 +66,7 @@ html, body {
 
 .app-container {
   display: flex;
-  height: 100vh;
+  height: 100dvh;
   width: 100vw;
   overflow: hidden;
 }
@@ -46,12 +78,105 @@ html, body {
   flex-direction: column;
   border-right: 1px solid var(--border-color);
   z-index: 200;
-  height: 100%; 
+  height: 100%;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
+/* Update your existing desktop sidebar class to include a transition */
 .sidebar.desktop {
   width: 260px;
   flex-shrink: 0;
+  /* Add width to the transition so it glides smoothly! */
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.3s ease, border-color 0.3s ease;
+  position: relative;
+}
+
+/* --- THE NEW COLLAPSED STATE --- */
+.sidebar.desktop.collapsed {
+  width: 80px; 
+}
+
+/* Hide the logo image smoothly */
+.sidebar.collapsed .logo-image {
+  opacity: 0;
+  width: 0;
+  visibility: hidden;
+}
+
+/* Center the toggle button when collapsed */
+.sidebar.collapsed .logo-section {
+  justify-content: center;
+  padding: 24px 0;
+}
+
+/* The Collapse Button Styling */
+.collapse-btn {
+  background: var(--surface-hover);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  margin-left: auto;
+  transition: all 0.2s ease;
+}
+
+.collapse-btn:hover {
+  color: var(--text-primary);
+  background-color: var(--surface-active);
+}
+
+.sidebar.collapsed .collapse-btn {
+  margin-left: 0; /* Centers it when text/logo is gone */
+}
+
+/* --- ANIMATING THE TEXT OUT --- */
+/* Add these transitions to your existing text classes */
+.nav-text, 
+.pro-badge, 
+.user-info {
+  transition: opacity 0.2s ease, width 0.2s ease;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+/* When collapsed, shrink and hide the text */
+.sidebar.collapsed .nav-text,
+.sidebar.collapsed .pro-badge,
+.sidebar.collapsed .user-info {
+  opacity: 0;
+  width: 0;
+  margin-left: 0;
+  padding: 0;
+}
+
+/* Keep icons centered in the footer when collapsed */
+.sidebar.collapsed .user-footer {
+  justify-content: center;
+  padding: 12px 0;
+}
+
+.sidebar.collapsed .avatar {
+  margin-right: 0; /* Removes the gap since there's no text next to it */
+}
+
+/* Ensure the SVG icons never shrink when the sidebar collapses */
+.nav-item svg {
+  flex-shrink: 0;
+  min-width: 20px; /* Matches the size={20} you set in the component */
+}
+
+/* Optional: Add a smooth rotation animation to the hamburger menu when clicked */
+.collapse-btn svg {
+  transition: transform 0.3s ease;
+}
+
+.sidebar.collapsed .collapse-btn svg {
+  transform: rotate(180deg);
 }
 
 .sidebar.mobile-drawer {
@@ -62,7 +187,6 @@ html, body {
   width: 280px;
   transform: translateX(-100%);
   transition: transform 0.3s ease-in-out;
-  box-shadow: 4px 0 25px rgba(0,0,0,0.8);
 }
 
 .sidebar.mobile-drawer.open {
@@ -70,16 +194,15 @@ html, body {
 }
 
 /* Logo Section */
-.logo-section { 
-  display: flex; 
-  align-items: center; 
+.logo-section {
+  display: flex;
+  align-items: center;
   padding: 24px;
 }
 
-/* 👇 Az új kép stílusa */
 .logo-image {
-  height: 32px; /* Állítsd be a kívánt magasságot (pl. 24px vagy 32px) */
-  width: auto;  /* A szélesség automatikusan skálázódik, hogy ne torzuljon a kép */
+  height: 32px;
+  width: auto;
   object-fit: contain;
   display: block;
 }
@@ -92,74 +215,75 @@ html, body {
   overflow-y: auto;
   padding: 0 16px;
   gap: 8px;
-  position: relative; /* Crucial for the absolute indicator to stick to the edge */
+  position: relative;
 }
 
 /* The floating animated line */
 .active-indicator {
   position: absolute;
-  left: 22px; 
+  left: 22px;
   width: 4px;
   height: 24px;
   background-color: var(--accent-orange);
-  border-radius: 4px; 
+  border-radius: 4px;
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   z-index: 10;
 }
 
-.nav-item { 
-  display: flex; 
-  align-items: center; 
-  height: 48px; 
-  padding: 0 16px; 
-  border-radius: 8px; 
-  cursor: pointer; 
-  color: var(--text-secondary); 
-  transition: background-color 0.2s; 
+.nav-item {
+  display: flex;
+  align-items: center;
+  height: 48px;
+  padding: 0 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  transition: background-color 0.2s, color 0.2s;
 }
 
-.nav-item:hover { 
-  background-color: var(--surface-hover); 
+.nav-item:hover {
+  background-color: var(--surface-hover);
   color: var(--text-primary);
 }
 
-.nav-item.active { 
-  background-color: var(--surface-active); 
-  color: var(--accent-orange); 
+.nav-item.active {
+  background-color: var(--surface-active);
+  color: var(--accent-orange);
 }
 
 /* --- Animated Content Inside Nav Items --- */
-/* By targeting ALL direct children (> *), the icon, text, and badges all slide perfectly together without colliding */
-.nav-item > * {
+.nav-item>* {
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.nav-item.active > * {
+.nav-item.active>* {
   transform: translateX(6px);
 }
 
-.nav-text { 
-  margin-left: 16px; 
-  font-weight: 500; 
-  font-size: 14px; 
+.nav-text {
+  margin-left: 16px;
+  font-weight: 500;
+  font-size: 14px;
 }
 
-.pro-badge { 
-  background-color: rgba(255, 90, 54, 0.15); 
-  color: var(--accent-orange); 
-  font-size: 10px; 
-  padding: 3px 6px; 
-  border-radius: 4px; 
-  font-weight: 700; 
-  margin-left: auto; 
+.pro-badge {
+  /* Using color-mix to get that 15% opacity on the Orange background */
+  background-color: color-mix(in srgb, var(--accent-orange) 15%, transparent);
+  color: var(--accent-orange);
+  font-size: 10px;
+  padding: 3px 6px;
+  border-radius: 4px;
+  font-weight: 700;
+  margin-left: auto;
   letter-spacing: 0.5px;
 }
-.notification-dot { 
-  width: 8px; 
-  height: 8px; 
-  background-color: var(--accent-orange); 
-  border-radius: 50%; 
-  margin-left: auto; 
+
+.notification-dot {
+  width: 8px;
+  height: 8px;
+  background-color: var(--accent-orange);
+  border-radius: 50%;
+  margin-left: auto;
 }
 
 /* User Footer */
@@ -171,16 +295,48 @@ html, body {
   align-items: center;
   background-color: transparent;
   border-radius: 8px;
-  transition: background-color 0.2s;
+  transition: background-color 0.2s, border-color 0.3s;
   cursor: pointer;
 }
+
 .user-footer:hover {
   background-color: var(--surface-hover);
 }
-.avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--surface-active); border: 1px solid var(--border-color); margin-right: 12px; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: bold; color: var(--text-primary); }
-.user-info { flex: 1; overflow: hidden; }
-.user-name { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text-primary); }
-.user-role { font-size: 12px; color: var(--accent-orange); margin-top: 2px;}
+
+.avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--surface-active);
+  border: 1px solid var(--border-color);
+  margin-right: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: bold;
+  color: var(--text-primary);
+}
+
+.user-info {
+  flex: 1;
+  overflow: hidden;
+}
+
+.user-name {
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--text-primary);
+}
+
+.user-role {
+  font-size: 12px;
+  color: var(--accent-orange);
+  margin-top: 2px;
+}
 
 /* --- Mobile TopBar & Overlay --- */
 .mobile-topbar {
@@ -195,11 +351,15 @@ html, body {
   position: fixed;
   top: 0;
   z-index: 100;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
 .mobile-overlay {
   position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   background-color: rgba(0, 0, 0, 0.6);
   z-index: 150;
   animation: fadeIn 0.2s;
@@ -219,6 +379,7 @@ html, body {
   align-items: flex-end;
   padding-bottom: 8px;
   z-index: 100;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
 .bottom-nav-item {
@@ -239,7 +400,10 @@ html, body {
   margin-top: 4px;
   color: var(--text-secondary);
 }
-.bottom-label.active-text { color: var(--accent-orange); }
+
+.bottom-label.active-text {
+  color: var(--accent-orange);
+}
 
 /* The Pop-out Button */
 .icon-wrapper.highlight {
@@ -252,8 +416,10 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 8px 20px rgba(255, 90, 54, 0.4);
+  /* Glowing orange shadow using color-mix for 40% opacity */
+  box-shadow: 0 8px 20px color-mix(in srgb, var(--accent-orange) 40%, transparent);
   border: 4px solid var(--bg-dark);
+  transition: border-color 0.3s ease;
 }
 
 .coach-label {
@@ -281,22 +447,66 @@ html, body {
   display: flex;
   flex-direction: column;
   position: relative;
-  height: 100%; 
-  overflow-y: auto; 
+  height: 100%;
+  overflow-y: auto;
   padding: 0;
 }
 
-.icon-btn, .close-btn { background: none; border: none; cursor: pointer; color: var(--text-primary); padding: 4px; display: flex; align-items: center; }
-.close-btn { position: absolute; top: 16px; right: 16px; }
-.topbar-title { font-size: 16px; margin: 0; font-weight: 600; color: var(--text-primary); }
-.topbar-avatar { width: 32px; height: 32px; background: var(--surface-active); border: 1px solid var(--border-color); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; color: white; }
+.icon-btn,
+.close-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-primary);
+  padding: 4px;
+  display: flex;
+  align-items: center;
+}
 
-@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.close-btn {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+}
+
+.topbar-title {
+  font-size: 16px;
+  margin: 0;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.topbar-avatar {
+  width: 32px;
+  height: 32px;
+  background: var(--surface-active);
+  border: 1px solid var(--border-color);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: bold;
+  color: white;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
 
 @media (max-width: 768px) {
-  .app-container { flex-direction: column; }
+  .app-container {
+    flex-direction: column;
+  }
+
   .main-content {
-    margin-top: var(--header-height); 
-    height: calc(100vh - var(--header-height) - var(--bottom-nav-height)); /* Adjusted for bottom nav */
+    margin-top: var(--header-height);
+    height: calc(100dvh - var(--header-height) - var(--bottom-nav-height));
   }
 }

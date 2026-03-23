@@ -20,8 +20,7 @@ class LocationRepositoryImpl(
 
     override suspend fun getNearbyLocations(): List<Location> {
         return try {
-            httpClient.get("${SERVER_IP}/locations/nearby") {
-                bearerAuth(tokenStorage.getToken()!!)
+            httpClient.get("${SERVER_IP}/api/locations/nearby") {
             }.body<List<Location>>()
         } catch (e: Exception) {
             println("Network Error fetching locations: ${e.message}")

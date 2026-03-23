@@ -78,17 +78,17 @@ fun App() {
 
             val currentRoute = remember(currentDestination) {
                 when {
-                    currentDestination?.hasRoute(NavRoute.Map::class) == true -> NavRoute.Map
-                    currentDestination?.hasRoute(NavRoute.Coach::class) == true -> NavRoute.Coach
                     currentDestination?.hasRoute(NavRoute.Match::class) == true -> NavRoute.Match
+                    currentDestination?.hasRoute(NavRoute.Coach::class) == true -> NavRoute.Coach
+                    currentDestination?.hasRoute(NavRoute.Messages::class) == true -> NavRoute.Messages
                     currentDestination?.hasRoute(NavRoute.Profile::class) == true -> NavRoute.Profile
-                    else -> NavRoute.Home
+                    else -> NavRoute.Map
                 }
             }
 
             val onNavigate: (NavRoute) -> Unit = { targetRoute ->
                 navController.navigate(targetRoute) {
-                    popUpTo<NavRoute.Home> {
+                    popUpTo<NavRoute.Map> {
                         saveState = true
                     }
                     launchSingleTop = true
@@ -98,7 +98,7 @@ fun App() {
 
             // Determine the title for the TopBar
             val topBarTitle = when (currentRoute) {
-                NavRoute.Home -> "Home" // Or use stringResource(SharedStrings.home)
+                NavRoute.Messages -> "Messages" // Or use stringResource(SharedStrings.home)
                 NavRoute.Map -> "Map"
                 NavRoute.Coach -> "AI Coach"
                 NavRoute.Match -> "Match"
@@ -139,7 +139,7 @@ fun App() {
                     ) { innerPadding ->
                         NavHost(
                             navController = navController,
-                            startDestination = NavRoute.Home,
+                            startDestination = NavRoute.Map,
                             modifier = Modifier
                                 .fillMaxSize(),
                             enterTransition = { fadeIn(animationSpec = tween(200)) },
@@ -147,24 +147,6 @@ fun App() {
                             popEnterTransition = { fadeIn(animationSpec = tween(200)) },
                             popExitTransition = { fadeOut(animationSpec = tween(200)) }
                         ) {
-                            composable<NavRoute.Home> {
-                                Box(
-                                    modifier = Modifier.fillMaxSize().padding(innerPadding)
-                                        .padding(16.dp)
-                                ) {
-                                    Text("Home Screen", color = AppColors.TextPrimary)
-                                    Button(
-                                        onClick = {
-                                            tokenStorage.clearToken()
-                                            tokenStorage.clearLanguage()
-                                            isLoggedIn = false
-                                        },
-                                        modifier = Modifier.padding(top = 16.dp)
-                                    ) {
-                                        Text("Logout")
-                                    }
-                                }
-                            }
                             composable<NavRoute.Map> {
                                 Box(
                                     modifier = Modifier
@@ -175,14 +157,32 @@ fun App() {
                                     MapScreen()
                                 }
                             }
+                            composable<NavRoute.Match> {
+                                Box(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
+                                    MatchScreen()
+                                }
+                            }
                             composable<NavRoute.Coach> {
                                 Box(modifier = Modifier.fillMaxSize().padding(innerPadding).padding(16.dp)) {
                                     Text("Coach Screen", color = AppColors.TextPrimary)
                                 }
                             }
-                            composable<NavRoute.Match> {
-                                Box(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
-                                    MatchScreen()
+                            composable<NavRoute.Messages> {
+                                Box(
+                                    modifier = Modifier.fillMaxSize().padding(innerPadding)
+                                        .padding(16.dp)
+                                ) {
+                                    Text("Messages Screen", color = AppColors.TextPrimary)
+                                    Button(
+                                        onClick = {
+                                            tokenStorage.clearToken()
+                                            tokenStorage.clearLanguage()
+                                            isLoggedIn = false
+                                        },
+                                        modifier = Modifier.padding(top = 16.dp)
+                                    ) {
+                                        Text("Logout")
+                                    }
                                 }
                             }
                             composable<NavRoute.Profile> {

@@ -12,7 +12,7 @@ import org.ttproject.repository.UserRepository
 
 sealed class ProfileState {
     object Loading : ProfileState()
-    data class Success(val name: String, val elo: Int, val winRate: String, val language: String?) : ProfileState()
+    data class Success(val name: String?, val elo: Int, val winRate: String, val language: String?) : ProfileState()
     data class Error(val message: String) : ProfileState()
 }
 

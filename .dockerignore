@@ -1,0 +1,19 @@
+# CRITICAL: Ignore all node_modules everywhere to fix the symlink crash
+**/node_modules
+
+# Ignore Kotlin/Android caches and IDE files (Saves hundreds of MBs)
+**/.gradle
+.gradle
+.idea
+local.properties
+*.iml
+
+# Ignore build outputs we don't need to send to the Docker daemon
+server/build
+webApp/dist
+
+# Ignore the Docker tarballs your script creates
+*.tar
+
+# Ignore git history to speed up the transfer
+.git

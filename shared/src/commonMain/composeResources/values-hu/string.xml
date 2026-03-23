@@ -1,6 +1,8 @@
 <resources>
     <string name="app_name">MATCH</string>
     <string name="home">Kezdőlap</string>
+    <string name="feed">Hírfolyam</string>
+    <string name="messages">Üzenetek</string>
     <string name="map">Térkép</string>
     <string name="ai_coach">AI Edző</string>
     <string name="match">Meccs</string>
@@ -15,7 +17,13 @@
     <string name="password">Jelszó</string>
     <string name="forgot_password">Elfelejtett jelszó?</string>
     <string name="login">Bejelentkezés</string>
+    <string name="already_have_an_account">Már rendelkezik fiókkal?</string>
+    <string name="don_t_have_an_account">Nem rendelkezik még fiókkal?</string>
+    <string name="create_account">Fiók létrehozása</string>
+    <string name="join_the_club">Csatlakozz a Klubhoz</string>
+    <string name="find">Találj közeli játékosokat és asztalokat</string>
     <string name="logout">Kijelentkezés</string>
+    <string name="register">Regisztráció</string>
     <string name="or">VAGY</string>
     <string name="continue_with_google">Folytatás Google-lal</string>
     <string name="english">Angol</string>
@@ -33,4 +41,6 @@
     <string name="outdoor">Szabadtéri</string>
     <string name="free">Ingyenes</string>
     <string name="nearby_clubs">Közeli klubok</string>
+    <string name="find_your_match_unauth_title">Készen állsz, hogy megtaláld a partnered?</string>
+    <string name="login_to_swipe_overlay">Jelentkezz be, hogy felfedezd a közeledben lévő pingpongosokat, összehasonlítsd az ELO-jukat, és szervezz egy új meccset.</string>
 </resources>

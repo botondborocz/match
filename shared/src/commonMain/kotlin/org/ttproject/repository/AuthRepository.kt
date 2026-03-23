@@ -27,7 +27,7 @@ class AuthRepositoryImpl(
         return try {
             val cleanEmail = email.trim()
             // Point this to your Google Cloud IP!
-            val response = httpClient.post("${SERVER_IP}/auth/login") {
+            val response = httpClient.post("${SERVER_IP}/api/auth/login") {
                 contentType(ContentType.Application.Json)
                 setBody(LoginRequest(cleanEmail, password))
             }

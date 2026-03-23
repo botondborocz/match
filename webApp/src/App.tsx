@@ -1,27 +1,67 @@
 import { useState, useEffect } from 'react';
-import Sidebar from './components/Navigation/SideBar';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
+import SideBar from './components/Navigation/SideBar';
 import TopBar from './components/Navigation/TopBar';
-import { SharedRes } from './shared/SharedRes.ts';
+import LoginScreen from './components/Screens/LoginScreen'; 
+import ProfileScreen from './components/Screens/ProfileScreen'; 
+import MapScreen from './components/Screens/MapScreen';
+import { SharedRes } from './shared/SharedRes';
+import { SharedTheme } from './theme/SharedTheme';
+import { ThemeProvider } from './theme/ThemeContext'; // 👈 Import the ThemeProvider we made!
 import './App.css';
+import MatchScreen from './components/Screens/MatchScreen';
+import RegisterScreen from './components/Screens/RegisterScreen';
+import { GoogleOAuthProvider } from '@react-oauth/google';
 
-function App() {
-  const [activeTab, setActiveTab] = useState('home');
+function AppContent() {
+  // 1. Theme Injection
+  useEffect(() => {
+    const root = document.documentElement;
+    // Iterates over the TS object and creates vars like --hexBackground: #0F172A
+    Object.entries(SharedTheme).forEach(([key, value]) => {
+      root.style.setProperty(`--${key}`, value as string);
+    });
+  }, []);
+
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(() => !!localStorage.getItem("auth_token"));
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const location = useLocation();
+  const navigate = useNavigate();
 
-  // Handle Resize
+  // 2. NEW: Listen for window resize events instantly!
   useEffect(() => {
     const handleResize = () => {
-      const mobile = window.innerWidth <= 768;
-      setIsMobile(mobile);
-      if (!mobile) setIsMenuOpen(false); // Reset menu state if resizing to desktop
+      setIsMobile(window.innerWidth <= 768);
+      
+      // Optional polish: Auto-close the mobile menu if they stretch the window to desktop size
+      if (window.innerWidth > 768) {
+        setIsMenuOpen(false);
+      }
     };
+
     window.addEventListener('resize', handleResize);
+    
+    // Cleanup the listener when the app unmounts
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Helper to get title for TopBar
+  const handleLoginSuccess = (token: string) => {
+    localStorage.setItem("auth_token", token);
+    setIsLoggedIn(true);
+    navigate("/profile", { replace: true });
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("auth_token");
+    setIsLoggedIn(false);
+    navigate("/login", { replace: true });
+  };
+
+  // Get title based on URL
   const getPageTitle = () => {
+    const path = location.pathname.substring(1) || 'home';
     const titles: Record<string, string> = {
       home: SharedRes.strings.home,
       map: SharedRes.strings.map,
@@ -29,41 +69,64 @@ function App() {
       match: SharedRes.strings.match,
       profile: SharedRes.strings.profile
     };
-    return titles[activeTab] || SharedRes.strings.appName;
+    return titles[path] || SharedRes.strings.appName;
   };
 
   return (
     <div className="app-container">
-      {/* The Sidebar is always rendered, but styles change based on isMobile.
-        On Desktop: It sits relatively in the flex layout.
-        On Mobile: It becomes a fixed drawer (hidden unless isOpen is true).
-      */}
-      <Sidebar 
-        activeTab={activeTab} 
-        onTabChange={setActiveTab}
+      <SideBar 
         isMobile={isMobile}
         isOpen={isMenuOpen}
         onClose={() => setIsMenuOpen(false)}
+        isCollapsed={isSidebarCollapsed}
+        onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
       />
 
-      {/* TopBar is only visible on Mobile */}
       {isMobile && (
-        <TopBar 
-          onMenuClick={() => setIsMenuOpen(true)} 
-          title={getPageTitle()}
-        />
+        <TopBar onMenuClick={() => setIsMenuOpen(true)} title={getPageTitle()} />
       )}
 
-      {/* Main Content Area */}
       <main className="main-content">
-        <div style={{ padding: '20px', textAlign: 'center' }}>
-           {/* Placeholder Content */}
-           <h2>Welcome to {getPageTitle()}</h2>
-           <p>This is the content area.</p>
-        </div>
+      <Routes>
+          {/* Public Tabs */}
+          {/* <Route path="/home" element={<HomeScreen />} /> */}
+          <Route path="/map" element={<MapScreen />} />
+          <Route path="/match" element={<MatchScreen />} />
+          
+          {/* The Gateway Tab */}
+          <Route 
+            path="/profile" 
+            element={
+              isLoggedIn 
+                ? <ProfileScreen onLogout={handleLogout} /> 
+                // 👇 THE FIX: Instantly redirects the URL and renders the Auth screen!
+                : <Navigate to="/login" replace /> 
+            } 
+          />
+          
+          {/* Authentication Screens */}
+          <Route path="/register" element={<RegisterScreen onLoginSuccess={handleLoginSuccess} />} />
+          <Route path="/login" element={<LoginScreen onLoginSuccess={handleLoginSuccess} />} />
+
+          {/* Default Redirects */}
+          <Route path="/" element={<Navigate to="/map" replace />} />
+          <Route path="*" element={<Navigate to="/map" replace />} />
+        </Routes>
       </main>
     </div>
   );
 }
 
-export default App;
+export default function App() {
+  const clientId = import.meta.env.VITE_GOOGLE_OAUTH_CLIENT_ID;
+  return (
+    // 3. Wrap everything in the ThemeProvider so ProfileScreen can access it
+    <GoogleOAuthProvider clientId={clientId || ""}>
+      <ThemeProvider>
+        <Router>
+          <AppContent />
+        </Router>
+      </ThemeProvider>
+    </GoogleOAuthProvider>
+  );
+}

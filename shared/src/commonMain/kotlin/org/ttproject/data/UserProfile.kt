@@ -6,7 +6,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class UserProfile(
     val id: String,
-    val name: String,
+    val name: String?,
     val email: String,
     val elo: Int,
     val winRate: String,
@@ -16,7 +16,7 @@ data class UserProfile(
 @Serializable
 data class PlayerResponse(
     val id: String,
-    val username: String,
+    val username: String?,
     val skillLevel: String,
     val lat: Double?,
     val lng: Double?,
