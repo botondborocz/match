@@ -1,12 +1,11 @@
 workflows:
   ios-unsigned-workflow:
     name: Build KMP iOS App (Unsigned)
-    instance_type: mac_mini_m2 # The free macOS runner
+    instance_type: mac_mini_m2
     max_build_duration: 120
 
     environment:
       java: 17
-      # This connects to the secrets you configure in the Codemagic UI
       groups:
         - api_keys
 
@@ -19,6 +18,7 @@ workflows:
 
       - name: Configure Gradle Memory limits for 8GB Mac
         script: |
+          # This forces Gradle and Kotlin to stay safely inside the 8GB RAM limit!
           echo "" >> gradle.properties 
           echo "org.gradle.jvmargs=-Xmx2g -XX:MaxMetaspaceSize=512m" >> gradle.properties
           echo "kotlin.native.jvmArgs=-Xmx3g" >> gradle.properties
@@ -27,8 +27,9 @@ workflows:
 
       - name: Build Unsigned iOS App
         script: |
-          set -e
-          # 1. Ask Xcode to build the app, but explicitly disable code signing
+          # Tells the script to stop immediately if the build fails
+          set -e 
+
           xcodebuild clean build \
             -project iosApp/iosApp.xcodeproj \
             -scheme iosApp \
@@ -40,11 +41,9 @@ workflows:
             CONFIGURATION_BUILD_DIR=build/Release-iphoneos \
             OTHER_LDFLAGS="-framework MapKit -framework CoreLocation"
 
-          # 2. Package the resulting .app folder into an .ipa file
           mkdir -p Payload
           mv iosApp/build/Release-iphoneos/*.app Payload/
           zip -r KmpApp.ipa Payload
 
     artifacts:
-      # Uploads the file so you can download it from the build summary
       - KmpApp.ipa
