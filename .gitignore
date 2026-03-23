@@ -22,3 +22,5 @@ node_modules/
 docker-compose.yml
 Dockerfile
 bin/
+nginx.conf
+Caddyfile
