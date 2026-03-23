@@ -39,19 +39,41 @@ actual fun NativeMap(
     locations: List<TTClub>,
     selectedClub: TTClub?,
     userLocationTrigger: Int,
-    bottomPadding: Dp, // 👈 Added Bottom Padding
-    isDark: Boolean,   // 👈 Added Theme State
-    onMarkerClick: (TTClub) -> Unit
+    bottomPadding: Dp,
+    isDark: Boolean,
+    onMarkerClick: (TTClub) -> Unit,
+    onBoundsChanged: (MapBounds) -> Unit
 ) {
     val context = LocalContext.current
 
     // --- STATE ---
-    var hasLocationPermission by remember { mutableStateOf(false) }
+    // 👇 1. Silently check if they already granted it in a previous session
+    var hasLocationPermission by remember {
+        mutableStateOf(
+            ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == android.content.pm.PackageManager.PERMISSION_GRANTED
+        )
+    }
     var userLocation by remember { mutableStateOf<LatLng?>(null) }
 
     val budapest = LatLng(47.4979, 19.0402)
     val cameraPositionState = rememberCameraPositionState {
         position = CameraPosition.fromLatLngZoom(budapest, 12f)
+    }
+
+    // 👇 2. Catch the map bounds whenever the user stops dragging/zooming
+    LaunchedEffect(cameraPositionState.isMoving) {
+        if (!cameraPositionState.isMoving) {
+            cameraPositionState.projection?.visibleRegion?.latLngBounds?.let { bounds ->
+                onBoundsChanged(
+                    MapBounds(
+                        north = bounds.northeast.latitude,
+                        south = bounds.southwest.latitude,
+                        east = bounds.northeast.longitude,
+                        west = bounds.southwest.longitude
+                    )
+                )
+            }
+        }
     }
 
     // --- PERMISSIONS ---
@@ -61,9 +83,7 @@ actual fun NativeMap(
         hasLocationPermission = isGranted
     }
 
-    LaunchedEffect(Unit) {
-        permissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
-    }
+    // 👇 2. DELETED the LaunchedEffect(Unit) that forced the prompt on startup!
 
     // --- LIVE LOCATION TRACKING ---
     DisposableEffect(hasLocationPermission) {
@@ -101,24 +121,33 @@ actual fun NativeMap(
     }
 
     // --- ZOOM TO ME ("Center Me" Button) ---
-    LaunchedEffect(userLocationTrigger) {
-        if (userLocationTrigger > 0 && hasLocationPermission) {
-            try {
-                val locationManager = ContextCompat.getSystemService(context, LocationManager::class.java)
-                val lastLocation = locationManager?.getLastKnownLocation(LocationManager.GPS_PROVIDER)
-                    ?: locationManager?.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)
+    // 👇 3. We listen to BOTH the trigger and the permission state!
+    LaunchedEffect(userLocationTrigger, hasLocationPermission) {
+        if (userLocationTrigger > 0) {
+            if (hasLocationPermission) {
+                // We have permission! Go ahead and pan the camera.
+                try {
+                    val locationManager = ContextCompat.getSystemService(context, LocationManager::class.java)
+                    val lastLocation = locationManager?.getLastKnownLocation(LocationManager.GPS_PROVIDER)
+                        ?: locationManager?.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)
 
-                lastLocation?.let { loc ->
-                    cameraPositionState.animate(
-                        update = CameraUpdateFactory.newLatLngZoom(LatLng(loc.latitude, loc.longitude), 15f),
-                        durationMs = 800
-                    )
+                    lastLocation?.let { loc ->
+                        cameraPositionState.animate(
+                            update = CameraUpdateFactory.newLatLngZoom(LatLng(loc.latitude, loc.longitude), 15f),
+                            durationMs = 800
+                        )
+                    }
+                } catch (e: SecurityException) {
+                    // Ignore
                 }
-            } catch (e: SecurityException) {
-                // Ignore
+            } else {
+                // We DON'T have permission yet. Launch the prompt!
+                permissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
             }
         }
     }
+
+    // ... (The rest of your code: Google Maps JSON and GoogleMap composable remain exactly the same)
 
     // --- GOOGLE MAPS DARK MODE JSON ---
     val darkMapStyle = """

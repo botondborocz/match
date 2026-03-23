@@ -72,6 +72,14 @@ enum class SheetState {
     Collapsed
 }
 
+// 👇 1. Add this cross-platform data class
+data class MapBounds(
+    val north: Double,
+    val south: Double,
+    val east: Double,
+    val west: Double
+)
+
 @Composable
 expect fun NativeMap(
     modifier: Modifier,
@@ -80,7 +88,9 @@ expect fun NativeMap(
     userLocationTrigger: Int,
     bottomPadding: Dp,
     isDark: Boolean,
-    onMarkerClick: (TTClub) -> Unit
+    onMarkerClick: (TTClub) -> Unit,
+    // 👇 2. Add the callback to the signature
+    onBoundsChanged: (MapBounds) -> Unit
 )
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
@@ -132,6 +142,26 @@ fun MapScreen(
     var selectedClub by remember { mutableStateOf<TTClub?>(null) }
     val coroutineScope = rememberCoroutineScope()
     var userLocationTrigger by remember { mutableStateOf(0) }
+
+    // 👇 1. Add state to hold the current screen edges
+    var mapBounds by remember { mutableStateOf<MapBounds?>(null) }
+
+    // 👇 2. Automatically filter the list when mapBounds OR clubs change
+    val visibleClubs = remember(clubs, mapBounds) {
+        val bounds = mapBounds ?: return@remember clubs // If bounds unknown, show all
+
+        clubs.filter { club ->
+            val isInsideLat = club.lat in bounds.south..bounds.north
+            // Handle standard longitude check (with fallback for crossing the antimeridian)
+            val isInsideLng = if (bounds.west <= bounds.east) {
+                club.lng in bounds.west..bounds.east
+            } else {
+                club.lng >= bounds.west || club.lng <= bounds.east
+            }
+
+            isInsideLat && isInsideLng
+        }
+    }
 
     var isIndoorSelected by remember { mutableStateOf(false) }
     var isOutdoorSelected by remember { mutableStateOf(true) }
@@ -246,7 +276,8 @@ fun MapScreen(
             userLocationTrigger = userLocationTrigger,
             bottomPadding = mapBottomPadding,
             isDark = isDark,
-            onMarkerClick = handleClubSelection
+            onMarkerClick = handleClubSelection,
+            onBoundsChanged = { newBounds -> mapBounds = newBounds }
         )
 
         // FLOATING FILTER CHIPS (Top)
@@ -407,7 +438,7 @@ fun MapScreen(
                 )
 
                 NearbyClubsList(
-                    clubs = clubs,
+                    clubs = visibleClubs,
                     cardBg = cardBg,
                     brandOrange = brandOrange,
                     onClubClick = handleClubSelection

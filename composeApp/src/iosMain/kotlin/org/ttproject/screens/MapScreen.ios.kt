@@ -25,6 +25,7 @@ import platform.UIKit.UIImageSymbolConfiguration
 import platform.UIKit.UIImageSymbolWeightBold
 import platform.UIKit.UIUserInterfaceStyle
 import platform.darwin.NSObject
+import kotlinx.cinterop.useContents
 
 @OptIn(ExperimentalComposeUiApi::class, ExperimentalForeignApi::class)
 @Composable
@@ -35,10 +36,13 @@ actual fun NativeMap(
     userLocationTrigger: Int,
     bottomPadding: Dp, // 👈 Added Bottom Padding
     isDark: Boolean,   // 👈 Added Theme State
-    onMarkerClick: (TTClub) -> Unit
+    onMarkerClick: (TTClub) -> Unit,
+    onBoundsChanged: (MapBounds) -> Unit
 ) {
     val currentLocations by rememberUpdatedState(locations)
     val currentOnMarkerClick by rememberUpdatedState(onMarkerClick)
+
+    val currentOnBoundsChanged by rememberUpdatedState(onBoundsChanged)
 
     var lastHandledTrigger by remember { mutableStateOf(0) }
 
@@ -50,6 +54,19 @@ actual fun NativeMap(
 
     val mapDelegate = remember {
         object : NSObject(), MKMapViewDelegateProtocol {
+
+            // 👇 3. ADD THIS: Fires when the map stops moving!
+            override fun mapView(mapView: MKMapView, regionDidChangeAnimated: Boolean) {
+                mapView.region.useContents {
+                    // Calculate the 4 edges of the screen using the center point and the "span" (zoom level)
+                    val north = center.latitude + (span.latitudeDelta / 2.0)
+                    val south = center.latitude - (span.latitudeDelta / 2.0)
+                    val east = center.longitude + (span.longitudeDelta / 2.0)
+                    val west = center.longitude - (span.longitudeDelta / 2.0)
+
+                    currentOnBoundsChanged(MapBounds(north = north, south = south, east = east, west = west))
+                }
+            }
 
             override fun mapView(mapView: MKMapView, didSelectAnnotationView: MKAnnotationView) {
                 val tappedTitle = didSelectAnnotationView.annotation?.title
