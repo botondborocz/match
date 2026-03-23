@@ -17,6 +17,7 @@ import org.ttproject.shared.resources.home
 import org.ttproject.shared.resources.map
 import org.ttproject.shared.resources.ai_coach
 import org.ttproject.shared.resources.match
+import org.ttproject.shared.resources.messages
 import org.ttproject.shared.resources.profile
 
 // 2. Import your App Resources (where brain.xml is)
@@ -67,6 +68,6 @@ val MainNavItems = listOf(
     ),
 
     // Standard Icon -> Wrap in AppIcon.Vector
-    NavigationItem(NavRoute.Messages, SharedRes.string.home, AppIcon.Drawable(AppRes.drawable.message_circle)),
+    NavigationItem(NavRoute.Messages, SharedRes.string.messages, AppIcon.Drawable(AppRes.drawable.message_circle)),
     NavigationItem(NavRoute.Profile, SharedRes.string.profile, AppIcon.Drawable(AppRes.drawable.user))
 )

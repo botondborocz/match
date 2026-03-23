@@ -27,6 +27,7 @@ import org.ttproject.data.TokenStorage
 import org.ttproject.screens.LoginScreen
 import org.ttproject.screens.MapScreen
 import org.ttproject.screens.MatchScreen
+import org.ttproject.screens.MessagesScreen
 import org.ttproject.screens.ProfileScreen
 import org.ttproject.util.LocalThemeMode
 import org.ttproject.util.SetStatusBarColors
@@ -165,14 +166,6 @@ fun App() {
                             composable<NavRoute.Coach> {
                                 Box(modifier = Modifier.fillMaxSize().padding(innerPadding).padding(16.dp)) {
                                     Text("Coach Screen", color = AppColors.TextPrimary)
-                                }
-                            }
-                            composable<NavRoute.Messages> {
-                                Box(
-                                    modifier = Modifier.fillMaxSize().padding(innerPadding)
-                                        .padding(16.dp)
-                                ) {
-                                    Text("Messages Screen", color = AppColors.TextPrimary)
                                     Button(
                                         onClick = {
                                             tokenStorage.clearToken()
@@ -183,6 +176,12 @@ fun App() {
                                     ) {
                                         Text("Logout")
                                     }
+                                }
+                            }
+                            composable<NavRoute.Messages> {
+                                Box(modifier = Modifier.fillMaxSize().padding(innerPadding))
+                                {
+                                    MessagesScreen()
                                 }
                             }
                             composable<NavRoute.Profile> {

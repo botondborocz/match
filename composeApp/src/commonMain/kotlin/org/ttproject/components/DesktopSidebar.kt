@@ -40,9 +40,11 @@ import org.ttproject.MainNavItems
 import org.ttproject.NavRoute
 import org.ttproject.shared.resources.Res as SharedRes
 import org.ttproject.AppIcon
+import org.ttproject.isDark
 import org.ttproject.shared.resources.pro_badge
 import ttproject.composeapp.generated.resources.Res
 import ttproject.composeapp.generated.resources.match_logo_long
+import ttproject.composeapp.generated.resources.match_logo_long_dark
 
 @Composable
 fun DesktopSidebar(
@@ -97,11 +99,20 @@ fun DesktopSidebar(
 //                        maxLines = 1,
 //                        softWrap = false // CRUCIAL: Stops text from wrapping to a second line
 //                    )
-                    Image(
-                        painter = painterResource(Res.drawable.match_logo_long),
-                        contentDescription = "App Logo",
-                        modifier = Modifier.height(28.dp) // Adjust this to make your logo look crisp
-                    )
+                    if (isDark) {
+                        Image(
+                            painter = painterResource(Res.drawable.match_logo_long),
+                            contentDescription = "App Logo",
+                            modifier = Modifier.height(28.dp)
+                        )
+                    }
+                    else {
+                        Image(
+                            painter = painterResource(Res.drawable.match_logo_long_dark),
+                            contentDescription = "App Logo",
+                            modifier = Modifier.height(28.dp)
+                        )
+                    }
 
                 }
             }
