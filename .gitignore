@@ -21,3 +21,4 @@ node_modules/
 *.sh
 docker-compose.yml
 Dockerfile
+bin/
