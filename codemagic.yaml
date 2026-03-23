@@ -27,22 +27,23 @@ workflows:
 
       - name: Build Unsigned iOS App
         script: |
-          # Tells the script to stop immediately if the build fails
           set -e 
-
+          
+          # 1. Changed to -configuration Debug
           xcodebuild clean build \
             -project iosApp/iosApp.xcodeproj \
             -scheme iosApp \
-            -configuration Release \
+            -configuration Debug \
             -sdk iphoneos \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO \
-            CONFIGURATION_BUILD_DIR=build/Release-iphoneos \
+            CONFIGURATION_BUILD_DIR=build/Debug-iphoneos \
             OTHER_LDFLAGS="-framework MapKit -framework CoreLocation"
-
+          
+          # 2. Changed the folder paths to match Debug
           mkdir -p Payload
-          mv iosApp/build/Release-iphoneos/*.app Payload/
+          mv iosApp/build/Debug-iphoneos/*.app Payload/
           zip -r KmpApp.ipa Payload
 
     artifacts:
