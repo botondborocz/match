@@ -41,7 +41,7 @@ kotlin {
         }
 
         // Your Google Sign In dependencies
-        pod("GoogleSignIn") { version = "~> 7.0.0" }
+        pod("GoogleSignIn")
     }
 
     jvm()

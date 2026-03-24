@@ -1,98 +1,60 @@
-@file:OptIn(kotlinx.cinterop.ExperimentalForeignApi::class)
-
 package org.ttproject.util
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
-import org.ttproject.config.BuildKonfig
-
-// Native iOS Imports
-import cocoapods.GoogleSignIn.GIDConfiguration
-import cocoapods.GoogleSignIn.GIDSignIn
 import platform.UIKit.UIApplication
 import platform.UIKit.UIViewController
 import platform.UIKit.UIWindow
 import platform.UIKit.UIWindowScene
-import platform.UIKit.UIColor
-import platform.darwin.dispatch_async
-import platform.darwin.dispatch_get_main_queue
+// Note: This import requires you to expose the GoogleSignIn iOS framework
+// to Kotlin, typically via the KMP CocoaPods plugin.
+import cocoapods.GoogleSignIn.GIDSignIn
 
-class IOSGoogleAuthClient : GoogleAuthClient {
+class IosGoogleAuthClient : GoogleAuthClient {
 
     override suspend fun signIn(): String? = suspendCancellableCoroutine { continuation ->
-
-        // 1. Configure the Google Auth SDK
-        val config = GIDConfiguration(
-            clientID = BuildKonfig.IOS_CLIENT_ID,
-            serverClientID = BuildKonfig.WEB_CLIENT_ID
-        )
-        GIDSignIn.sharedInstance.configuration = config
-
-        // 2. Find the Root View Controller
-        var rootViewController: UIViewController? = null
-        val scenes = UIApplication.sharedApplication.connectedScenes
-        for (scene in scenes) {
-            val windowScene = scene as? UIWindowScene
-            if (windowScene != null) {
-                for (window in windowScene.windows) {
-                    val uiWindow = window as? UIWindow
-                    if (uiWindow != null && uiWindow.isKeyWindow()) {
-                        rootViewController = uiWindow.rootViewController
-                        break
-                    }
-                }
-            }
-            if (rootViewController != null) break
-        }
+        val rootViewController = getRootViewController()
 
         if (rootViewController == null) {
-            rootViewController = UIApplication.sharedApplication.keyWindow?.rootViewController
-        }
-
-        if (rootViewController == null) {
-            println("CRITICAL ERROR: Could not find iOS Root View Controller.")
+            println("Error: Could not find root UIViewController to present Google Sign-In.")
             continuation.resume(null)
             return@suspendCancellableCoroutine
         }
 
-        // 3. Create a DUMMY invisible view controller to host the Google popup!
-        // This prevents Compose Multiplatform rendering engines from conflicting with the secure web session.
-        dispatch_async(dispatch_get_main_queue()) {
-            val dummyController = UIViewController()
-            dummyController.view.backgroundColor = UIColor.clearColor
-            dummyController.modalPresentationStyle = platform.UIKit.UIModalPresentationOverFullScreen
-
-            // Present the dummy controller on top of Compose
-            rootViewController.presentViewController(dummyController, animated = false) {
-
-                // Now, tell Google to present its popup on the DUMMY controller
-                GIDSignIn.sharedInstance.signInWithPresentingViewController(dummyController) { result, error ->
-
-                    // Immediately dismiss our dummy controller when Google is done
-                    dummyController.dismissViewControllerAnimated(false, completion = null)
-
-                    if (error != null) {
-                        println("Google Sign In failed: ${error.localizedDescription}")
-                        continuation.resume(null)
-                        return@signInWithPresentingViewController
-                    }
-
-                    if (result == null) {
-                        continuation.resume(null)
-                        return@signInWithPresentingViewController
-                    }
-
-                    val idToken = result.user.idToken?.tokenString
-                    continuation.resume(idToken)
-                }
+        // Trigger the native iOS Google Sign-In
+        GIDSignIn.sharedInstance.signInWithPresentingViewController(
+            presentingViewController = rootViewController
+        ) { result, error ->
+            if (error != null) {
+                println("Google Sign-In failed: ${error.localizedDescription}")
+                continuation.resume(null)
+            } else {
+                // Extract the ID token on success
+                val idToken = result?.user?.idToken?.tokenString
+                continuation.resume(idToken)
             }
         }
+    }
+
+    /**
+     * Helper function to find the currently active UIViewController
+     * in the iOS application to present the Google Sign-In overlay.
+     */
+    private fun getRootViewController(): UIViewController? {
+        val scenes = UIApplication.sharedApplication.connectedScenes
+        val windowScene = scenes.firstOrNull { it is UIWindowScene } as? UIWindowScene
+
+        val window = windowScene?.windows?.firstOrNull { (it as UIWindow).isKeyWindow() } as? UIWindow
+            ?: UIApplication.sharedApplication.keyWindow // Fallback for older iOS versions
+
+        return window?.rootViewController
     }
 }
 
 @Composable
 actual fun rememberGoogleAuthClient(): GoogleAuthClient {
-    return remember { IOSGoogleAuthClient() }
+    // Remember the instance so it survives Compose recompositions
+    return remember { IosGoogleAuthClient() }
 }
