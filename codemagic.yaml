@@ -54,7 +54,8 @@ workflows:
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO \
-            CONFIGURATION_BUILD_DIR=build/Debug-iphoneos
+            CONFIGURATION_BUILD_DIR=build/Debug-iphoneos \
+            FRAMEWORK_SEARCH_PATHS='$(inherited) "${PODS_CONFIGURATION_BUILD_DIR}/GoogleSignIn"'
           
           mkdir -p Payload
           mv iosApp/build/Debug-iphoneos/*.app Payload/
