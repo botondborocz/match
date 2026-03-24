@@ -16,6 +16,16 @@ import platform.UIKit.UIApplication
 class IOSGoogleAuthClient : GoogleAuthClient {
 
     override suspend fun signIn(): String? = suspendCancellableCoroutine { continuation ->
+
+        // 👇 ADD THESE DEBUG PRINTS HERE 👇
+        println("====== GOOGLE SIGN-IN DEBUG ======")
+        println("IOS_CLIENT_ID length: ${BuildKonfig.IOS_CLIENT_ID.length}")
+        println("IOS_CLIENT_ID value: '${BuildKonfig.IOS_CLIENT_ID}'")
+        println("WEB_CLIENT_ID length: ${BuildKonfig.WEB_CLIENT_ID.length}")
+        println("WEB_CLIENT_ID value: '${BuildKonfig.WEB_CLIENT_ID}'")
+        println("==================================")
+        // 👆 ---------------------------- 👆
+
         // 1. Get the root view controller to present the native iOS popup
         val window = UIApplication.sharedApplication.keyWindow
         val rootViewController = window?.rootViewController
