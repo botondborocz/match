@@ -37,10 +37,14 @@ workflows:
         script: |
           set -e 
           
-          # 1. Back to -project and .xcodeproj
-          # 2. REMOVED the OTHER_LDFLAGS override entirely so Google can link!
+          # 1. We MUST install pods first to generate the workspace!
+          cd iosApp
+          pod install
+          cd ..
+          
+          # 2. Now we build the newly generated workspace!
           xcodebuild clean build \
-            -project iosApp/iosApp.xcodeproj \
+            -workspace iosApp/iosApp.xcworkspace \
             -scheme iosApp \
             -configuration Debug \
             -sdk iphoneos \

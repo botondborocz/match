@@ -27,13 +27,21 @@ kotlin {
     iosSimulatorArm64()
 
     cocoapods {
-        summary = "Shared KMP module"
-        homepage = "https://github.com/your-repo"
+        summary = "Some description for the Shared Module"
+        homepage = "Link to the Shared Module homepage"
         version = "1.0"
-        ios.deploymentTarget = "14.0"
-        if (System.getProperty("os.name").contains("Mac")) {
-            pod("GoogleSignIn") { version = "~> 7.0.0" }
+        ios.deploymentTarget = "15.0"
+
+        // Make sure this points to your iOS app folder
+        podfile = project.file("../iosApp/Podfile")
+
+        framework {
+            baseName = "shared"
+            isStatic = true // Changing to static often fixes linker errors!
         }
+
+        // Your Google Sign In dependencies
+        pod("GoogleSignIn") { version = "~> 7.0.0" }
     }
 
     jvm()
