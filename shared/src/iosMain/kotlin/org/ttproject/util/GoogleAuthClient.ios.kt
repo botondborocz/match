@@ -18,13 +18,17 @@ class IosGoogleAuthClient(
     private val clientId: String
 ) : GoogleAuthClient {
 
-    init {
-        // Initialize the Google SDK natively from Kotlin
-        val config = GIDConfiguration(clientID = clientId)
-        GIDSignIn.sharedInstance.configuration = config
-    }
-
     override suspend fun signIn(): String? = suspendCancellableCoroutine { continuation ->
+        // 1. Failsafe check: Ensure the string isn't empty
+        if (clientId.isBlank()) {
+            println("Error: Google Client ID is empty! Please check your configuration.")
+            continuation.resume(null)
+            return@suspendCancellableCoroutine
+        }
+
+        // 2. Configure the SDK immediately before calling sign-in
+        GIDSignIn.sharedInstance.configuration = GIDConfiguration(clientID = clientId)
+
         val rootViewController = getRootViewController()
 
         if (rootViewController == null) {
