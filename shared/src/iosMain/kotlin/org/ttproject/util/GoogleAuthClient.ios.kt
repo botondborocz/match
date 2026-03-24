@@ -9,9 +9,11 @@ import kotlin.coroutines.resume
 import platform.UIKit.UIApplication
 import platform.UIKit.UIViewController
 import platform.UIKit.UIWindowScene
+import platform.UIKit.UIWindow
 import cocoapods.GoogleSignIn.GIDSignIn
 import cocoapods.GoogleSignIn.GIDConfiguration
 import kotlinx.cinterop.ExperimentalForeignApi
+import org.ttproject.config.BuildKonfig
 
 @OptIn(ExperimentalForeignApi::class)
 class IosGoogleAuthClient(
@@ -19,7 +21,6 @@ class IosGoogleAuthClient(
 ) : GoogleAuthClient {
 
     override suspend fun signIn(): String? =
-        // 1. FORCE THIS TO RUN ON THE iOS MAIN THREAD
         withContext(Dispatchers.Main) {
             suspendCancellableCoroutine { continuation ->
 
@@ -31,7 +32,6 @@ class IosGoogleAuthClient(
 
                 GIDSignIn.sharedInstance.configuration = GIDConfiguration(clientID = clientId)
 
-                // 2. GET THE TOPMOST VIEW CONTROLLER
                 val topViewController = getTopViewController()
 
                 if (topViewController == null) {
@@ -40,7 +40,6 @@ class IosGoogleAuthClient(
                     return@suspendCancellableCoroutine
                 }
 
-                // Trigger the native iOS Google Sign-In
                 GIDSignIn.sharedInstance.signInWithPresentingViewController(
                     presentingViewController = topViewController
                 ) { result, error ->
@@ -54,21 +53,22 @@ class IosGoogleAuthClient(
             }
         }
 
-    /**
-     * Recursively finds the topmost UIViewController currently on screen.
-     */
     private fun getTopViewController(): UIViewController? {
-        val window = UIApplication.sharedApplication.connectedScenes
+        // 1. Get the scenes, cast to UIWindowScene
+        val scenes = UIApplication.sharedApplication.connectedScenes
             .mapNotNull { it as? UIWindowScene }
-            .flatMap { it.windows }
-            .firstOrNull { it.isKeyWindow() }
+
+        // 2. Get the windows, explicitly cast the generic list elements to UIWindow
+        val window = scenes.flatMap { it.windows }
+            .mapNotNull { it as? UIWindow }
+            .firstOrNull { it.isKeyWindow }
             ?: UIApplication.sharedApplication.keyWindow
 
+        // 3. Drill down to the topmost presented view controller
         var topController = window?.rootViewController
 
-        // Drill down to the topmost presented view controller
         while (topController?.presentedViewController != null) {
-            topController = topController.presentedViewController
+            topController = topController?.presentedViewController
         }
 
         return topController
