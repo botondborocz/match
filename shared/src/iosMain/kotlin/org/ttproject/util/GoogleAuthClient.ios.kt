@@ -15,6 +15,7 @@ import platform.UIKit.UIApplication
 import platform.UIKit.UIViewController
 import platform.UIKit.UIWindow
 import platform.UIKit.UIWindowScene
+import platform.UIKit.UIColor
 import platform.darwin.dispatch_async
 import platform.darwin.dispatch_get_main_queue
 
@@ -56,23 +57,36 @@ class IOSGoogleAuthClient : GoogleAuthClient {
             return@suspendCancellableCoroutine
         }
 
-        // 3. Launch the Google Sign-In modal on the iOS Main Thread!
-        // This prevents Compose from crashing when it loses window focus.
+        // 3. Create a DUMMY invisible view controller to host the Google popup!
+        // This prevents Compose Multiplatform rendering engines from conflicting with the secure web session.
         dispatch_async(dispatch_get_main_queue()) {
-            GIDSignIn.sharedInstance.signInWithPresentingViewController(rootViewController) { result, error ->
-                if (error != null) {
-                    println("Google Sign In failed: ${error.localizedDescription}")
-                    continuation.resume(null)
-                    return@signInWithPresentingViewController
-                }
+            val dummyController = UIViewController()
+            dummyController.view.backgroundColor = UIColor.clearColor
+            dummyController.modalPresentationStyle = platform.UIKit.UIModalPresentationOverFullScreen
 
-                if (result == null) {
-                    continuation.resume(null)
-                    return@signInWithPresentingViewController
-                }
+            // Present the dummy controller on top of Compose
+            rootViewController.presentViewController(dummyController, animated = false) {
 
-                val idToken = result.user.idToken?.tokenString
-                continuation.resume(idToken)
+                // Now, tell Google to present its popup on the DUMMY controller
+                GIDSignIn.sharedInstance.signInWithPresentingViewController(dummyController) { result, error ->
+
+                    // Immediately dismiss our dummy controller when Google is done
+                    dummyController.dismissViewControllerAnimated(false, completion = null)
+
+                    if (error != null) {
+                        println("Google Sign In failed: ${error.localizedDescription}")
+                        continuation.resume(null)
+                        return@signInWithPresentingViewController
+                    }
+
+                    if (result == null) {
+                        continuation.resume(null)
+                        return@signInWithPresentingViewController
+                    }
+
+                    val idToken = result.user.idToken?.tokenString
+                    continuation.resume(idToken)
+                }
             }
         }
     }
