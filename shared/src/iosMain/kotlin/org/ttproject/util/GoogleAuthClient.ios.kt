@@ -8,27 +8,31 @@ import platform.UIKit.UIApplication
 import platform.UIKit.UIViewController
 import platform.UIKit.UIWindow
 import platform.UIKit.UIWindowScene
-// Note: This import requires you to expose the GoogleSignIn iOS framework
-// to Kotlin, typically via the KMP CocoaPods plugin.
 import cocoapods.GoogleSignIn.GIDSignIn
-
-// 1. Add this import
+import cocoapods.GoogleSignIn.GIDConfiguration // <-- Add this import
 import kotlinx.cinterop.ExperimentalForeignApi
+import org.ttproject.config.BuildKonfig
 
-// 2. Add the OptIn annotation to the class
 @OptIn(ExperimentalForeignApi::class)
-class IosGoogleAuthClient : GoogleAuthClient {
+class IosGoogleAuthClient(
+    private val clientId: String
+) : GoogleAuthClient {
+
+    init {
+        // Initialize the Google SDK natively from Kotlin
+        val config = GIDConfiguration(clientID = clientId)
+        GIDSignIn.sharedInstance.configuration = config
+    }
 
     override suspend fun signIn(): String? = suspendCancellableCoroutine { continuation ->
         val rootViewController = getRootViewController()
 
         if (rootViewController == null) {
-            println("Error: Could not find root UIViewController to present Google Sign-In.")
+            println("Error: Could not find root UIViewController.")
             continuation.resume(null)
             return@suspendCancellableCoroutine
         }
 
-        // Trigger the native iOS Google Sign-In
         GIDSignIn.sharedInstance.signInWithPresentingViewController(
             presentingViewController = rootViewController
         ) { result, error ->
@@ -36,23 +40,17 @@ class IosGoogleAuthClient : GoogleAuthClient {
                 println("Google Sign-In failed: ${error.localizedDescription}")
                 continuation.resume(null)
             } else {
-                // Extract the ID token on success
-                val idToken = result?.user?.idToken?.tokenString
-                continuation.resume(idToken)
+                continuation.resume(result?.user?.idToken?.tokenString)
             }
         }
     }
 
-    /**
-     * Helper function to find the currently active UIViewController
-     * in the iOS application to present the Google Sign-In overlay.
-     */
     private fun getRootViewController(): UIViewController? {
         val scenes = UIApplication.sharedApplication.connectedScenes
         val windowScene = scenes.firstOrNull { it is UIWindowScene } as? UIWindowScene
 
         val window = windowScene?.windows?.firstOrNull { (it as UIWindow).isKeyWindow() } as? UIWindow
-            ?: UIApplication.sharedApplication.keyWindow // Fallback for older iOS versions
+            ?: UIApplication.sharedApplication.keyWindow
 
         return window?.rootViewController
     }
@@ -60,6 +58,8 @@ class IosGoogleAuthClient : GoogleAuthClient {
 
 @Composable
 actual fun rememberGoogleAuthClient(): GoogleAuthClient {
-    // Remember the instance so it survives Compose recompositions
-    return remember { IosGoogleAuthClient() }
+    // You can fetch this from BuildKonfig or hardcode it for now
+    val iosClientId = BuildKonfig.IOS_CLIENT_ID
+
+    return remember { IosGoogleAuthClient(clientId = iosClientId) }
 }
