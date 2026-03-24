@@ -24,10 +24,14 @@ workflows:
 
       - name: Inject Google iOS Keys into Config.xcconfig
         script: |
-          # 👇 2. Generate the Config.xcconfig file securely for Xcode (Info.plist)
-          # Create the folder if Git ignored it, then write the variables
           mkdir -p iosApp/Configuration
-          echo "GOOGLE_IOS_CLIENT_ID = $GOOGLE_IOS_CLIENT_ID" > iosApp/Configuration/Config.xcconfig
+          
+          # 👇 1. Add the app names back in so Xcode doesn't crash on a blank name!
+          echo "PRODUCT_NAME = iosApp" > iosApp/Configuration/Config.xcconfig
+          echo "APP_NAME = iosApp" >> iosApp/Configuration/Config.xcconfig
+          
+          # 2. Add your Google Keys
+          echo "GOOGLE_IOS_CLIENT_ID = $GOOGLE_IOS_CLIENT_ID" >> iosApp/Configuration/Config.xcconfig
           echo "GOOGLE_REVERSED_CLIENT_ID = $GOOGLE_REVERSED_CLIENT_ID" >> iosApp/Configuration/Config.xcconfig
 
       - name: Configure Gradle Memory limits for 8GB Mac
@@ -43,20 +47,18 @@ workflows:
         script: |
           set -e 
           
-          # 1. Added PRODUCT_NAME="iosApp" to stop the blank .app crash!
+          # 👇 Removed PRODUCT_NAME from here so CocoaPods can breathe!
           xcodebuild clean build \
             -project iosApp/iosApp.xcodeproj \
             -scheme iosApp \
             -configuration Debug \
             -sdk iphoneos \
-            PRODUCT_NAME="iosApp" \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO \
             CONFIGURATION_BUILD_DIR=build/Debug-iphoneos \
             OTHER_LDFLAGS="-framework MapKit -framework CoreLocation"
           
-          # 2. Specifically move "iosApp.app" instead of "*.app"
           mkdir -p Payload
           mv iosApp/build/Debug-iphoneos/iosApp.app Payload/
           zip -r KmpApp.ipa Payload
