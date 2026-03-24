@@ -37,12 +37,15 @@ workflows:
         script: |
           set -e 
           
-          # 1. We MUST install pods first to generate the workspace!
+          # 1. Tell Kotlin to generate the CocoaPods blueprint (.podspec)
+          ./gradlew :shared:podspec
+          
+          # 2. Install the Pods to generate the Xcode Workspace
           cd iosApp
           pod install
           cd ..
           
-          # 2. Now we build the newly generated workspace!
+          # 3. Build the App!
           xcodebuild clean build \
             -workspace iosApp/iosApp.xcworkspace \
             -scheme iosApp \
