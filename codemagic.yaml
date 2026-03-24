@@ -37,17 +37,17 @@ workflows:
         script: |
           set -e 
           
-          # 👇 We changed -project to -workspace, and .xcodeproj to .xcworkspace!
+          # 1. Back to -project and .xcodeproj
+          # 2. REMOVED the OTHER_LDFLAGS override entirely so Google can link!
           xcodebuild clean build \
-            -workspace iosApp/iosApp.xcworkspace \
+            -project iosApp/iosApp.xcodeproj \
             -scheme iosApp \
             -configuration Debug \
             -sdk iphoneos \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO \
-            CONFIGURATION_BUILD_DIR=build/Debug-iphoneos \
-            OTHER_LDFLAGS="-framework MapKit -framework CoreLocation"
+            CONFIGURATION_BUILD_DIR=build/Debug-iphoneos
           
           mkdir -p Payload
           mv iosApp/build/Debug-iphoneos/*.app Payload/
