@@ -12,6 +12,7 @@ import org.ttproject.config.BuildKonfig
 import cocoapods.GoogleSignIn.GIDConfiguration
 import cocoapods.GoogleSignIn.GIDSignIn
 import platform.UIKit.UIApplication
+import platform.UIKit.UIViewController
 import platform.UIKit.UIWindow
 import platform.UIKit.UIWindowScene
 
@@ -19,34 +20,45 @@ class IOSGoogleAuthClient : GoogleAuthClient {
 
     override suspend fun signIn(): String? = suspendCancellableCoroutine { continuation ->
 
-        println("====== GOOGLE SIGN-IN DEBUG ======")
-        println("IOS_CLIENT_ID value: '${BuildKonfig.IOS_CLIENT_ID}'")
-        println("WEB_CLIENT_ID value: '${BuildKonfig.WEB_CLIENT_ID}'")
-        println("==================================")
-
-        // 1. Get the ACTIVE window safely for modern iOS
-        val windowScene = UIApplication.sharedApplication.connectedScenes.firstOrNull {
-            (it as? UIWindowScene)?.activationState == platform.UIKit.UISceneActivationStateForegroundActive
-        } as? UIWindowScene
-
-        // Map through the windows list, cast them, and find the key window
-        val activeWindow = windowScene?.windows?.mapNotNull { it as? UIWindow }?.firstOrNull { it.isKeyWindow() }
-            ?: UIApplication.sharedApplication.keyWindow
-
-        val rootViewController = activeWindow?.rootViewController
-
-        if (rootViewController == null) {
-            println("Failed to find root view controller")
-            continuation.resume(null)
-            return@suspendCancellableCoroutine
-        }
-
-        // 2. Configure the Google Auth SDK
+        // 1. Configure the Google Auth SDK first
         val config = GIDConfiguration(
             clientID = BuildKonfig.IOS_CLIENT_ID,
             serverClientID = BuildKonfig.WEB_CLIENT_ID
         )
         GIDSignIn.sharedInstance.configuration = config
+
+        // 2. The Bulletproof way to find the Compose Root View Controller
+        var rootViewController: UIViewController? = null
+
+        // Loop through all connected scenes
+        val scenes = UIApplication.sharedApplication.connectedScenes
+        for (scene in scenes) {
+            val windowScene = scene as? UIWindowScene
+            if (windowScene != null) {
+                // Loop through all windows in the scene
+                for (window in windowScene.windows) {
+                    val uiWindow = window as? UIWindow
+                    // Check if it's the main key window and has a root controller
+                    if (uiWindow != null && uiWindow.isKeyWindow()) {
+                        rootViewController = uiWindow.rootViewController
+                        break
+                    }
+                }
+            }
+            if (rootViewController != null) break
+        }
+
+        // Fallback for older iOS versions
+        if (rootViewController == null) {
+            rootViewController = UIApplication.sharedApplication.keyWindow?.rootViewController
+        }
+
+        // If we still can't find it, we must abort cleanly so the app doesn't crash
+        if (rootViewController == null) {
+            println("CRITICAL ERROR: Could not find iOS Root View Controller.")
+            continuation.resume(null)
+            return@suspendCancellableCoroutine
+        }
 
         // 3. Launch the native iOS Google Sign-In modal
         GIDSignIn.sharedInstance.signInWithPresentingViewController(rootViewController) { result, error ->
