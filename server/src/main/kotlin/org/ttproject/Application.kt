@@ -33,8 +33,6 @@ fun main() {
     val dotenv = dotenv {
         ignoreIfMissing = true
     }
-    println(dotenv["GOOGLE_CLIENT_ID"])
-    println(System.getenv("GOOGLE_CLIENT_ID"))
     embeddedServer(Netty, port = SERVER_PORT, host = "0.0.0.0", module = Application::module)
         .start(wait = true)
 }

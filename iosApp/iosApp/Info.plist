@@ -23,5 +23,17 @@
             <string>UIInterfaceOrientationLandscapeLeft</string>
             <string>UIInterfaceOrientationLandscapeRight</string>
         </array>
+        <key>GIDClientID</key>
+            <string>$(GOOGLE_IOS_CLIENT_ID)</string>
+
+            <key>CFBundleURLTypes</key>
+            <array>
+                <dict>
+                    <key>CFBundleURLSchemes</key>
+                    <array>
+                        <string>$(GOOGLE_REVERSED_CLIENT_ID)</string>
+                    </array>
+                </dict>
+            </array>
 </dict>
 </plist>

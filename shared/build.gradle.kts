@@ -1,4 +1,7 @@
+import org.gradle.kotlin.dsl.implementation
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import java.io.FileInputStream
+import java.util.Properties
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
@@ -6,6 +9,8 @@ plugins {
     id("org.jetbrains.compose")
     id("org.jetbrains.kotlin.plugin.compose")
     kotlin("plugin.serialization") version "2.3.0"
+    kotlin("native.cocoapods")
+    id("com.codingfeline.buildkonfig") version "0.15.1"
 }
 
 kotlin {
@@ -15,8 +20,21 @@ kotlin {
         }
     }
 
+    // Only configure iOS if the host machine is a Mac
+
+    iosX64()
     iosArm64()
     iosSimulatorArm64()
+
+    cocoapods {
+        summary = "Shared KMP module"
+        homepage = "https://github.com/your-repo"
+        version = "1.0"
+        ios.deploymentTarget = "14.0"
+        if (System.getProperty("os.name").contains("Mac")) {
+            pod("GoogleSignIn") { version = "~> 7.0.0" }
+        }
+    }
 
     jvm()
 
@@ -50,12 +68,16 @@ kotlin {
             implementation("io.ktor:ktor-client-content-negotiation:3.3.0")
             implementation("io.ktor:ktor-serialization-kotlinx-json:3.3.0")
             implementation("io.ktor:ktor-client-auth:3.3.0")
+            implementation("io.github.cdimascio:dotenv-kotlin:6.5.0")
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
         }
         androidMain.dependencies {
             implementation("com.liftric:kvault:1.12.0")
+            implementation("androidx.credentials:credentials:1.2.2")
+            implementation("androidx.credentials:credentials-play-services-auth:1.2.2")
+            implementation("com.google.android.libraries.identity.googleid:googleid:1.1.0")
         }
         iosMain.dependencies {
             implementation("com.liftric:kvault:1.12.0")
@@ -78,4 +100,23 @@ android {
 compose.resources {
     publicResClass = true
     packageOfResClass = "org.ttproject.shared.resources"
+}
+
+
+buildkonfig {
+    packageName = "org.ttproject.config"
+
+    defaultConfigs {
+        val localProperties = Properties()
+        val localPropertiesFile = rootProject.file("local.properties")
+        if (localPropertiesFile.exists()) {
+            localProperties.load(FileInputStream(localPropertiesFile))
+        }
+        // Look in local.properties first (Local PC), then check System.getenv() (Codemagic)
+        val webClientId = localProperties.getProperty("GOOGLE_WEB_CLIENT_ID")?.toString() ?: System.getenv("GOOGLE_WEB_CLIENT_ID") ?: ""
+        val iosClientId = localProperties.getProperty("GOOGLE_IOS_CLIENT_ID")?.toString() ?: System.getenv("GOOGLE_IOS_CLIENT_ID") ?: ""
+
+        buildConfigField(com.codingfeline.buildkonfig.compiler.FieldSpec.Type.STRING, "WEB_CLIENT_ID", webClientId)
+        buildConfigField(com.codingfeline.buildkonfig.compiler.FieldSpec.Type.STRING, "IOS_CLIENT_ID", iosClientId)
+    }
 }

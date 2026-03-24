@@ -108,12 +108,10 @@ fun Route.authRoutes() {
         val dotenv = dotenv {
             ignoreIfMissing = true
         }
-        println(dotenv["GOOGLE_CLIENT_ID"])
-        println(System.getenv("GOOGLE_CLIENT_ID"))
 
         // 2. Grab your Google ID! (Falls back to System Env if .env file is missing)
-        val googleClientId = dotenv["GOOGLE_CLIENT_ID"]
-            ?: System.getenv("GOOGLE_CLIENT_ID")
+        val googleClientId = dotenv["GOOGLE_WEB_CLIENT_ID"]
+            ?: System.getenv("GOOGLE_WEB_CLIENT_ID")
             ?: throw IllegalStateException("Google Client ID is missing!")
 
         // 3. Build your verifier
@@ -122,55 +120,56 @@ fun Route.authRoutes() {
             .build()
 
         // 3. GOOGLE LOGIN
-                post("/google") {
-                    val req = call.receive<GoogleAuthRequest>() // Ktor catches the JSON from React
+        post("/google") {
+            val req = call.receive<GoogleAuthRequest>() // { "idToken": "..." }
 
-                    // 1. Call Google's UserInfo API using the token React sent us
-                    val client = HttpClient.newHttpClient()
-                    val request = HttpRequest.newBuilder()
-                        .uri(URI.create("https://www.googleapis.com/oauth2/v3/userinfo"))
-                        .header("Authorization", "Bearer ${req.idToken}") // (Or req.token, whatever your data class uses)
-                        .GET()
-                        .build()
+            try {
+                // 👇 1. Use the Verifier to decode the ID Token locally!
+                val googleIdToken = verifier.verify(req.idToken)
 
-                    val response = client.send(request, HttpResponse.BodyHandlers.ofString())
+                if (googleIdToken != null) {
+                    // 👇 2. Extract the data directly from the token's payload
+                    val payload = googleIdToken.payload
 
-                    // 2. Check if Google approved the token
-                    if (response.statusCode() == 200) {
-                        // Parse the JSON Google sent back
-                        val json = Json.parseToJsonElement(response.body()).jsonObject
-                        val googleUserId = json["sub"]?.jsonPrimitive?.content ?: return@post call.respondText("Missing Google ID", status = HttpStatusCode.BadRequest)
-                        val googleEmail = json["email"]?.jsonPrimitive?.content ?: ""
-                        val googleName = json["name"]?.jsonPrimitive?.content ?: ""
+                    val googleUserId = payload.subject // The "sub" field
+                    val googleEmail = payload.email
+                    val googleName = payload["name"] as? String ?: ""
 
-                        // 3. Save or find the user in your database (Exactly the same as before!)
-                        val userId = transaction {
-                            val existingUser = Users.select { Users.googleId eq googleUserId }.singleOrNull()
+                    // 3. Save or find the user in your database (Your exact same logic!)
+                    val userId = transaction {
+                        val existingUser = Users.select { Users.googleId eq googleUserId }.singleOrNull()
 
-                            if (existingUser != null) {
-                                existingUser[Users.id]
-                            } else {
-                                Users.insert {
-                                    it[email] = googleEmail
-                                    it[googleId] = googleUserId
-                                    it[fullName] = googleName
-                                    it[username] = "user_${java.util.UUID.randomUUID().toString().take(8)}"
-                                    it[skillLevel] = SkillLevel.Beginner
-                                    it[createdAt] = java.time.Instant.now()
-                                } get Users.id
-                            }
+                        if (existingUser != null) {
+                            existingUser[Users.id]
+                        } else {
+                            Users.insert {
+                                it[email] = googleEmail
+                                it[googleId] = googleUserId
+                                it[fullName] = googleName
+                                it[username] = "user_${java.util.UUID.randomUUID().toString().take(8)}"
+                                it[skillLevel] = SkillLevel.Beginner
+                                it[createdAt] = java.time.Instant.now()
+                            } get Users.id
                         }
-                        // Generate the token using the user's UUID
-                        val token = JwtConfig.generateToken(userId.toString())
-
-                        // Send it back to Android as a JSON response!
-                        call.respondText(
-                            """{"token": "$token"}""",
-                            io.ktor.http.ContentType.Application.Json
-                        )
-                    } else {
-                        call.respondText("Invalid or Expired Google Token", status = HttpStatusCode.Unauthorized)
                     }
+
+                    // 4. Generate the token using the user's UUID
+                    val token = JwtConfig.generateToken(userId.toString())
+
+                    // Send it back to Android/React as a JSON response!
+                    call.respondText(
+                        """{"token": "$token"}""",
+                        io.ktor.http.ContentType.Application.Json
+                    )
+                } else {
+                    // Token was invalid (wrong audience, expired, or tampered with)
+                    call.respondText("Invalid or Expired Google Token", status = HttpStatusCode.Unauthorized)
                 }
+            } catch (e: Exception) {
+                // 👇 This will print to your Ktor console if Google rejects it, telling you exactly why!
+                e.printStackTrace()
+                call.respondText("Token Verification Crashed: ${e.message}", status = HttpStatusCode.Unauthorized)
+            }
+        }
     }
 }

@@ -23,6 +23,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
@@ -39,6 +40,7 @@ import org.ttproject.shared.resources.Res as SharedRes
 import ttproject.composeapp.generated.resources.match_logo_long
 import ttproject.composeapp.generated.resources.match_logo_long_dark
 import org.ttproject.shared.resources.password
+import org.ttproject.util.rememberGoogleAuthClient
 
 @Composable
 fun LoginScreen(
@@ -52,10 +54,17 @@ fun LoginScreen(
 
     val focusManager = LocalFocusManager.current
 
+    val scope = rememberCoroutineScope()
+    val googleAuthClient = rememberGoogleAuthClient()
+    var isGoogleLoading by remember { mutableStateOf(false) }
+
     LaunchedEffect(uiState) {
         if (uiState is LoginState.Success) {
+            isGoogleLoading = false // Stop spinner
             onLoginSuccess()
             viewModel.resetState()
+        } else if (uiState is LoginState.Error) {
+            isGoogleLoading = false // Stop spinner if backend fails
         }
     }
 
@@ -206,7 +215,26 @@ fun LoginScreen(
 
             // --- GOOGLE LOGIN BUTTON ---
             OutlinedButton(
-                onClick = { /* TODO: Implement Google Auth */ },
+                onClick = {
+                    focusManager.clearFocus()
+                    isGoogleLoading = true
+                    // 👇 2. Launch the native Google Sign-In flow!
+                    scope.launch {
+                        // This will suspend and wait for the user to finish the native Google pop-up
+                        val idToken = googleAuthClient.signIn()
+
+                        if (idToken != null) {
+                            // If we got a token from Google, send it to our Ktor backend!
+                            viewModel.googleLogin(idToken)
+                        } else {
+                            // The user canceled the popup, or it failed.
+                            // You could optionally show a toast here.
+                            isGoogleLoading = false
+                            println("Google Sign-In canceled or failed")
+                        }
+                    }
+                },
+                enabled = !isGoogleLoading && uiState !is LoginState.Loading,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
@@ -216,19 +244,28 @@ fun LoginScreen(
                     containerColor = Color.Transparent
                 )
             ) {
-                Text(
-                    text = "G",
-                    color = AppColors.TextPrimary,
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    modifier = Modifier.padding(end = 12.dp)
-                )
-                Text(
-                    text = stringResource(SharedRes.string.continue_with_google),
-                    color = AppColors.TextPrimary,
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Medium
-                )
+                if (isGoogleLoading) {
+                    CircularProgressIndicator(
+                        color = AppColors.TextPrimary,
+                        modifier = Modifier.size(24.dp),
+                        strokeWidth = 2.dp
+                    )
+                } else {
+                    Text(
+                        text = "G",
+                        color = AppColors.TextPrimary,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        modifier = Modifier.padding(end = 12.dp)
+                    )
+
+                    Text(
+                        text = stringResource(SharedRes.string.continue_with_google),
+                        color = AppColors.TextPrimary,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
             }
         }
     }

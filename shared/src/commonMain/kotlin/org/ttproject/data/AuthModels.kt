@@ -9,6 +9,18 @@ data class LoginRequest(
     val password: String
 )
 
+@Serializable
+data class RegisterRequest(
+    val email: String,
+    val username: String,
+    val password: String
+)
+
+@Serializable
+data class GoogleLoginRequest(
+    val idToken: String
+)
+
 // 2. What we get BACK from the server
 @Serializable
 data class TokenResponse(

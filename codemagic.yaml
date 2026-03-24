@@ -7,14 +7,28 @@ workflows:
     environment:
       java: 17
       groups:
-        - api_keys
+        - api_keys # ⚠️ Make sure to add your 3 new Google variables to this group in the Codemagic UI!
 
     scripts:
       - name: Make Gradle Wrapper Executable
         script: chmod +x gradlew
 
-      - name: Inject API Key into local.properties
-        script: echo "MAPS_API_KEY=$MAPS_API_KEY" >> local.properties
+      - name: Inject API Keys into local.properties
+        script: |
+          # For Google Maps
+          echo "MAPS_API_KEY=$MAPS_API_KEY" >> local.properties
+          
+          # 👇 1. Added these for Kotlin BuildKonfig (GoogleAuthClient files)
+          echo "GOOGLE_WEB_CLIENT_ID=$GOOGLE_WEB_CLIENT_ID" >> local.properties
+          echo "GOOGLE_IOS_CLIENT_ID=$GOOGLE_IOS_CLIENT_ID" >> local.properties
+
+      - name: Inject Google iOS Keys into Config.xcconfig
+        script: |
+          # 👇 2. Generate the Config.xcconfig file securely for Xcode (Info.plist)
+          # Create the folder if Git ignored it, then write the variables
+          mkdir -p iosApp/Configuration
+          echo "GOOGLE_IOS_CLIENT_ID = $GOOGLE_IOS_CLIENT_ID" > iosApp/Configuration/Config.xcconfig
+          echo "GOOGLE_REVERSED_CLIENT_ID = $GOOGLE_REVERSED_CLIENT_ID" >> iosApp/Configuration/Config.xcconfig
 
       - name: Configure Gradle Memory limits for 8GB Mac
         script: |
