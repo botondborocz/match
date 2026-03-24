@@ -46,7 +46,7 @@ workflows:
           cd ..
           
           # 3. Build the App!
-          xcodebuild clean build \
+          xcodebuild build \
             -workspace iosApp/iosApp.xcworkspace \
             -scheme iosApp \
             -configuration Debug \
@@ -54,8 +54,10 @@ workflows:
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO \
-            CONFIGURATION_BUILD_DIR=build/Debug-iphoneos \
-            FRAMEWORK_SEARCH_PATHS='$(inherited) "${PODS_CONFIGURATION_BUILD_DIR}/GoogleSignIn"'
+            CONFIGURATION_BUILD_DIR=$PWD/build/Debug-iphoneos \
+            FRAMEWORK_SEARCH_PATHS='$(inherited) "$PWD/iosApp/Pods/**"' \
+            HEADER_SEARCH_PATHS='$(inherited) "$PWD/iosApp/Pods/Headers/Public/**"' \
+            OTHER_LDFLAGS='$(inherited) -framework "GoogleSignIn" -framework "AppAuth" -framework "GTMAppAuth" -framework "GTMSessionFetcher"'
           
           mkdir -p Payload
           mv iosApp/build/Debug-iphoneos/*.app Payload/
