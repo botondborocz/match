@@ -21,11 +21,10 @@ workflows:
 
       - name: Inject Google Secrets into Info.plist
         script: |
-          # 👇 This specifically finds the fake strings and replaces them with your secure Codemagic variables!
           sed -i '' "s/REPLACE_ME_IOS_CLIENT_ID/$GOOGLE_IOS_CLIENT_ID/g" iosApp/iosApp/Info.plist
           sed -i '' "s/REPLACE_ME_REVERSED_CLIENT_ID/$GOOGLE_REVERSED_CLIENT_ID/g" iosApp/iosApp/Info.plist
 
-      - name: Configure Gradle Memory limits for 8GB Mac
+      - name: Configure Gradle Memory limits
         script: |
           echo "" >> gradle.properties 
           echo "org.gradle.jvmargs=-Xmx2g -XX:MaxMetaspaceSize=512m" >> gradle.properties
@@ -36,31 +35,33 @@ workflows:
       - name: Build Unsigned iOS App
         script: |
           set -e 
-          
-          # 1. Generate BOTH the dummy framework and the podspec blueprint!
+
+          # 1. Generate BOTH dummy framework and podspec
           ./gradlew :shared:generateDummyFramework :shared:podspec
-          
-          # 2. Install the Pods to generate the Xcode Workspace
+
+          # 2. Install Pods to create the Workspace
           cd iosApp
           pod install
           cd ..
-          
-          # 3. Build the App!
-          xcodebuild build \
+
+          # 3. Build the Workspace with the Cycle Fix
+          # The -parallelizeTargets NO flag prevents the AppAuth crash!
+          xcodebuild clean build \
             -workspace iosApp/iosApp.xcworkspace \
             -scheme iosApp \
             -configuration Debug \
             -sdk iphoneos \
+            -parallelizeTargets NO \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGNING_ALLOWED=NO \
-            CONFIGURATION_BUILD_DIR=$PWD/build/Debug-iphoneos \
-            FRAMEWORK_SEARCH_PATHS='$(inherited) "$PWD/iosApp/Pods/**"' \
-            HEADER_SEARCH_PATHS='$(inherited) "$PWD/iosApp/Pods/Headers/Public/**"' \
-            OTHER_LDFLAGS='$(inherited) -framework "GoogleSignIn" -framework "AppAuth" -framework "GTMAppAuth" -framework "GTMSessionFetcher"'
-          
+            CODE_SIGNING_ALLOWED=NO
+
+          # 4. Package the IPA
+          # Xcode puts the build in a 'DerivedData' or default folder if we don't specify.
+          # We'll look for the .app file and move it to Payload.
           mkdir -p Payload
-          mv iosApp/build/Debug-iphoneos/*.app Payload/
+          APP_PATH=$(find . -name "*.app" | grep "Debug-iphoneos" | head -n 1)
+          cp -R "$APP_PATH" Payload/
           zip -r KmpApp.ipa Payload
 
     artifacts:
