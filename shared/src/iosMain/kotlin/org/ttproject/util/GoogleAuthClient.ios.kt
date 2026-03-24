@@ -2,61 +2,76 @@ package org.ttproject.util
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withContext
 import kotlin.coroutines.resume
 import platform.UIKit.UIApplication
 import platform.UIKit.UIViewController
-import platform.UIKit.UIWindow
 import platform.UIKit.UIWindowScene
 import cocoapods.GoogleSignIn.GIDSignIn
-import cocoapods.GoogleSignIn.GIDConfiguration // <-- Add this import
+import cocoapods.GoogleSignIn.GIDConfiguration
 import kotlinx.cinterop.ExperimentalForeignApi
-import org.ttproject.config.BuildKonfig
 
 @OptIn(ExperimentalForeignApi::class)
 class IosGoogleAuthClient(
     private val clientId: String
 ) : GoogleAuthClient {
 
-    override suspend fun signIn(): String? = suspendCancellableCoroutine { continuation ->
-        // 1. Failsafe check: Ensure the string isn't empty
-        if (clientId.isBlank()) {
-            println("Error: Google Client ID is empty! Please check your configuration.")
-            continuation.resume(null)
-            return@suspendCancellableCoroutine
-        }
+    override suspend fun signIn(): String? =
+        // 1. FORCE THIS TO RUN ON THE iOS MAIN THREAD
+        withContext(Dispatchers.Main) {
+            suspendCancellableCoroutine { continuation ->
 
-        // 2. Configure the SDK immediately before calling sign-in
-        GIDSignIn.sharedInstance.configuration = GIDConfiguration(clientID = clientId)
+                if (clientId.isBlank()) {
+                    println("Error: Google Client ID is empty!")
+                    continuation.resume(null)
+                    return@suspendCancellableCoroutine
+                }
 
-        val rootViewController = getRootViewController()
+                GIDSignIn.sharedInstance.configuration = GIDConfiguration(clientID = clientId)
 
-        if (rootViewController == null) {
-            println("Error: Could not find root UIViewController.")
-            continuation.resume(null)
-            return@suspendCancellableCoroutine
-        }
+                // 2. GET THE TOPMOST VIEW CONTROLLER
+                val topViewController = getTopViewController()
 
-        GIDSignIn.sharedInstance.signInWithPresentingViewController(
-            presentingViewController = rootViewController
-        ) { result, error ->
-            if (error != null) {
-                println("Google Sign-In failed: ${error.localizedDescription}")
-                continuation.resume(null)
-            } else {
-                continuation.resume(result?.user?.idToken?.tokenString)
+                if (topViewController == null) {
+                    println("Error: Could not find a UIViewController to present on.")
+                    continuation.resume(null)
+                    return@suspendCancellableCoroutine
+                }
+
+                // Trigger the native iOS Google Sign-In
+                GIDSignIn.sharedInstance.signInWithPresentingViewController(
+                    presentingViewController = topViewController
+                ) { result, error ->
+                    if (error != null) {
+                        println("Google Sign-In failed: ${error.localizedDescription}")
+                        continuation.resume(null)
+                    } else {
+                        continuation.resume(result?.user?.idToken?.tokenString)
+                    }
+                }
             }
         }
-    }
 
-    private fun getRootViewController(): UIViewController? {
-        val scenes = UIApplication.sharedApplication.connectedScenes
-        val windowScene = scenes.firstOrNull { it is UIWindowScene } as? UIWindowScene
-
-        val window = windowScene?.windows?.firstOrNull { (it as UIWindow).isKeyWindow() } as? UIWindow
+    /**
+     * Recursively finds the topmost UIViewController currently on screen.
+     */
+    private fun getTopViewController(): UIViewController? {
+        val window = UIApplication.sharedApplication.connectedScenes
+            .mapNotNull { it as? UIWindowScene }
+            .flatMap { it.windows }
+            .firstOrNull { it.isKeyWindow() }
             ?: UIApplication.sharedApplication.keyWindow
 
-        return window?.rootViewController
+        var topController = window?.rootViewController
+
+        // Drill down to the topmost presented view controller
+        while (topController?.presentedViewController != null) {
+            topController = topController.presentedViewController
+        }
+
+        return topController
     }
 }
 
