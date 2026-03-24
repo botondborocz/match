@@ -37,8 +37,8 @@ workflows:
         script: |
           set -e 
           
-          # 1. Tell Kotlin to generate the CocoaPods blueprint (.podspec)
-          ./gradlew :shared:podspec
+          # 1. Generate the dummy framework so CocoaPods has something to link against
+          ./gradlew :shared:generateDummyFramework
           
           # 2. Install the Pods to generate the Xcode Workspace
           cd iosApp
