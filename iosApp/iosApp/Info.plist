@@ -24,16 +24,21 @@
             <string>UIInterfaceOrientationLandscapeRight</string>
         </array>
         <key>GIDClientID</key>
-            <string>REPLACE_ME_IOS_CLIENT_ID</string>
+        <string>REPLACE_ME_IOS_CLIENT_ID</string>
 
-            <key>CFBundleURLTypes</key>
-            <array>
-                <dict>
-                    <key>CFBundleURLSchemes</key>
-                    <array>
-                        <string>REPLACE_ME_REVERSED_CLIENT_ID</string>
-                    </array>
-                </dict>
-            </array>
+        <key>CFBundleURLTypes</key>
+        <array>
+            <dict>
+                <key>CFBundleURLSchemes</key>
+                <array>
+                    <string>REPLACE_ME_REVERSED_CLIENT_ID</string>
+                </array>
+            </dict>
+        </array>
+        <key>NSAppTransportSecurity</key>
+        <dict>
+            <key>NSAllowsArbitraryLoads</key>
+            <true/>
+        </dict>
 </dict>
 </plist>
