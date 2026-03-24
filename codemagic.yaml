@@ -37,8 +37,8 @@ workflows:
         script: |
           set -e 
           
-          # 1. Generate the dummy framework so CocoaPods has something to link against
-          ./gradlew :shared:generateDummyFramework
+          # 1. Generate BOTH the dummy framework and the podspec blueprint!
+          ./gradlew :shared:generateDummyFramework :shared:podspec
           
           # 2. Install the Pods to generate the Xcode Workspace
           cd iosApp
