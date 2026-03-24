@@ -12,6 +12,11 @@ import platform.UIKit.UIWindowScene
 // to Kotlin, typically via the KMP CocoaPods plugin.
 import cocoapods.GoogleSignIn.GIDSignIn
 
+// 1. Add this import
+import kotlinx.cinterop.ExperimentalForeignApi
+
+// 2. Add the OptIn annotation to the class
+@OptIn(ExperimentalForeignApi::class)
 class IosGoogleAuthClient : GoogleAuthClient {
 
     override suspend fun signIn(): String? = suspendCancellableCoroutine { continuation ->
