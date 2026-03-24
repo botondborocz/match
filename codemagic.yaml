@@ -43,21 +43,22 @@ workflows:
         script: |
           set -e 
           
-          # 1. Changed to -configuration Debug
+          # 1. Added PRODUCT_NAME="iosApp" to stop the blank .app crash!
           xcodebuild clean build \
             -project iosApp/iosApp.xcodeproj \
             -scheme iosApp \
             -configuration Debug \
             -sdk iphoneos \
+            PRODUCT_NAME="iosApp" \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO \
             CONFIGURATION_BUILD_DIR=build/Debug-iphoneos \
             OTHER_LDFLAGS="-framework MapKit -framework CoreLocation"
           
-          # 2. Changed the folder paths to match Debug
+          # 2. Specifically move "iosApp.app" instead of "*.app"
           mkdir -p Payload
-          mv iosApp/build/Debug-iphoneos/*.app Payload/
+          mv iosApp/build/Debug-iphoneos/iosApp.app Payload/
           zip -r KmpApp.ipa Payload
 
     artifacts:
