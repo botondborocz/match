@@ -36,32 +36,32 @@ workflows:
         script: |
           set -e 
 
-          # 1. Generate BOTH dummy framework and podspec
+          # 1. Prepare Kotlin CocoaPods
           ./gradlew :shared:generateDummyFramework :shared:podspec
 
-          # 2. Install Pods to create the Workspace
+          # 2. Install Pods
           cd iosApp
           pod install
           cd ..
 
-          # 3. Build the Workspace with the Cycle Fix
-          # The -parallelizeTargets NO flag prevents the AppAuth crash!
-          xcodebuild clean build \
+          # 3. Build the Workspace
+          # Fix: PARALLELIZE_TARGETS=NO (no dash, uses equals sign)
+          # Addition: -derivedDataPath to make finding the app easier
+          xcodebuild build \
             -workspace iosApp/iosApp.xcworkspace \
             -scheme iosApp \
             -configuration Debug \
             -sdk iphoneos \
-            -parallelizeTargets NO \
+            -derivedDataPath ./build-xcode \
+            PARALLELIZE_TARGETS=NO \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO
 
           # 4. Package the IPA
-          # Xcode puts the build in a 'DerivedData' or default folder if we don't specify.
-          # We'll look for the .app file and move it to Payload.
+          # The app will now always be in this exact folder
           mkdir -p Payload
-          APP_PATH=$(find . -name "*.app" | grep "Debug-iphoneos" | head -n 1)
-          cp -R "$APP_PATH" Payload/
+          cp -R build-xcode/Build/Products/Debug-iphoneos/Match.app Payload/
           zip -r KmpApp.ipa Payload
 
     artifacts:
