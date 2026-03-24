@@ -7,7 +7,7 @@ workflows:
     environment:
       java: 17
       groups:
-        - api_keys # ⚠️ Make sure to add your 3 new Google variables to this group in the Codemagic UI!
+        - api_keys
 
     scripts:
       - name: Make Gradle Wrapper Executable
@@ -15,57 +15,43 @@ workflows:
 
       - name: Inject API Keys into local.properties
         script: |
-          # For Google Maps
           echo "MAPS_API_KEY=$MAPS_API_KEY" >> local.properties
-          
-          # 👇 1. Added these for Kotlin BuildKonfig (GoogleAuthClient files)
           echo "GOOGLE_WEB_CLIENT_ID=$GOOGLE_WEB_CLIENT_ID" >> local.properties
           echo "GOOGLE_IOS_CLIENT_ID=$GOOGLE_IOS_CLIENT_ID" >> local.properties
 
-      - name: Inject Google iOS Keys into Config.xcconfig
+      - name: Inject Google Secrets into Info.plist
         script: |
-          mkdir -p iosApp/Configuration
-          
-          # 1. Rebuild the missing config file safely
-          echo "APP_NAME = iosApp" > iosApp/Configuration/Config.xcconfig
-          echo "PRODUCT_NAME = iosApp" >> iosApp/Configuration/Config.xcconfig
-          echo "BUNDLE_ID = org.ttproject.iosApp" >> iosApp/Configuration/Config.xcconfig
-          
-          # 2. Add your Google Keys
-          echo "GOOGLE_IOS_CLIENT_ID = $GOOGLE_IOS_CLIENT_ID" >> iosApp/Configuration/Config.xcconfig
-          echo "GOOGLE_REVERSED_CLIENT_ID = $GOOGLE_REVERSED_CLIENT_ID" >> iosApp/Configuration/Config.xcconfig
-          
-          # 3. Add the Linker Flags here! Use single quotes so $(inherited) doesn't break
-          echo 'OTHER_LDFLAGS = $(inherited) -framework MapKit -framework CoreLocation' >> iosApp/Configuration/Config.xcconfig
+          # 👇 This specifically finds the fake strings and replaces them with your secure Codemagic variables!
+          sed -i '' "s/REPLACE_ME_IOS_CLIENT_ID/$GOOGLE_IOS_CLIENT_ID/g" iosApp/iosApp/Info.plist
+          sed -i '' "s/REPLACE_ME_REVERSED_CLIENT_ID/$GOOGLE_REVERSED_CLIENT_ID/g" iosApp/iosApp/Info.plist
 
-          - name: Configure Gradle Memory limits for 8GB Mac
-            script: |
-              echo "" >> gradle.properties 
-              echo "org.gradle.jvmargs=-Xmx2g -XX:MaxMetaspaceSize=512m" >> gradle.properties
-              echo "kotlin.native.jvmArgs=-Xmx3g" >> gradle.properties
-              echo "kotlin.native.cacheKind=none" >> gradle.properties
-              echo "org.gradle.daemon=false" >> gradle.properties
+      - name: Configure Gradle Memory limits for 8GB Mac
+        script: |
+          echo "" >> gradle.properties 
+          echo "org.gradle.jvmargs=-Xmx2g -XX:MaxMetaspaceSize=512m" >> gradle.properties
+          echo "kotlin.native.jvmArgs=-Xmx3g" >> gradle.properties
+          echo "kotlin.native.cacheKind=none" >> gradle.properties
+          echo "org.gradle.daemon=false" >> gradle.properties
 
-          - name: Build Unsigned iOS App
-            script: |
-              set -e 
-              
-              # 4. A completely clean xcodebuild command with ZERO infectious overrides.
-              # We use -derivedDataPath so we know exactly where the app will be built.
-              xcodebuild clean build \
-                -project iosApp/iosApp.xcodeproj \
-                -scheme iosApp \
-                -configuration Debug \
-                -sdk iphoneos \
-                -derivedDataPath build_output \
-                CODE_SIGN_IDENTITY="" \
-                CODE_SIGNING_REQUIRED=NO \
-                CODE_SIGNING_ALLOWED=NO
-              
-              # 5. Grab the app from the new derived data path
-              mkdir -p Payload
-              mv build_output/Build/Products/Debug-iphoneos/iosApp.app Payload/
-              zip -r KmpApp.ipa Payload
+      - name: Build Unsigned iOS App
+        script: |
+          set -e 
+          
+          # 👇 Your original, perfectly working build command!
+          xcodebuild clean build \
+            -project iosApp/iosApp.xcodeproj \
+            -scheme iosApp \
+            -configuration Debug \
+            -sdk iphoneos \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            CONFIGURATION_BUILD_DIR=build/Debug-iphoneos \
+            OTHER_LDFLAGS="-framework MapKit -framework CoreLocation"
+          
+          mkdir -p Payload
+          mv iosApp/build/Debug-iphoneos/*.app Payload/
+          zip -r KmpApp.ipa Payload
 
     artifacts:
       - KmpApp.ipa
