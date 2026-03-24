@@ -37,9 +37,9 @@ workflows:
         script: |
           set -e 
           
-          # 👇 Your original, perfectly working build command!
+          # 👇 We changed -project to -workspace, and .xcodeproj to .xcworkspace!
           xcodebuild clean build \
-            -project iosApp/iosApp.xcodeproj \
+            -workspace iosApp/iosApp.xcworkspace \
             -scheme iosApp \
             -configuration Debug \
             -sdk iphoneos \
