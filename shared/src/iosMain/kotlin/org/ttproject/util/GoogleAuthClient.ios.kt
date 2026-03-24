@@ -1,3 +1,5 @@
+@file:OptIn(kotlinx.cinterop.ExperimentalForeignApi::class)
+
 package org.ttproject.util
 
 import androidx.compose.runtime.Composable
@@ -6,17 +8,15 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
 import org.ttproject.config.BuildKonfig
 
-
-// ⚠️ Note: These imports will be RED on Windows. Ignore them!
+// Native iOS Imports (Managed by CocoaPods)
 import cocoapods.GoogleSignIn.GIDConfiguration
 import cocoapods.GoogleSignIn.GIDSignIn
-import org.ttproject.util.GoogleAuthClient
 import platform.UIKit.UIApplication
 
 class IOSGoogleAuthClient : GoogleAuthClient {
 
     override suspend fun signIn(): String? = suspendCancellableCoroutine { continuation ->
-        // 1. We need the root view controller to present the native iOS popup
+        // 1. Get the root view controller to present the native iOS popup
         val window = UIApplication.sharedApplication.keyWindow
         val rootViewController = window?.rootViewController
 
@@ -26,8 +26,7 @@ class IOSGoogleAuthClient : GoogleAuthClient {
             return@suspendCancellableCoroutine
         }
 
-        // 2. Configure the Google Auth SDK
-        // Replace these with your actual IDs from Google Cloud Console
+        // 2. Configure the Google Auth SDK using BuildKonfig values
         val config = GIDConfiguration(
             clientID = BuildKonfig.IOS_CLIENT_ID,
             serverClientID = BuildKonfig.WEB_CLIENT_ID
@@ -50,7 +49,7 @@ class IOSGoogleAuthClient : GoogleAuthClient {
                 return@signInWithPresentingViewController
             }
 
-            // 4. Success! Extract the ID Token (This is what you send to your Ktor backend)
+            // 4. Success! Extract the ID Token
             val idToken = result.user.idToken?.tokenString
             continuation.resume(idToken)
         }
