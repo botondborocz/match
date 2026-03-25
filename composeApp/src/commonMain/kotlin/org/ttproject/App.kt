@@ -1,5 +1,6 @@
 package org.ttproject
 
+import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -19,11 +20,13 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.toRoute
 import org.koin.compose.koinInject
 import org.ttproject.components.DesktopSidebar
 import org.ttproject.components.MobileBottomNav
 import org.ttproject.components.MobileTopBar
 import org.ttproject.data.TokenStorage
+import org.ttproject.screens.ChatDetailScreen
 import org.ttproject.screens.LoginScreen
 import org.ttproject.screens.MapScreen
 import org.ttproject.screens.MatchScreen
@@ -86,7 +89,7 @@ fun App() {
                 when {
                     currentDestination?.hasRoute(NavRoute.Match::class) == true -> NavRoute.Match
                     currentDestination?.hasRoute(NavRoute.Coach::class) == true -> NavRoute.Coach
-                    currentDestination?.hasRoute(NavRoute.Messages::class) == true -> NavRoute.Messages
+                    currentDestination?.hasRoute(NavRoute.Messages::class) == true || currentDestination?.hasRoute(NavRoute.ChatDetail::class) == true -> NavRoute.Messages
                     currentDestination?.hasRoute(NavRoute.Profile::class) == true -> NavRoute.Profile
                     else -> NavRoute.Map
                 }
@@ -112,6 +115,8 @@ fun App() {
                 NavRoute.Coach -> "AI Coach"
                 NavRoute.Match -> "Match"
                 NavRoute.Profile -> "Profile"
+                NavRoute.ChatDetail -> "Chat"
+                is NavRoute.ChatDetail -> "Chat"
             }
 
             BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
@@ -131,7 +136,7 @@ fun App() {
                     // Main Content Area: Replaced Column with Scaffold
                     Scaffold(
                         topBar = {
-                            if (isMobile && currentRoute != NavRoute.Map && currentRoute != NavRoute.Profile) {
+                            if (isMobile && currentRoute != NavRoute.Map && currentRoute != NavRoute.Profile && currentRoute != NavRoute.Messages) {
                                 MobileTopBar()
                             }
                         },
@@ -194,12 +199,66 @@ fun App() {
                                     }
                                 }
                             }
-                            composable<NavRoute.Messages> {
-                                Box(modifier = Modifier.fillMaxSize().padding(innerPadding))
-                                {
-                                    MessagesScreen()
+                            composable<NavRoute.Messages>(
+                                // 1. When LEAVING the messages list to go to a chat, slide it out to the left
+                                exitTransition = {
+                                    if (targetState.destination.hasRoute(NavRoute.ChatDetail::class)) {
+                                        slideOutOfContainer(
+                                            towards = AnimatedContentTransitionScope.SlideDirection.Left,
+                                            animationSpec = tween(300)
+                                        )
+                                    } else {
+                                        fadeOut(tween(200)) // Keep the default fade for switching bottom tabs
+                                    }
+                                },
+                                // 2. When COMING BACK from a chat, slide it back in from the left
+                                popEnterTransition = {
+                                    if (initialState.destination.hasRoute(NavRoute.ChatDetail::class)) {
+                                        slideIntoContainer(
+                                            towards = AnimatedContentTransitionScope.SlideDirection.Right,
+                                            animationSpec = tween(300)
+                                        )
+                                    } else {
+                                        fadeIn(tween(200))
+                                    }
+                                }
+                            ) {
+                                Box(modifier = Modifier.fillMaxSize().padding(bottom = 100.dp)) {
+                                    MessagesScreen(
+                                        onNavigateToChat = { chatId ->
+                                            navController.navigate(NavRoute.ChatDetail(chatId))
+                                        }
+                                    )
                                 }
                             }
+
+// 👇 The Chat Detail Screen gets the opposite animations!
+                            composable<NavRoute.ChatDetail>(
+                                // 3. When OPENING the chat, slide it in from the right
+                                enterTransition = {
+                                    slideIntoContainer(
+                                        towards = AnimatedContentTransitionScope.SlideDirection.Left,
+                                        animationSpec = tween(300)
+                                    )
+                                },
+                                // 4. When CLOSING the chat (hitting back), slide it out to the right
+                                popExitTransition = {
+                                    slideOutOfContainer(
+                                        towards = AnimatedContentTransitionScope.SlideDirection.Right,
+                                        animationSpec = tween(300)
+                                    )
+                                }
+                            ) { backStackEntry ->
+                                val route = backStackEntry.toRoute<NavRoute.ChatDetail>()
+
+                                Box(modifier = Modifier.fillMaxSize().padding(bottom = 100.dp)) {
+                                    ChatDetailScreen(
+                                        chatId = route.chatId,
+                                        onBack = { navController.popBackStack() }
+                                    )
+                                }
+                            }
+
                             composable<NavRoute.Profile> {
                                 Box(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
                                     if (isLoggedIn) {

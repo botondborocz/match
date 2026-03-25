@@ -7,6 +7,9 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -18,8 +21,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import org.ttproject.AppColors
+// 👇 Make sure to import your top bar!
+import org.ttproject.components.MobileTopBar
 
-// --- MOCK DATA MODEL ---
 data class ChatThread(
     val id: String,
     val otherUserName: String,
@@ -31,9 +35,8 @@ data class ChatThread(
 
 @Composable
 fun MessagesScreen(
-    onNavigateToChat: (String) -> Unit = { _ -> } // Placeholder lambda, replace with actual navigation logic
+    onNavigateToChat: (String) -> Unit
 ) {
-    // Dummy Data - Replace with your actual ViewModel data later
     val chatThreads = remember {
         listOf(
             ChatThread("1", "Gábor Kovács", "Are we still on for 6 PM at Corvin?", "10:42 AM", 2, true),
@@ -43,20 +46,22 @@ fun MessagesScreen(
         )
     }
 
-    Box(
+    // 👇 Changed this from a Box to a Column to stack the local TopBar and the Content
+    Column(
         modifier = Modifier
             .fillMaxSize()
             .background(AppColors.Background)
-            .windowInsetsPadding(WindowInsets.systemBars.only(WindowInsetsSides.Top))
     ) {
+        // 👇 Local Top Bar! This will now slide left smoothly with the screen.
+        MobileTopBar()
+
         if (chatThreads.isEmpty()) {
             EmptyMessagesState()
         } else {
             LazyColumn(
-                contentPadding = PaddingValues(top = 0.dp, bottom = 100.dp), // Bottom padding for NavBar
+                contentPadding = PaddingValues(top = 0.dp, bottom = 10.dp),
                 modifier = Modifier.fillMaxSize()
             ) {
-                // Header
                 item {
                     Text(
                         text = "Messages",
@@ -68,7 +73,6 @@ fun MessagesScreen(
                     Spacer(modifier = Modifier.height(8.dp))
                 }
 
-                // Chat List
                 items(chatThreads, key = { it.id }) { thread ->
                     ChatListItem(
                         thread = thread,
@@ -80,125 +84,169 @@ fun MessagesScreen(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ChatListItem(
-    thread: ChatThread,
-    onClick: () -> Unit
+fun ChatDetailScreen(
+    chatId: String,
+    onBack: () -> Unit
 ) {
-    Surface(
-        color = Color.Transparent, // Transparent so it blends with Background, but gives us the ripple!
+    var messageText by remember { mutableStateOf("") }
+    val chatPartnerName = if (chatId == "1") "Gábor Kovács" else "Player $chatId"
+
+    Column(
         modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onClick() }
+            .fillMaxSize()
+            .background(AppColors.Background)
     ) {
+        // Because the global top bar is gone, this component perfectly handles
+        // the status bar padding on its own without double-padding!
+        TopAppBar(
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier.size(36.dp).clip(CircleShape).background(AppColors.SurfaceDark),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(getInitials(chatPartnerName), color = AppColors.AccentOrange, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text(chatPartnerName, color = AppColors.TextPrimary, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                }
+            },
+            navigationIcon = {
+                IconButton(onClick = onBack) {
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = AppColors.TextPrimary)
+                }
+            },
+            colors = TopAppBarDefaults.topAppBarColors(containerColor = AppColors.Background)
+        )
+
+        HorizontalDivider(color = AppColors.TextGray.copy(alpha = 0.2f))
+
+        LazyColumn(
+            modifier = Modifier.weight(1f).fillMaxWidth(),
+            contentPadding = PaddingValues(16.dp),
+            reverseLayout = true
+        ) {
+            item {
+                ChatBubble(text = "Are we still on for 6 PM at Corvin?", isMe = false, time = "10:42 AM")
+                Spacer(modifier = Modifier.height(16.dp))
+                ChatBubble(text = "Sounds good!", isMe = true, time = "10:40 AM")
+                Spacer(modifier = Modifier.height(16.dp))
+                ChatBubble(text = "Hey! Want to play today?", isMe = false, time = "10:35 AM")
+            }
+        }
+
         Row(
             modifier = Modifier
+                .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 12.dp)
-                .fillMaxWidth(),
+                .padding(bottom = 10.dp), // Padding for bottom nav bar
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // --- AVATAR & ONLINE STATUS ---
+            OutlinedTextField(
+                value = messageText,
+                onValueChange = { messageText = it },
+                placeholder = { Text("Type a message...", color = AppColors.TextGray) },
+                modifier = Modifier.weight(1f),
+                shape = RoundedCornerShape(24.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = AppColors.AccentOrange,
+                    unfocusedBorderColor = AppColors.TextGray.copy(alpha = 0.5f),
+                    focusedTextColor = AppColors.TextPrimary,
+                    unfocusedTextColor = AppColors.TextPrimary
+                ),
+                maxLines = 3
+            )
+            Spacer(modifier = Modifier.width(8.dp))
             Box(
-                modifier = Modifier.size(52.dp)
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(CircleShape)
+                    .background(if (messageText.isNotBlank()) AppColors.AccentOrange else AppColors.SurfaceDark)
+                    .clickable(enabled = messageText.isNotBlank()) {
+                        messageText = ""
+                    },
+                contentAlignment = Alignment.Center
             ) {
-                // Avatar Circle
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.Send,
+                    contentDescription = "Send",
+                    tint = if (messageText.isNotBlank()) Color.White else AppColors.TextGray,
+                    modifier = Modifier.size(20.dp).offset(x = 2.dp)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun ChatBubble(text: String, isMe: Boolean, time: String) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalAlignment = if (isMe) Alignment.End else Alignment.Start
+    ) {
+        Box(
+            modifier = Modifier
+                .clip(
+                    RoundedCornerShape(
+                        topStart = 16.dp,
+                        topEnd = 16.dp,
+                        bottomStart = if (isMe) 16.dp else 4.dp,
+                        bottomEnd = if (isMe) 4.dp else 16.dp
+                    )
+                )
+                .background(if (isMe) AppColors.AccentOrange else Color(0xFF1E2532))
+                .padding(horizontal = 16.dp, vertical = 12.dp)
+        ) {
+            Text(
+                text = text,
+                color = if (isMe) Color.White else AppColors.TextPrimary,
+                fontSize = 15.sp
+            )
+        }
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(text = time, color = AppColors.TextGray, fontSize = 11.sp)
+    }
+}
+
+@Composable
+fun ChatListItem(thread: ChatThread, onClick: () -> Unit) {
+    Surface(
+        color = Color.Transparent,
+        modifier = Modifier.fillMaxWidth().clickable { onClick() }
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp).fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(modifier = Modifier.size(52.dp)) {
                 Box(
-                    modifier = Modifier
-                        .size(52.dp)
-                        .clip(CircleShape)
-                        .background(AppColors.SurfaceDark),
+                    modifier = Modifier.size(52.dp).clip(CircleShape).background(AppColors.SurfaceDark),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        text = getInitials(thread.otherUserName),
-                        color = AppColors.AccentOrange,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 18.sp
-                    )
+                    Text(getInitials(thread.otherUserName), color = AppColors.AccentOrange, fontWeight = FontWeight.Bold, fontSize = 18.sp)
                 }
-
-                // Online Indicator Badge
                 if (thread.isOnline) {
-                    Box(
-                        modifier = Modifier
-                            .size(14.dp)
-                            .align(Alignment.BottomEnd)
-                            .offset(x = (-2).dp, y = (-2).dp)
-                            .clip(CircleShape)
-                            .background(Color(0xFF4CAF50)) // Green online dot
-                            .padding(2.dp)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .clip(CircleShape)
-                                .background(Color(0xFF4CAF50))
-                        )
+                    Box(modifier = Modifier.size(14.dp).align(Alignment.BottomEnd).offset(x = (-2).dp, y = (-2).dp).clip(CircleShape).background(Color(0xFF4CAF50)).padding(2.dp)) {
+                        Box(modifier = Modifier.fillMaxSize().clip(CircleShape).background(Color(0xFF4CAF50)))
                     }
                 }
             }
-
             Spacer(modifier = Modifier.width(16.dp))
-
-            // --- MESSAGE CONTENT ---
-            Column(
-                modifier = Modifier.weight(1f)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = thread.otherUserName,
-                        color = AppColors.TextPrimary,
-                        fontWeight = if (thread.unreadCount > 0) FontWeight.Bold else FontWeight.Medium,
-                        fontSize = 16.sp,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f)
-                    )
+            Column(modifier = Modifier.weight(1f)) {
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                    Text(thread.otherUserName, color = AppColors.TextPrimary, fontWeight = if (thread.unreadCount > 0) FontWeight.Bold else FontWeight.Medium, fontSize = 16.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = thread.timestamp,
-                        color = if (thread.unreadCount > 0) AppColors.AccentOrange else Color.Gray,
-                        fontSize = 12.sp,
-                        fontWeight = if (thread.unreadCount > 0) FontWeight.Bold else FontWeight.Normal
-                    )
+                    Text(thread.timestamp, color = if (thread.unreadCount > 0) AppColors.AccentOrange else Color.Gray, fontSize = 12.sp, fontWeight = if (thread.unreadCount > 0) FontWeight.Bold else FontWeight.Normal)
                 }
-
                 Spacer(modifier = Modifier.height(4.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = thread.lastMessage,
-                        color = if (thread.unreadCount > 0) AppColors.TextPrimary else Color.Gray,
-                        fontSize = 14.sp,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f)
-                    )
-
-                    // Unread Badge
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                    Text(thread.lastMessage, color = if (thread.unreadCount > 0) AppColors.TextPrimary else Color.Gray, fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
                     if (thread.unreadCount > 0) {
                         Spacer(modifier = Modifier.width(8.dp))
-                        Box(
-                            modifier = Modifier
-                                .size(20.dp)
-                                .clip(CircleShape)
-                                .background(AppColors.AccentOrange),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = thread.unreadCount.toString(),
-                                color = Color.White,
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold
-                            )
+                        Box(modifier = Modifier.size(20.dp).clip(CircleShape).background(AppColors.AccentOrange), contentAlignment = Alignment.Center) {
+                            Text(thread.unreadCount.toString(), color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                         }
                     }
                 }
@@ -210,39 +258,20 @@ fun ChatListItem(
 @Composable
 fun EmptyMessagesState() {
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(32.dp),
+        modifier = Modifier.fillMaxSize().padding(32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        // You can replace this emoji with an actual Lucide/Vector icon (like MessageSquare) if you prefer!
         Text("💬", fontSize = 64.sp)
         Spacer(modifier = Modifier.height(16.dp))
-        Text(
-            text = "No Messages Yet",
-            color = AppColors.TextPrimary,
-            fontSize = 20.sp,
-            fontWeight = FontWeight.Bold
-        )
+        Text("No Messages Yet", color = AppColors.TextPrimary, fontSize = 20.sp, fontWeight = FontWeight.Bold)
         Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = "Swipe on players nearby or join a table to start a conversation.",
-            color = Color.Gray,
-            fontSize = 14.sp,
-            textAlign = androidx.compose.ui.text.style.TextAlign.Center
-        )
+        Text("Swipe on players nearby or join a table to start a conversation.", color = Color.Gray, fontSize = 14.sp, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
     }
 }
 
-// Helper to extract initials
 private fun getInitials(name: String): String {
     val parts = name.trim().split(Regex("\\s+"))
-    return if (parts.size >= 2) {
-        "${parts[0].first().uppercase()}${parts[1].first().uppercase()}"
-    } else if (name.isNotEmpty()) {
-        name.take(2).uppercase()
-    } else {
-        "?"
-    }
+    return if (parts.size >= 2) "${parts[0].first().uppercase()}${parts[1].first().uppercase()}"
+    else if (name.isNotEmpty()) name.take(2).uppercase() else "?"
 }
