@@ -31,13 +31,19 @@ class IosGoogleAuthClient(
 
                 GIDSignIn.sharedInstance.configuration = GIDConfiguration(clientID = clientId)
 
-                // Trigger the native iOS Google Sign-In on the EXACT Compose screen
+                // Trigger the native iOS Google Sign-In
                 GIDSignIn.sharedInstance.signInWithPresentingViewController(
                     presentingViewController = viewController
                 ) { result, error ->
                     if (error != null) {
-                        println("Google Sign-In failed: ${error.localizedDescription}")
-                        continuation.resume(null)
+                        // Cast to NSError to get the exact numeric error code
+                        val nsError = error as? platform.Foundation.NSError
+                        val errorMessage = "🚨 GOOGLE SIGN-IN FAILED: ${error.localizedDescription} | Domain: ${nsError?.domain} | Code: ${nsError?.code}"
+
+                        println(errorMessage)
+
+                        // Let's intentionally crash the app here so the error is forced onto your screen/logs!
+                        throw RuntimeException(errorMessage)
                     } else {
                         continuation.resume(result?.user?.idToken?.tokenString)
                     }
