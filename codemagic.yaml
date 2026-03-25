@@ -19,11 +19,6 @@ workflows:
           echo "GOOGLE_WEB_CLIENT_ID=$GOOGLE_WEB_CLIENT_ID" >> local.properties
           echo "GOOGLE_IOS_CLIENT_ID=$GOOGLE_IOS_CLIENT_ID" >> local.properties
 
-      - name: Inject Google Secrets into Info.plist
-        script: |
-          sed -i '' "s/REPLACE_ME_IOS_CLIENT_ID/$GOOGLE_IOS_CLIENT_ID/g" iosApp/iosApp/Info.plist
-          sed -i '' "s/REPLACE_ME_REVERSED_CLIENT_ID/$GOOGLE_REVERSED_CLIENT_ID/g" iosApp/iosApp/Info.plist
-
       - name: Configure Gradle Memory limits
         script: |
           echo "" >> gradle.properties 

@@ -28,14 +28,14 @@
     </array>
 
     <key>GIDClientID</key>
-    <string>REPLACE_ME_IOS_CLIENT_ID</string>
+    <string>115244117318-35pj0hqg5ko98esh44q6i9gn7t3e7vae.apps.googleusercontent.com</string>
 
     <key>CFBundleURLTypes</key>
     <array>
         <dict>
             <key>CFBundleURLSchemes</key>
             <array>
-                <string>REPLACE_ME_REVERSED_CLIENT_ID</string>
+                <string>com.googleusercontent.apps.115244117318-35pj0hqg5ko98esh44q6i9gn7t3e7vae</string>
             </array>
         </dict>
     </array>

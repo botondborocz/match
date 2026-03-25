@@ -2,69 +2,74 @@ package org.ttproject.util
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
-import androidx.compose.ui.interop.LocalUIViewController // <-- The magic Compose import
+import androidx.compose.ui.interop.LocalUIViewController
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 import platform.UIKit.UIViewController
+import platform.Foundation.NSBundle
+import platform.Foundation.NSError
 import cocoapods.GoogleSignIn.GIDSignIn
 import cocoapods.GoogleSignIn.GIDConfiguration
 import kotlinx.cinterop.ExperimentalForeignApi
-import org.ttproject.config.BuildKonfig
 
 @OptIn(ExperimentalForeignApi::class)
 class IosGoogleAuthClient(
-    private val clientId: String,
-    private val viewController: UIViewController // <-- Pass this in
+    private val viewController: UIViewController
 ) : GoogleAuthClient {
 
     override suspend fun signIn(): String? =
         withContext(Dispatchers.Main) {
             suspendCancellableCoroutine { continuation ->
 
-                if (clientId.isBlank()) {
-                    // Throw an error instead of returning null
-                    continuation.resumeWith(Result.failure(Exception("ERROR: Client ID is blank. Did you replace the placeholder?")))
+                // 1. Read the Client ID dynamically from the Info.plist
+                val clientId = NSBundle.mainBundle.objectForInfoDictionaryKey("GIDClientID") as? String
+
+                if (clientId.isNullOrBlank()) {
+                    val errorMsg = "Info.plist Error: GIDClientID is missing or empty!"
+                    continuation.resumeWithException(IllegalStateException(errorMsg))
                     return@suspendCancellableCoroutine
                 }
 
+                // 2. Configure the Google SDK
                 GIDSignIn.sharedInstance.configuration = GIDConfiguration(clientID = clientId)
 
+                // 3. Trigger the native Google Sign-In sheet
                 GIDSignIn.sharedInstance.signInWithPresentingViewController(
                     presentingViewController = viewController
                 ) { result, error ->
+
                     if (error != null) {
-                        // Extract the exact error and THROW it
-                        val nsError = error as? platform.Foundation.NSError
+                        // Extract the exact iOS error code and message
+                        val nsError = error as? NSError
                         val errorMsg = "Google SDK Error: ${error.localizedDescription} (Code: ${nsError?.code})"
 
-                        continuation.resumeWith(Result.failure(Exception(errorMsg)))
+                        // Throw the exception so Compose can catch it!
+                        continuation.resumeWithException(RuntimeException(errorMsg))
                     } else {
+                        // Success! Extract the token.
                         val token = result?.user?.idToken?.tokenString
                         if (token != null) {
                             continuation.resume(token)
                         } else {
-                            continuation.resumeWith(Result.failure(Exception("ERROR: Login succeeded but ID Token was missing!")))
+                            continuation.resumeWithException(RuntimeException("Login succeeded, but Google returned a null ID Token."))
                         }
                     }
                 }
             }
         }
-
-    // Notice: We completely deleted the getTopViewController() function!
 }
 
 @OptIn(ExperimentalForeignApi::class)
 @Composable
 actual fun rememberGoogleAuthClient(): GoogleAuthClient {
-    // You can fetch this from BuildKonfig or hardcode it for now
-    val iosClientId = "115244117318-35pj0hqg5ko98esh44q6i9gn7t3e7vae.apps.googleusercontent.com"
-
     // Grab the exact UIViewController powering this Compose screen
     val viewController = LocalUIViewController.current
 
+    // Remember the client, passing in the view controller
     return remember(viewController) {
-        IosGoogleAuthClient(clientId = iosClientId, viewController = viewController)
+        IosGoogleAuthClient(viewController = viewController)
     }
 }
