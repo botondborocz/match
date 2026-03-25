@@ -82,7 +82,7 @@ fun App() {
             val navBackStackEntry by navController.currentBackStackEntryAsState()
             val currentDestination = navBackStackEntry?.destination
 
-            val currentRoute = remember(currentDestination) {
+            var currentRoute = remember(currentDestination) {
                 when {
                     currentDestination?.hasRoute(NavRoute.Match::class) == true -> NavRoute.Match
                     currentDestination?.hasRoute(NavRoute.Coach::class) == true -> NavRoute.Coach
@@ -91,6 +91,9 @@ fun App() {
                     else -> NavRoute.Map
                 }
             }
+
+            // 2. Remember which Auth screen the user is on (Defaults to Login)
+            var currentAuthRoute by remember { mutableStateOf(AuthRoute.Login) }
 
             val onNavigate: (NavRoute) -> Unit = { targetRoute ->
                 navController.navigate(targetRoute) {
@@ -165,7 +168,12 @@ fun App() {
                             }
                             composable<NavRoute.Match> {
                                 Box(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
-                                    MatchScreen()
+                                    MatchScreen(
+                                        onNavigateToLogin = {
+                                            currentAuthRoute = AuthRoute.Login
+                                            onNavigate(NavRoute.Profile)
+                                        }
+                                    )
                                 }
                             }
                             composable<NavRoute.Coach> {
@@ -217,8 +225,7 @@ fun App() {
                                             }
                                         )
                                     } else {
-                                        // 2. Remember which Auth screen the user is on (Defaults to Login)
-                                        var currentAuthRoute by remember { mutableStateOf(AuthRoute.Login) }
+
 
                                         // 3. Switch between them!
                                         when (currentAuthRoute) {

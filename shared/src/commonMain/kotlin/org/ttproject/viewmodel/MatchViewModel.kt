@@ -39,7 +39,7 @@ class MatchViewModel(
                 val players = repository.getNearbyPlayers()
                 _uiState.value = MatchUiState.Success(players)
             } catch (e: Exception) {
-                _uiState.value = MatchUiState.Error("Failed to load matches.")
+                _uiState.value = MatchUiState.Error(e.message ?: "Unknown error")
             }
         }
     }

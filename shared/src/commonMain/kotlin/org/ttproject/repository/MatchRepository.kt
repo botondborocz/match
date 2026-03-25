@@ -14,6 +14,7 @@ import org.ttproject.data.Player
 import org.ttproject.data.SwipeRequest
 import org.ttproject.data.SwipeResponse
 import org.ttproject.data.TokenStorage
+import io.ktor.client.statement.bodyAsText
 
 // The interface remains completely unchanged!
 interface MatchRepository {
@@ -28,13 +29,15 @@ class MatchRepositoryImpl(
 ) : MatchRepository {
 
     override suspend fun getNearbyPlayers(): List<Player> {
-        // Make the GET request and automatically parse the JSON array into a List<Player>
+        // 👇 1. Check for token FIRST. If null, throw it so the ViewModel catches the Error state!
+        val token = tokenStorage.getToken() ?: throw Exception("No token found")
+
         return try {
-            httpClient.get("${SERVER_IP}/api/users/nearby"){
-                bearerAuth(tokenStorage.getToken()!!)
-            }.body<List<Player>>()
+            val response = httpClient.get("${SERVER_IP}/api/users/nearby"){
+                bearerAuth(token) // 👈 Safe to use now
+            }
+            response.body<List<Player>>()
         } catch (e: Exception) {
-            // In a real app, you might want to throw a custom domain exception here
             println("Network Error fetching players: ${e.message}")
             emptyList()
         }

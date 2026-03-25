@@ -7,8 +7,8 @@ data class Player(
     val id: String,
     val username: String,
     val skillLevel: String,
-    val lat: Double,
-    val lng: Double,
+    val lat: Double? = null,
+    val lng: Double? = null,
     // We'll calculate mock values for the UI display based on your design
     val age: Int = (18..45).random(),
     val elo: Int = (1000..2000).random(),
