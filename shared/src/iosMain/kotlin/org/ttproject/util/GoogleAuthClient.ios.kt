@@ -21,33 +21,47 @@ class IosGoogleAuthClient(
 
     override suspend fun signIn(): String? =
         withContext(Dispatchers.Main) {
+            println("🔵 STEP 1: signIn() function triggered on Main Thread")
+
             suspendCancellableCoroutine { continuation ->
+                println("🔵 STEP 2: Inside suspendCancellableCoroutine")
 
                 if (clientId.isBlank()) {
-                    println("Error: Google Client ID is empty!")
+                    println("🔴 STEP 3 ERROR: Client ID is completely blank!")
                     continuation.resume(null)
                     return@suspendCancellableCoroutine
                 }
 
+                println("🔵 STEP 4: Configuring Google SDK with ID: $clientId")
                 GIDSignIn.sharedInstance.configuration = GIDConfiguration(clientID = clientId)
 
-                // Trigger the native iOS Google Sign-In
+                println("🔵 STEP 5: Requesting presentation on ViewController: $viewController")
+
+                // Track if the coroutine gets cancelled prematurely
+                continuation.invokeOnCancellation {
+                    println("🔴 COROUTINE CANCELLED! The UI cancelled the login before it could finish.")
+                }
+
+                println("🔵 STEP 6: Firing Google SDK signInWithPresentingViewController...")
+
                 GIDSignIn.sharedInstance.signInWithPresentingViewController(
                     presentingViewController = viewController
                 ) { result, error ->
+
+                    println("🔵 STEP 7: Google SDK Callback actually fired!")
+
                     if (error != null) {
-                        // Cast to NSError to get the exact numeric error code
                         val nsError = error as? platform.Foundation.NSError
-                        val errorMessage = "🚨 GOOGLE SIGN-IN FAILED: ${error.localizedDescription} | Domain: ${nsError?.domain} | Code: ${nsError?.code}"
-
-                        println(errorMessage)
-
-                        // Let's intentionally crash the app here so the error is forced onto your screen/logs!
-                        throw RuntimeException(errorMessage)
+                        println("🔴 STEP 8 ERROR: ${error.localizedDescription} | Code: ${nsError?.code}")
+                        continuation.resume(null)
                     } else {
-                        continuation.resume(result?.user?.idToken?.tokenString)
+                        val token = result?.user?.idToken?.tokenString
+                        println("🟢 STEP 8 SUCCESS: Token received!")
+                        continuation.resume(token)
                     }
                 }
+
+                println("🔵 STEP 9: SDK called successfully, waiting for user to log in...")
             }
         }
 
