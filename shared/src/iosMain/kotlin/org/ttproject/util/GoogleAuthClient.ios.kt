@@ -59,7 +59,7 @@ class IosGoogleAuthClient(
 @Composable
 actual fun rememberGoogleAuthClient(): GoogleAuthClient {
     // You can fetch this from BuildKonfig or hardcode it for now
-    val iosClientId = BuildKonfig.IOS_CLIENT_ID
+    val iosClientId = "115244117318-35pj0hqg5ko98esh44q6i9gn7t3e7vae.apps.googleusercontent.com"
 
     // Grab the exact UIViewController powering this Compose screen
     val viewController = LocalUIViewController.current
