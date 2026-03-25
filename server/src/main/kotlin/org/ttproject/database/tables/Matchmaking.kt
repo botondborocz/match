@@ -9,7 +9,7 @@ object Swipes : Table("swipes") {
     val id = uuid("id").autoGenerate()
     val swiperId = reference("swiper_id", Users.id)
     val swipedId = reference("swiped_id", Users.id)
-    val action = enumerationByName("action", 20, SwipeAction::class)
+    val isLiked = bool("is_liked")
     val createdAt = timestamp("created_at")
 
     override val primaryKey = PrimaryKey(id)

@@ -9,5 +9,9 @@
   "scripts": {
     "build": "cd webApp && npm run build",
     "start": "cd webApp && npm run start"
+  },
+  "dependencies": {
+    "@react-oauth/google": "^0.13.4",
+    "@vis.gl/react-google-maps": "^1.7.1"
   }
 }

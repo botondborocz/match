@@ -38,10 +38,13 @@ import org.jetbrains.compose.resources.painterResource
 import org.ttproject.AppColors
 import org.ttproject.MainNavItems
 import org.ttproject.NavRoute
-import org.ttproject.SharedStrings
+import org.ttproject.shared.resources.Res as SharedRes
 import org.ttproject.AppIcon
+import org.ttproject.isDark
+import org.ttproject.shared.resources.pro_badge
 import ttproject.composeapp.generated.resources.Res
 import ttproject.composeapp.generated.resources.match_logo_long
+import ttproject.composeapp.generated.resources.match_logo_long_dark
 
 @Composable
 fun DesktopSidebar(
@@ -96,11 +99,20 @@ fun DesktopSidebar(
 //                        maxLines = 1,
 //                        softWrap = false // CRUCIAL: Stops text from wrapping to a second line
 //                    )
-                    Image(
-                        painter = painterResource(Res.drawable.match_logo_long),
-                        contentDescription = "App Logo",
-                        modifier = Modifier.height(28.dp) // Adjust this to make your logo look crisp
-                    )
+                    if (isDark) {
+                        Image(
+                            painter = painterResource(Res.drawable.match_logo_long),
+                            contentDescription = "App Logo",
+                            modifier = Modifier.height(28.dp)
+                        )
+                    }
+                    else {
+                        Image(
+                            painter = painterResource(Res.drawable.match_logo_long_dark),
+                            contentDescription = "App Logo",
+                            modifier = Modifier.height(28.dp)
+                        )
+                    }
 
                 }
             }
@@ -188,7 +200,7 @@ fun DesktopSidebar(
                                                 .background(AppColors.AccentOrange.copy(alpha = 0.1f))
                                                 .padding(horizontal = 6.dp, vertical = 2.dp)
                                         ) {
-                                            Text(SharedStrings.pro, color = AppColors.AccentOrange, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                                            Text(stringResource(SharedRes.string.pro_badge), color = AppColors.AccentOrange, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                                         }
                                     }
                                 }
@@ -231,8 +243,8 @@ fun DesktopSidebar(
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Column(modifier = Modifier.weight(1f)) {
-                        Text(SharedStrings.userName, color = AppColors.TextPrimary, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, softWrap = false)
-                        Text(SharedStrings.userTitle, color = AppColors.AccentOrange, fontSize = 12.sp, maxLines = 1, softWrap = false)
+                        Text("John", color = AppColors.TextPrimary, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, softWrap = false)
+                        Text("Doe", color = AppColors.AccentOrange, fontSize = 12.sp, maxLines = 1, softWrap = false)
                     }
                     Icon(Icons.Default.Settings, "Settings", tint = AppColors.TextSecondary, modifier = Modifier.size(18.dp).padding(end = 12.dp))
                 }

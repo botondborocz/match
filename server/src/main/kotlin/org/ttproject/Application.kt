@@ -1,5 +1,8 @@
 package org.ttproject
 
+import io.github.cdimascio.dotenv.dotenv
+import io.ktor.http.HttpHeaders
+import io.ktor.http.HttpMethod
 import io.ktor.server.application.*
 import io.ktor.server.auth.Authentication
 import io.ktor.server.auth.authenticate
@@ -22,13 +25,31 @@ import org.ttproject.security.JwtConfig
 import kotlin.collections.map
 import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.serialization.gson.*
+import org.ttproject.routes.locationRoutes
+import org.ttproject.routes.userRoutes
+import io.ktor.server.plugins.cors.routing.*
 
 fun main() {
+    val dotenv = dotenv {
+        ignoreIfMissing = true
+    }
     embeddedServer(Netty, port = SERVER_PORT, host = "0.0.0.0", module = Application::module)
         .start(wait = true)
 }
 
 fun Application.module() {
+    install(CORS) {
+        allowMethod(HttpMethod.Options)
+        allowMethod(HttpMethod.Get)
+        allowMethod(HttpMethod.Post)
+        allowMethod(HttpMethod.Put)
+        allowMethod(HttpMethod.Delete)
+        allowMethod(HttpMethod.Patch)
+        allowHeader(HttpHeaders.ContentType)
+        allowHeader(HttpHeaders.Authorization)
+        anyHost()
+    }
+
     initDatabase()
 
     install(ContentNegotiation) {
@@ -53,6 +74,8 @@ fun Application.module() {
 
     routing {
         authRoutes()
+        userRoutes()
+        locationRoutes()
 
         get("/") {
             call.respondText("Ktor Server is Online!")

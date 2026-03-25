@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.kotlinJvm)
     alias(libs.plugins.ktor)
     application
+    kotlin("plugin.serialization") version "2.1.0"
 }
 
 group = "org.ttproject"
@@ -32,4 +33,5 @@ dependencies {
     implementation("com.google.api-client:google-api-client:2.2.0")
     implementation("io.ktor:ktor-server-content-negotiation:3.3.3")
     implementation("io.ktor:ktor-serialization-gson:3.3.3")
-}
+    implementation("io.ktor:ktor-server-cors:3.3.3")
+    implementation("io.github.cdimascio:dotenv-kotlin:6.5.0")}

@@ -1,0 +1,1 @@
+export const SERVER_IP = "https://match-tt.duckdns.org"

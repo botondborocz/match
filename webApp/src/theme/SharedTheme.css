@@ -1,0 +1,27 @@
+/* AUTO-GENERATED FILE. DO NOT EDIT DIRECTLY. */
+/* Synced from SharedRes.kt */
+
+@theme {
+  --color-hexBackground: #0F172A;
+  --color-hexSurfaceDark: #162032;
+  --color-hexAccentCyan: #00D2FF;
+  --color-hexTextPrimary: #FFFFFF;
+  --color-hexTextSecondary: #94A3B8;
+  --color-hexTextGray: #A0AABF;
+  --color-hexProBadgeBg: #0C4A6E;
+  --color-hexAccentOrange: #FF6B35;
+  --color-hexErrorText: #FF4B4B;
+  --color-hexSuccessText: #00E676;
+  --color-hexButtonBackground: #151C2C;
+  --color-hexBackgroundLight: #F8FAFC;
+  --color-hexSurfaceLight: #FFFFFF;
+  --color-hexAccentCyanLight: #0284C7;
+  --color-hexTextPrimaryLight: #0F172A;
+  --color-hexTextSecondaryLight: #475569;
+  --color-hexTextGrayLight: #64748B;
+  --color-hexProBadgeBgLight: #E0F2FE;
+  --color-hexAccentOrangeLight: #FF6B35;
+  --color-hexErrorTextLight: #DC2626;
+  --color-hexSuccessTextLight: #16A34A;
+  --color-hexButtonBackgroundLight: #F1F5F9;
+}

@@ -17,6 +17,7 @@ import org.ttproject.shared.resources.home
 import org.ttproject.shared.resources.map
 import org.ttproject.shared.resources.ai_coach
 import org.ttproject.shared.resources.match
+import org.ttproject.shared.resources.messages
 import org.ttproject.shared.resources.profile
 
 // 2. Import your App Resources (where brain.xml is)
@@ -26,6 +27,7 @@ import ttproject.composeapp.generated.resources.flame
 import ttproject.composeapp.generated.resources.house
 import ttproject.composeapp.generated.resources.map
 import ttproject.composeapp.generated.resources.user
+import ttproject.composeapp.generated.resources.message_circle
 
 // --- THE WRAPPER CLASS ---
 sealed interface AppIcon {
@@ -36,10 +38,10 @@ sealed interface AppIcon {
 // 1. The Type-Safe Routes
 @Serializable
 sealed class NavRoute {
-    @Serializable data object Home : NavRoute()
     @Serializable data object Map : NavRoute()
-    @Serializable data object Coach : NavRoute()
     @Serializable data object Match : NavRoute()
+    @Serializable data object Coach : NavRoute()
+    @Serializable data object Messages : NavRoute()
     @Serializable data object Profile : NavRoute()
 }
 
@@ -52,11 +54,10 @@ data class NavigationItem(
 )
 
 val MainNavItems = listOf(
-    // Standard Icon -> Wrap in AppIcon.Vector
-    NavigationItem(NavRoute.Home, SharedRes.string.home, AppIcon.Drawable(AppRes.drawable.house)),
 
     // Standard Icon -> Wrap in AppIcon.Vector
     NavigationItem(NavRoute.Map, SharedRes.string.map, AppIcon.Drawable(AppRes.drawable.map)),
+    NavigationItem(NavRoute.Match, SharedRes.string.match, AppIcon.Drawable(AppRes.drawable.flame)),
 
     // YOUR CUSTOM XML -> Wrap in AppIcon.Drawable
     NavigationItem(
@@ -66,6 +67,7 @@ val MainNavItems = listOf(
         isPro = true
     ),
 
-    NavigationItem(NavRoute.Match, SharedRes.string.match, AppIcon.Drawable(AppRes.drawable.flame)),
+    // Standard Icon -> Wrap in AppIcon.Vector
+    NavigationItem(NavRoute.Messages, SharedRes.string.messages, AppIcon.Drawable(AppRes.drawable.message_circle)),
     NavigationItem(NavRoute.Profile, SharedRes.string.profile, AppIcon.Drawable(AppRes.drawable.user))
 )

@@ -1,0 +1,534 @@
+.map-screen-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    /* 👈 Safe-area fix (no more 100vh) */
+    overflow: hidden;
+    background-color: var(--bg-dark);
+}
+
+/* --- Floating Filters --- */
+.floating-filters {
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    right: 16px;
+    display: flex;
+    gap: 8px;
+    z-index: 10;
+    overflow-x: auto;
+    padding-bottom: 8px;
+
+    /* Entrance Animation */
+    animation: slideDownFade 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+}
+
+@keyframes slideDownFade {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.floating-filters::-webkit-scrollbar {
+    display: none;
+}
+
+.filter-chip {
+    background-color: var(--surface-dark);
+    color: var(--text-primary);
+    border: none;
+    border-radius: 20px;
+    padding: 8px 16px;
+    font-size: 14px;
+    font-weight: 500;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.filter-chip.active {
+    background-color: var(--accent-orange);
+    /* color: var(--bg-dark); */
+}
+
+/* --- Floating Action Buttons (FABs) --- */
+.floating-actions {
+    position: absolute;
+    right: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    z-index: 10;
+
+    /* Bouncy Compose Transition for moving up/down */
+    transition: bottom 0.5s cubic-bezier(0.34, 1.25, 0.64, 1);
+
+    /* Matches Compose scaleIn() + fadeIn() */
+    animation: fabScaleIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
+}
+
+@keyframes fabScaleIn {
+    from {
+        opacity: 0;
+        transform: scale(0.5);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* Dynamic positioning based on Bottom Sheet */
+.floating-actions.sheet-collapsed {
+    bottom: 110px;
+}
+
+.floating-actions.sheet-half {
+    bottom: calc(40% + 20px);
+}
+
+.fab-btn {
+    width: 48px;
+    height: 48px;
+    /* border-radius: 50%; */
+    border-radius: 16px;
+    background-color: var(--surface-dark);
+    color: var(--accent-orange);
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    cursor: pointer;
+}
+
+/* --- Selected Club Overlay Card --- */
+.selected-club-overlay {
+    position: absolute;
+    bottom: 104px;
+    left: 50%;
+    width: calc(100% - 32px);
+    max-width: 400px;
+    z-index: 15;
+
+    /* Matches Compose Bouncy Spring */
+    animation: cardSlideUpBouncy 0.5s cubic-bezier(0.34, 1.25, 0.64, 1) forwards;
+}
+
+@keyframes cardSlideUpBouncy {
+    from {
+        opacity: 0;
+        transform: translate(-50%, 60px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translate(-50%, 0);
+    }
+}
+
+.selected-club-card {
+    background-color: var(--surface-dark);
+    border-radius: 16px;
+    padding: 16px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.club-name {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.club-subtitle {
+    margin: 4px 0 0 0;
+    font-size: 14px;
+    color: var(--text-secondary);
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+}
+
+.card-footer {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 16px;
+}
+
+.rating-badge {
+    background-color: #1E3A4C;
+    color: #4AC4F3;
+    padding: 6px 8px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.text-blue {
+    color: #4AC4F3;
+}
+
+.navigate-btn {
+    flex: 1;
+    height: 36px;
+    background-color: var(--accent-orange);
+    color: var(--bg-dark);
+    border: none;
+    border-radius: 8px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+/* --- BOTTOM SHEET --- */
+.bottom-sheet {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    height: 100%;
+    background-color: var(--bg-dark);
+    z-index: 20;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
+
+    /* 👇 Matches Compose spring() physics! Gives it a tiny, satisfying bounce when snapping */
+    transition: transform 0.5s cubic-bezier(0.34, 1.15, 0.64, 1), border-radius 0.4s ease;
+    transform: translateY(var(--sheet-base-y));
+}
+
+/* Remove transition while actively dragging */
+.bottom-sheet.dragging {
+    transition: none;
+}
+
+/* Snap Points (% relative to screen height) */
+.bottom-sheet.state-collapsed {
+    --sheet-base-y: calc(100% - 90px);
+    border-radius: 24px 24px 0 0;
+}
+
+.bottom-sheet.state-half {
+    --sheet-base-y: 60%;
+    border-radius: 24px 24px 0 0;
+}
+
+.bottom-sheet.state-expanded {
+    /* 👇 MATCHES the top: 16px of the floating filters exactly! */
+    --sheet-base-y: 16px; 
+    /* Keep the corners rounded to match the filter chips */
+    border-radius: 24px 24px 0 0; 
+  }
+
+.drag-handle-area {
+    width: 100%;
+    padding: 12px 0;
+    display: flex;
+    justify-content: center;
+    cursor: grab;
+    touch-action: none;
+}
+
+.drag-handle-area:active {
+    cursor: grabbing;
+}
+
+.drag-handle-bar {
+    width: 40px;
+    height: 4px;
+    background-color: rgba(156, 163, 175, 0.5);
+    border-radius: 2px;
+}
+
+/* Scrollable List Area */
+.sheet-content {
+    flex: 1;
+    overflow-y: hidden;
+    touch-action: none; /* 👈 Completely disables browser scroll hijacking */
+    padding: 0 16px 24px 16px;
+}
+
+/* 2. When fully expanded, unlock the scrolling! */
+.bottom-sheet.state-expanded .sheet-content {
+    overflow-y: auto;
+    touch-action: pan-y; /* 👈 Gives control back to the browser */
+    overscroll-behavior-y: contain; /* 👈 Stops the annoying iOS rubber-band bounce at the top */
+}
+
+.sheet-title {
+    font-size: 20px;
+    font-weight: 700;
+    margin: 0 0 16px 0;
+    color: var(--text-primary);
+}
+
+.club-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* Cascading Entrance Animation for List Items */
+.club-list-item {
+    background-color: var(--surface-dark);
+    border-radius: 12px;
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+
+    /* Initial invisible state */
+    opacity: 0;
+    animation: cascadeUp 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+/* Stagger the popping sequence */
+.club-list-item:nth-child(1) {
+    animation-delay: 0.1s;
+}
+
+.club-list-item:nth-child(2) {
+    animation-delay: 0.15s;
+}
+
+.club-list-item:nth-child(3) {
+    animation-delay: 0.2s;
+}
+
+.club-list-item:nth-child(4) {
+    animation-delay: 0.25s;
+}
+
+.club-list-item:nth-child(5) {
+    animation-delay: 0.3s;
+}
+
+.club-list-item:nth-child(6) {
+    animation-delay: 0.35s;
+}
+
+@keyframes cascadeUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.club-list-item:hover {
+    background-color: var(--surface-hover);
+}
+
+.club-list-img-placeholder {
+    width: 50px;
+    height: 50px;
+    background-color: #333947;
+    border-radius: 8px;
+    flex-shrink: 0;
+}
+
+.club-list-info h4 {
+    margin: 0 0 4px 0;
+    font-size: 16px;
+    color: var(--text-primary);
+}
+
+.club-list-info p {
+    margin: 0;
+    font-size: 14px;
+    color: var(--text-secondary);
+}
+
+/* --- Exit Animation for Mobile --- */
+.selected-club-overlay.exiting {
+    /* A faster, non-bouncy exit curve feels much snappier when closing */
+    animation: cardSlideOut 0.3s cubic-bezier(0.4, 0, 1, 1) forwards;
+}
+
+@keyframes cardSlideOut {
+    from {
+        opacity: 1;
+        transform: translate(-50%, 0);
+    }
+
+    to {
+        opacity: 0;
+        transform: translate(-50%, 40px);
+    }
+}
+
+/* =======================================================
+   CUSTOM MAP MARKERS (Replicating Android Compose)
+   ======================================================= */
+
+/* --- User Location (Blue Dot) --- */
+.user-location-marker {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+  }
+  
+  /* The translucent background circle */
+  .user-location-halo {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 210, 255, 0.2);
+    border-radius: 50%;
+    animation: pulseHalo 2.5s infinite ease-in-out; 
+  }
+  
+  /* The crisp center dot */
+  .user-location-dot {
+    position: relative;
+    width: 22px;
+    height: 22px;
+    background-color: #00D2FF;
+    border: 3px solid white;
+    border-radius: 50%;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+  }
+  
+  @keyframes pulseHalo {
+    0% { transform: scale(0.8); opacity: 0.6; }
+    50% { transform: scale(1.2); opacity: 0.2; }
+    100% { transform: scale(0.8); opacity: 0.6; }
+  }
+  
+  
+  /* --- Club Markers (Orange Ping Pong Pins) --- */
+  .club-marker {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    background-color: #FF7B42;
+    border-radius: 50%;
+    font-size: 16px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+    
+    /* The bouncy Spring physics from Compose */
+    transition: all 0.5s cubic-bezier(0.34, 1.25, 0.64, 1);
+    cursor: pointer;
+  }
+  
+  /* When the user clicks the pin, it bounces up in size! */
+  .club-marker.selected {
+    width: 48px;
+    height: 48px;
+    font-size: 22px;
+    box-shadow: 0 8px 16px rgba(0,0,0,0.5);
+    /* A slight nudge upward so the pin feels like it "pops" out of the map */
+    transform: translateY(-5px); 
+  }
+
+/* =======================================================
+     DESKTOP / TABLET LAYOUT (Side Panel Sidebar)
+     ======================================================= */
+@media (min-width: 768px) {
+    .map-screen-container {
+        /* Push Google Map to the right to fit the sidebar */
+        padding-left: 380px;
+        box-sizing: border-box;
+    }
+
+    /* Lock Bottom Sheet to the Left */
+    .bottom-sheet {
+        width: 380px;
+        height: 100% !important;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        transform: none !important;
+        /* Disables drag math entirely */
+        border-radius: 0;
+        border-right: 1px solid var(--border-color);
+        box-shadow: 4px 0 24px rgba(0, 0, 0, 0.5);
+    }
+
+    .drag-handle-area {
+        display: none;
+        /* User physically cannot drag the handle */
+    }
+
+    .sheet-content {
+        padding-top: 32px;
+    }
+
+    /* Keep Overlays Clear of the Sidebar */
+    .floating-filters {
+        left: 396px;
+        /* 380px + 16px padding */
+        top: 24px;
+    }
+
+    /* (Inside your @media block) */
+    .selected-club-overlay {
+        left: calc(50% + 190px);
+        max-width: 360px;
+        bottom: 32px;
+        /* Use a desktop-specific animation that respects the new X center */
+        animation: desktopCardSlideUp 0.5s cubic-bezier(0.34, 1.25, 0.64, 1) forwards;
+    }
+
+    @keyframes desktopCardSlideUp {
+        from {
+            opacity: 0;
+            transform: translate(-50%, 60px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translate(-50%, 0);
+        }
+    }
+
+    .floating-actions {
+        bottom: 32px !important;
+        right: 24px;
+    }
+
+    /* 1. Permanently unlock the scrolling for mouse wheels/trackpads */
+    .sheet-content {
+        overflow-y: auto !important;
+        touch-action: auto !important; 
+    }
+
+    /* 2. Hide the little grey drag pill, since desktop users don't drag it */
+    .drag-handle-area {
+        display: none;
+    }
+}

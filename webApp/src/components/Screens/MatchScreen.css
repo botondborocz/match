@@ -1,0 +1,527 @@
+.match-container {
+  /* Existing match container styles */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 100%;
+  width: 100%;
+  position: relative;
+  overflow: hidden;
+  padding-top: 8px;
+  /* Slightly tighter top padding */
+}
+
+/* Common parts which can be blurred */
+.blurred-content-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 100%;
+  width: 100%;
+  transition: filter 0.3s ease;
+  /* smooth blurring */
+}
+
+/* --- SNEAK PEEK BLUR --- */
+.blurred-content-wrapper.blurred {
+  /* 👈 Reduced from 5px to 3px so the UI is clearly visible, just out of focus */
+  filter: blur(3px); 
+  pointer-events: none;
+  /* Add a tiny bit of opacity to naturally dim the background without a black wall */
+  opacity: 0.7; 
+}
+
+/* --- Header --- */
+.match-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.text-orange {
+  color: var(--accent-orange);
+}
+
+.header-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+/* --- Card Stack Area --- */
+.card-stack-area {
+  flex: 1;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  /* Centering the wrapper pushes the buttons safely below it */
+  justify-content: center; 
+  position: relative;
+  /* Reserve space at the bottom so the card never touches the buttons */
+  padding-bottom: 90px; 
+}
+
+.card-stack-wrapper {
+  position: relative;
+  
+  /* 👇 THE RESPONSIVE MAGIC LOCK 👇 */
+  /* This checks 3 different sizes and automatically picks the smallest one! 
+     1. 380px (Protects huge screens/tablets from getting massive cards)
+     2. calc(100% - 32px) (Standard phones keep their 16px side padding)
+     3. calc((100dvh - 260px) * 0.75) (Short phones shrink the width to guarantee the height ALWAYS fits!)
+  */
+  width: min(380px, calc(100% - 32px), calc((100dvh - 260px) * 0.75));
+  
+  aspect-ratio: 3 / 4;
+}
+
+.match-card {
+  position: absolute;
+  /* Tell the card to perfectly fill the 3:4 wrapper */
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0; 
+  
+  border-radius: 24px;
+  background: linear-gradient(180deg, #3B4CCA 0%, #151C2C 100%);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  will-change: transform, opacity;
+  cursor: grab;
+  
+  /* 👇 CRITICAL FOR IMAGES: Prevents square images from poking out of your rounded corners! */
+  overflow: hidden; 
+}
+
+.match-card:active {
+  cursor: grabbing;
+}
+
+/* Background card stays slightly scaled down */
+.background-card {
+  transform: scale(0.95);
+  z-index: 1;
+}
+
+/* Top card sits on top */
+.top-card {
+  z-index: 2;
+}
+
+/* Smooth spring back when released */
+.animate-snap {
+  transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.3s ease;
+}
+
+/* Swipe animations */
+.exit-left {
+  transform: translateX(-150%) rotate(-20deg) !important;
+  opacity: 0 !important;
+  transition: transform 0.3s ease-out, opacity 0.3s ease-out;
+}
+
+.exit-right {
+  transform: translateX(150%) rotate(20deg) !important;
+  opacity: 0 !important;
+  transition: transform 0.3s ease-out, opacity 0.3s ease-out;
+}
+
+/* --- Card Content --- */
+.card-content-inner {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  height: 100%;
+  width: 100%;
+}
+
+.card-avatar-placeholder {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.inner-circle {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+.card-info {
+  padding: 24px;
+}
+
+/* --- Card Image & Overlays --- */
+
+.card-image {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* 👈 Forces the image to perfectly fill the 3:4 box without squishing! */
+  z-index: 0;
+}
+
+.card-gradient-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  /* Creates a dark fade at the bottom so the text is always 100% readable */
+  background: linear-gradient(
+    to bottom, 
+    transparent 50%, 
+    rgba(21, 28, 44, 0.6) 75%, 
+    rgba(21, 28, 44, 1) 100%
+  );
+  z-index: 1;
+  pointer-events: none; /* Lets you click through it */
+}
+
+.card-content-inner {
+  position: relative; /* 👈 Required so z-index works */
+  z-index: 2;         /* 👈 Places the text ON TOP of the image and gradient */
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  height: 100%;
+  width: 100%;
+}
+
+.info-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.align-bottom {
+  align-items: flex-end;
+}
+
+.mt-2 {
+  margin-top: 8px;
+}
+
+.mt-4 {
+  margin-top: 16px;
+}
+
+.text-gray {
+  color: #D1D5DB;
+}
+
+.card-name {
+  font-size: 32px;
+  font-weight: 800;
+  color: white;
+  line-height: 1;
+}
+
+.card-age {
+  font-size: 24px;
+  color: rgba(255, 255, 255, 0.8);
+  line-height: 1.1;
+  margin-bottom: 2px;
+}
+
+.elo-tag {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid var(--accent-orange);
+  color: var(--accent-orange);
+  padding: 4px 8px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  margin-left: auto;
+}
+
+.skill-chip {
+  background-color: rgba(0, 0, 0, 0.4);
+  color: white;
+  padding: 6px 12px;
+  border-radius: 16px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+/* --- Action Buttons --- */
+.action-buttons {
+  position: absolute;
+  bottom: 24px;
+  display: flex;
+  gap: 24px;
+  z-index: 10;
+  left: 50%;
+  transform: translateX(-50%);
+  animation: fadeInUpCentered 0.4s ease;
+}
+
+/* Custom animation that respects the horizontal centering! */
+@keyframes fadeInUpCentered {
+  from {
+    opacity: 0;
+    /* X stays at -50% to stay centered, Y drops down 20px */
+    transform: translate(-50%, 20px); 
+  }
+  to {
+    opacity: 1;
+    /* X stays at -50%, Y goes back to exactly 0 */
+    transform: translate(-50%, 0); 
+  }
+}
+
+.action-btn {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--surface-dark);
+  /* Replace with your ButtonBackground */
+  cursor: pointer;
+  transition: transform 0.1s ease;
+}
+
+.action-btn:active {
+  transform: scale(0.9);
+}
+
+.pass-btn {
+  border: 2px solid rgba(255, 75, 75, 0.5);
+  color: #FF4B4B;
+}
+
+.like-btn {
+  border: 2px solid rgba(0, 230, 118, 0.5);
+  color: #00E676;
+}
+
+/* --- Match Overlay --- */
+.match-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(21, 28, 44, 0.95);
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  text-align: center;
+}
+
+.match-title {
+  color: var(--accent-orange);
+  font-size: 42px;
+  font-weight: 800;
+  text-shadow: 0 0 20px var(--accent-orange);
+  margin: 0 0 16px 0;
+}
+
+.match-subtitle {
+  color: white;
+  font-size: 16px;
+  margin: 0;
+}
+
+.match-avatars {
+  display: flex;
+  gap: 16px;
+  margin-top: 48px;
+}
+
+.avatar {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  border: 3px solid var(--accent-orange);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  font-weight: bold;
+  color: white;
+}
+
+.avatar.me {
+  background-color: gray;
+}
+
+.avatar.them {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Standard Buttons */
+.primary-btn {
+  background-color: var(--accent-orange);
+  color: var(--bg-dark);
+  font-weight: 700;
+  padding: 16px 48px;
+  border-radius: 24px;
+  border: none;
+  cursor: pointer;
+}
+
+.secondary-btn {
+  background-color: transparent;
+  color: white;
+  font-weight: 700;
+  padding: 16px 48px;
+  border-radius: 24px;
+  border: 2px solid white;
+  cursor: pointer;
+}
+
+.mt-12 {
+  margin-top: 48px;
+}
+
+/* --- Basic Animations --- */
+.fade-in {
+  animation: fadeIn 0.3s ease;
+}
+
+.fade-in-down {
+  animation: fadeInDown 0.4s ease;
+}
+
+.fade-in-up {
+  animation: fadeInUp 0.4s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* --- UNAUTH OVERLAY (The Sneak Peek Layout) --- */
+.unauth-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  /* 👇 Replaced the solid black with a gradient that fades up from the bottom */
+  background: linear-gradient(to top, var(--bg-color) 10%, rgba(0, 0, 0, 0.4) 50%, transparent 100%);
+  display: flex;
+  align-items: flex-end; /* 👈 Pushes the card to the bottom */
+  justify-content: center;
+  padding-bottom: 40px; /* Keeps it hovering just above the bottom bar */
+  z-index: 10;
+}
+
+.unauth-content {
+  /* 👇 Glassmorphism effect! Let's the card colors bleed through the login prompt */
+  background-color: color-mix(in srgb, var(--surface-dark) 75%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid color-mix(in srgb, var(--text-muted) 20%, transparent);
+  
+  border-radius: 28px;
+  padding: 32px 24px;
+  width: calc(100% - 32px);
+  max-width: 360px;
+  text-align: center;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+  animation: slideUp 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.overlay-title {
+  color: var(--accent-orange);
+  font-size: 24px; /* 👈 Reduced from 36px so it doesn't scream at the user */
+  font-weight: 800;
+  text-shadow: 0 0 15px color-mix(in srgb, var(--accent-orange) 50%, transparent);
+  margin: 0 0 12px 0;
+  letter-spacing: 0.5px;
+}
+
+.overlay-subtitle {
+  color: var(--text-primary);
+  font-size: 15px;
+  line-height: 1.5;
+  margin: 0 0 24px 0;
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(40px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* --- First Load Animations --- */
+
+/* The bouncy entrance for the main card stack */
+.animate-spring-up {
+  animation: springUp 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
+}
+
+/* Staggered text animations inside the card */
+.stagger-1 {
+  animation: fadeInUp 0.4s ease forwards;
+  opacity: 0;
+  animation-delay: 0.1s;
+}
+
+.stagger-2 {
+  animation: fadeInUp 0.4s ease forwards;
+  opacity: 0;
+  animation-delay: 0.2s;
+}
+
+.stagger-3 {
+  animation: fadeInUp 0.4s ease forwards;
+  opacity: 0;
+  animation-delay: 0.3s;
+}
+
+@keyframes springUp {
+  from { 
+    opacity: 0; 
+    transform: scale(0.9) translateY(40px); 
+  }
+  to { 
+    opacity: 1; 
+    transform: scale(1) translateY(0); 
+  }
+}

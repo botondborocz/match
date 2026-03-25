@@ -1,17 +1,28 @@
-import React from 'react';
-import { Home, Map, Brain, Flame, User as UserIcon, Settings, X, LucideIcon } from 'lucide-react';
+import React, { useMemo } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import {
+  Home, Map, Brain, Flame, User as UserIcon, Settings, X,
+  LucideIcon, Menu,
+  LayoutList,
+  Activity,
+  Rss,
+  Newspaper,
+  MessageCircle
+} from 'lucide-react'; // 👈 Added ChevronLeft and ChevronRight
 import { SharedRes } from '../../shared/SharedRes';
-import '../../App.css';
 import { useTranslation } from 'react-i18next';
 import { LanguageToggle } from '../LanguageToggle';
-// import logoPng from '../../../assets/match_logo_long.png';
+import '../../App.css';
+import { log } from 'console';
+import { useTheme } from '../../theme/ThemeContext';
 
 interface SidebarProps {
-  activeTab: string;
-  onTabChange: (tabId: string) => void;
-  isOpen: boolean;       
-  onClose: () => void;   
-  isMobile: boolean;     
+  isOpen: boolean;
+  onClose: () => void;
+  isMobile: boolean;
+  // 👇 Added new collapse props
+  isCollapsed: boolean;
+  onToggleCollapse: () => void;
 }
 
 interface NavItem {
@@ -22,24 +33,46 @@ interface NavItem {
   notification?: boolean;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange, isOpen, onClose, isMobile }) => {
+const SideBar: React.FC<SidebarProps> = ({ isOpen, onClose, isMobile, isCollapsed, onToggleCollapse }) => {
   const { t } = useTranslation();
-  
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const { theme } = useTheme();
+
+  const isDarkMode = useMemo(() => {
+    if (theme === 'dark') return true;
+    if (theme === 'light') return false;
+    // If it's 'system', ask the browser/phone what the OS is currently set to!
+    return window.matchMedia('(prefers-color-scheme: dark)').matches;
+  }, [theme]);
+
+  console.log(isDarkMode ? "Dark mode is active" : "Light mode is active");
+
+  // Determine active tab from the URL (e.g., "/home" -> "home")
+  const rawPath = location.pathname.substring(1) || 'map';
+
+  // 👇 Force login and register routes to highlight the Profile tab
+  const activeTab = ['login', 'register', 'profile'].includes(rawPath)
+    ? 'profile'
+    : rawPath;
+
   const menuItems: NavItem[] = [
-    { id: 'home', label: t('home'), icon: Home },
     { id: 'map', label: t('map'), icon: Map },
-    // 👇 Itt cseréltük le a notification-t isPro-ra!
-    { id: 'coach', label: t('ai_coach'), icon: Brain, isPro: true },
     { id: 'match', label: t('match'), icon: Flame },
+    { id: 'coach', label: t('ai_coach'), icon: Brain, isPro: true },
+    // { id: 'home', label: t('home'), icon: Home },
+    // { id: 'feed', label: t('feed'), icon: LayoutList },
+    { id: 'messages', label: t('messages'), icon: MessageCircle },
     { id: 'profile', label: t('profile'), icon: UserIcon },
   ];
 
-  const sidebarClass = isMobile 
-    ? `sidebar mobile-drawer ${isOpen ? 'open' : ''}`
-    : 'sidebar desktop';
-
-  // Find the index of the currently active tab
   const activeIndex = Math.max(0, menuItems.findIndex(item => item.id === activeTab));
+
+  // 👇 Updated to apply the "collapsed" class on desktop
+  const sidebarClass = isMobile
+    ? `sidebar mobile-drawer ${isOpen ? 'open' : ''}`
+    : `sidebar desktop ${isCollapsed ? 'collapsed' : ''}`;
 
   return (
     <>
@@ -54,19 +87,29 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange, isOpen, onClo
           </button>
         )}
 
-        {/* Logo Area */}
         <div className="logo-section">
-          <img src="../../../assets/match_logo_long.png" alt="Match Logo" className="logo-image" />
+          {/* Note: I changed the image path to use an absolute path so it works on any route */}
+          {isDarkMode ? (
+            <img src="/assets/match_logo_long.png" alt="Match Logo" className="logo-image" />)
+            : (
+              <img src="/assets/match_logo_long_dark.png" alt="Match Logo" className="logo-image" />
+            )
+          }
+
+          {/* 👇 The new collapse toggle button (Only visible on Desktop) */}
+          {!isMobile && (
+            <button onClick={onToggleCollapse} className="collapse-btn">
+              <Menu size={20} />
+            </button>
+          )}
         </div>
 
-        {/* Navigation Items */}
         <nav className="nav-column">
-          {/* THE ANIMATED SLIDING LINE */}
-          <div 
-            className="active-indicator" 
-            style={{ 
-              transform: `translateY(calc(${activeIndex} * 56px + 12px))` 
-            }} 
+          <div
+            className="active-indicator"
+            style={{
+              transform: `translateY(calc(${activeIndex} * 56px + 12px))`
+            }}
           />
 
           {menuItems.map((item) => {
@@ -75,43 +118,44 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange, isOpen, onClo
               <div
                 key={item.id}
                 onClick={() => {
-                  onTabChange(item.id);
+                  navigate(`/${item.id}`);
                   if (isMobile) onClose();
                 }}
                 className={`nav-item ${isActive ? 'active' : ''}`}
               >
-                <item.icon 
-                  size={20} 
-                  color={isActive ? "#FF5A36" : "#9CA3AF"} 
+                <item.icon
+                  size={20}
+                  color={isActive ? "var(--accent-orange)" : "var(--text-secondary)"}
                 />
                 <span className="nav-text">{item.label}</span>
-                
-                {/* PRO Badge megjelenítése, ha isPro igaz */}
                 {item.isPro && <span className="pro-badge">{SharedRes.strings.pro || 'PRO'}</span>}
-                
-                {/* Notification pötty, ha notification igaz (most nincs ilyen, de a jövőben jól jöhet) */}
-                {item.notification && <div className="notification-dot"></div>}
               </div>
             );
           })}
         </nav>
-        
-        <div style={{ padding: '0 16px' }}>
+
+        {/* 👇 Hide LanguageToggle smoothly when collapsed */}
+        {/* <div style={{
+          padding: '0 16px',
+          opacity: isCollapsed ? 0 : 1,
+          pointerEvents: isCollapsed ? 'none' : 'auto',
+          transition: 'opacity 0.2s ease'
+        }}>
           <LanguageToggle />
         </div>
-        
-        {/* Footer */}
+
         <div className="user-footer">
           <div className="avatar">JD</div>
           <div className="user-info">
             <div className="user-name">János Doe</div>
             <div className="user-role">ELO 1380</div>
           </div>
-          <Settings size={18} color="#9CA3AF" />
-        </div>
+          {/* 👇 Hide Settings gear when collapsed so avatar stays centered }
+          {!isCollapsed && <Settings size={18} color="var(--text-secondary)" />}
+        </div> */}
       </aside>
     </>
   );
 };
 
-export default Sidebar;
+export default SideBar;

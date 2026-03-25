@@ -21,23 +21,33 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import org.jetbrains.compose.resources.painterResource
 import org.ttproject.AppColors
+import org.ttproject.isDark
 
 // 👇 Import your generated KMP resources here
 import ttproject.composeapp.generated.resources.Res
 import ttproject.composeapp.generated.resources.match_logo
 import ttproject.composeapp.generated.resources.match_logo_long
+import ttproject.composeapp.generated.resources.match_logo_long_dark
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MobileTopBar() { // We don't need the 'title' parameter anymore
     TopAppBar(
         title = {
-            // Replace the Text with your PNG Image
-            Image(
-                painter = painterResource(Res.drawable.match_logo_long),
-                contentDescription = "App Logo",
-                modifier = Modifier.height(28.dp) // Adjust this to make your logo look crisp
-            )
+            if (isDark) {
+                Image(
+                    painter = painterResource(Res.drawable.match_logo_long),
+                    contentDescription = "App Logo",
+                    modifier = Modifier.height(28.dp)
+                )
+            }
+            else {
+                Image(
+                    painter = painterResource(Res.drawable.match_logo_long_dark),
+                    contentDescription = "App Logo",
+                    modifier = Modifier.height(28.dp)
+                )
+            }
         },
         // 👇 Removed the navigationIcon entirely!
         actions = {
