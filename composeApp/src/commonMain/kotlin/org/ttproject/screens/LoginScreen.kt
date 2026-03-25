@@ -57,6 +57,7 @@ fun LoginScreen(
     val scope = rememberCoroutineScope()
     val googleAuthClient = rememberGoogleAuthClient()
     var isGoogleLoading by remember { mutableStateOf(false) }
+    var googleDebugError by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(uiState) {
         if (uiState is LoginState.Success) {
@@ -213,24 +214,34 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(32.dp))
 
+            // --- GOOGLE DEBUG ERROR TEXT ---
+            if (googleDebugError != null) {
+                Text(
+                    text = googleDebugError!!,
+                    color = Color.Red,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(bottom = 16.dp)
+                )
+            }
+
             // --- GOOGLE LOGIN BUTTON ---
             OutlinedButton(
                 onClick = {
                     focusManager.clearFocus()
                     isGoogleLoading = true
-                    // 👇 2. Launch the native Google Sign-In flow!
-                    scope.launch {
-                        // This will suspend and wait for the user to finish the native Google pop-up
-                        val idToken = googleAuthClient.signIn()
+                    googleDebugError = null // Clear previous errors
 
-                        if (idToken != null) {
-                            // If we got a token from Google, send it to our Ktor backend!
-                            viewModel.googleLogin(idToken)
-                        } else {
-                            // The user canceled the popup, or it failed.
-                            // You could optionally show a toast here.
+                    scope.launch {
+                        try {
+                            val idToken = googleAuthClient.signIn()
+                            if (idToken != null) {
+                                viewModel.googleLogin(idToken)
+                            }
+                        } catch (e: Exception) {
+                            // Catch the forced error and show it on screen!
                             isGoogleLoading = false
-                            println("Google Sign-In canceled or failed")
+                            googleDebugError = e.message
                         }
                     }
                 },

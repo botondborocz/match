@@ -21,47 +21,34 @@ class IosGoogleAuthClient(
 
     override suspend fun signIn(): String? =
         withContext(Dispatchers.Main) {
-            println("🔵 STEP 1: signIn() function triggered on Main Thread")
-
             suspendCancellableCoroutine { continuation ->
-                println("🔵 STEP 2: Inside suspendCancellableCoroutine")
 
                 if (clientId.isBlank()) {
-                    println("🔴 STEP 3 ERROR: Client ID is completely blank!")
-                    continuation.resume(null)
+                    // Throw an error instead of returning null
+                    continuation.resumeWith(Result.failure(Exception("ERROR: Client ID is blank. Did you replace the placeholder?")))
                     return@suspendCancellableCoroutine
                 }
 
-                println("🔵 STEP 4: Configuring Google SDK with ID: $clientId")
                 GIDSignIn.sharedInstance.configuration = GIDConfiguration(clientID = clientId)
-
-                println("🔵 STEP 5: Requesting presentation on ViewController: $viewController")
-
-                // Track if the coroutine gets cancelled prematurely
-                continuation.invokeOnCancellation {
-                    println("🔴 COROUTINE CANCELLED! The UI cancelled the login before it could finish.")
-                }
-
-                println("🔵 STEP 6: Firing Google SDK signInWithPresentingViewController...")
 
                 GIDSignIn.sharedInstance.signInWithPresentingViewController(
                     presentingViewController = viewController
                 ) { result, error ->
-
-                    println("🔵 STEP 7: Google SDK Callback actually fired!")
-
                     if (error != null) {
+                        // Extract the exact error and THROW it
                         val nsError = error as? platform.Foundation.NSError
-                        println("🔴 STEP 8 ERROR: ${error.localizedDescription} | Code: ${nsError?.code}")
-                        continuation.resume(null)
+                        val errorMsg = "Google SDK Error: ${error.localizedDescription} (Code: ${nsError?.code})"
+
+                        continuation.resumeWith(Result.failure(Exception(errorMsg)))
                     } else {
                         val token = result?.user?.idToken?.tokenString
-                        println("🟢 STEP 8 SUCCESS: Token received!")
-                        continuation.resume(token)
+                        if (token != null) {
+                            continuation.resume(token)
+                        } else {
+                            continuation.resumeWith(Result.failure(Exception("ERROR: Login succeeded but ID Token was missing!")))
+                        }
                     }
                 }
-
-                println("🔵 STEP 9: SDK called successfully, waiting for user to log in...")
             }
         }
 
