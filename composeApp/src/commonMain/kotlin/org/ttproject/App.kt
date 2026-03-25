@@ -172,6 +172,9 @@ fun App() {
                                         onNavigateToLogin = {
                                             currentAuthRoute = AuthRoute.Login
                                             onNavigate(NavRoute.Profile)
+                                        },
+                                        onNavigateToMessages = {
+                                            onNavigate(NavRoute.Messages)
                                         }
                                     )
                                 }

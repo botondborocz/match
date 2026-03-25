@@ -50,7 +50,8 @@ import kotlin.math.abs
 @Composable
 fun MatchScreen(
     viewModel: MatchViewModel = koinInject(),
-    onNavigateToLogin: () -> Unit
+    onNavigateToLogin: () -> Unit,
+    onNavigateToMessages: () -> Unit
 ) {
     var isVisible by remember { mutableStateOf(false) }
 
@@ -367,6 +368,7 @@ fun MatchScreen(
                     player = player,
                     onKeepSwiping = { viewModel.dismissMatchPopup() },
                     onSendMessage = {
+                        onNavigateToMessages()
                         viewModel.dismissMatchPopup()
                     }
                 )
