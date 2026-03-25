@@ -61,7 +61,7 @@ class IosGoogleAuthClient(
         // 2. Get the windows, explicitly cast the generic list elements to UIWindow
         val window = scenes.flatMap { it.windows }
             .mapNotNull { it as? UIWindow }
-            .firstOrNull { it.isKeyWindow }
+            .firstOrNull { it.isKeyWindow() }
             ?: UIApplication.sharedApplication.keyWindow
 
         // 3. Drill down to the topmost presented view controller
