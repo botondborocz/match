@@ -1,7 +1,11 @@
 package org.ttproject.screens
 
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -16,8 +20,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import org.ttproject.AppColors
@@ -42,7 +50,13 @@ fun MessagesScreen(
             ChatThread("1", "Gábor Kovács", "Are we still on for 6 PM at Corvin?", "10:42 AM", 2, true),
             ChatThread("2", "Anna Németh", "Haha yeah, my backhand was terrible today \uD83D\uDE2D", "Yesterday", 0, false),
             ChatThread("3", "Péter Szabó", "Let me know when you add the new table!", "Tuesday", 1, true),
-            ChatThread("4", "Table Tennis Fan", "Thanks for the game!", "Mar 18", 0, false)
+            ChatThread("4", "Table Tennis Fan", "Thanks for the game!", "Mar 18", 0, false),
+            ChatThread("5", "Player 5", "Hey, want to play?", "Mar 10", 0, false),
+            ChatThread("6", "Player 6", "Hey, want to play?", "Mar 8", 0, false),
+            ChatThread("7", "Player 7", "Hey, want to play?", "Mar 5", 0, false),
+            ChatThread("8", "Player 8", "Hey, want to play?", "Mar 1", 0, false),
+            ChatThread("9", "Player 9", "Hey, want to play?", "Feb 25", 0, false),
+            ChatThread("10", "Player 10", "Hey, want to play?", "Feb 20", 0, false)
         )
     }
 
@@ -88,18 +102,23 @@ fun MessagesScreen(
 @Composable
 fun ChatDetailScreen(
     chatId: String,
+    bottomNavPadding: Dp,
     onBack: () -> Unit
 ) {
     var messageText by remember { mutableStateOf("") }
     val chatPartnerName = if (chatId == "1") "Gábor Kovács" else "Player $chatId"
+    val focusManager = LocalFocusManager.current
+    val customBottomNavInset = WindowInsets(bottom = bottomNavPadding + 10.dp)
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(AppColors.Background)
+            .pointerInput(Unit) {
+                detectTapGestures(onTap = { focusManager.clearFocus() })
+            }
     ) {
-        // Because the global top bar is gone, this component perfectly handles
-        // the status bar padding on its own without double-padding!
+        // --- ANCHORED TOP BAR ---
         TopAppBar(
             title = {
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -123,6 +142,7 @@ fun ChatDetailScreen(
 
         HorizontalDivider(color = AppColors.TextGray.copy(alpha = 0.2f))
 
+        // This takes all remaining space. When keyboard opens, this shrinks!
         LazyColumn(
             modifier = Modifier.weight(1f).fillMaxWidth(),
             contentPadding = PaddingValues(16.dp),
@@ -137,11 +157,14 @@ fun ChatDetailScreen(
             }
         }
 
+        // --- THE KEYBOARD-AWARE INPUT ---
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp)
-                .padding(bottom = 10.dp), // Padding for bottom nav bar
+                .windowInsetsPadding(
+                    WindowInsets.ime.union(customBottomNavInset)
+                )
+                .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             OutlinedTextField(

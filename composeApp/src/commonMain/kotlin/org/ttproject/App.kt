@@ -223,7 +223,7 @@ fun App() {
                                     }
                                 }
                             ) {
-                                Box(modifier = Modifier.fillMaxSize().padding(bottom = 100.dp)) {
+                                Box(modifier = Modifier.fillMaxSize().padding(bottom = innerPadding.calculateBottomPadding() + 10.dp)) {
                                     MessagesScreen(
                                         onNavigateToChat = { chatId ->
                                             navController.navigate(NavRoute.ChatDetail(chatId))
@@ -251,9 +251,10 @@ fun App() {
                             ) { backStackEntry ->
                                 val route = backStackEntry.toRoute<NavRoute.ChatDetail>()
 
-                                Box(modifier = Modifier.fillMaxSize().padding(bottom = 100.dp)) {
+                                Box(modifier = Modifier.fillMaxSize().padding(0.dp)) {
                                     ChatDetailScreen(
                                         chatId = route.chatId,
+                                        bottomNavPadding = innerPadding.calculateBottomPadding(),
                                         onBack = { navController.popBackStack() }
                                     )
                                 }
