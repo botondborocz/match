@@ -29,10 +29,15 @@ import org.ttproject.screens.MapScreen
 import org.ttproject.screens.MatchScreen
 import org.ttproject.screens.MessagesScreen
 import org.ttproject.screens.ProfileScreen
+import org.ttproject.screens.RegisterScreen
 import org.ttproject.util.LocalThemeMode
 import org.ttproject.util.SetStatusBarColors
 import org.ttproject.util.ThemeMode
 import org.ttproject.util.changePlatformLanguage
+
+enum class AuthRoute {
+    Login, Register
+}
 
 @Composable
 fun App() {
@@ -212,14 +217,46 @@ fun App() {
                                             }
                                         )
                                     } else {
-                                        LoginScreen(
-                                            onLoginSuccess = {
-                                                if (tokenStorage.getToken() != null) {
-                                                    tokenStorage.saveLanguage(currentLanguage)
-                                                    isLoggedIn = true
-                                                }
+                                        // 2. Remember which Auth screen the user is on (Defaults to Login)
+                                        var currentAuthRoute by remember { mutableStateOf(AuthRoute.Login) }
+
+                                        // 3. Switch between them!
+                                        when (currentAuthRoute) {
+                                            AuthRoute.Login -> {
+                                                LoginScreen(
+                                                    onLoginSuccess = {
+                                                        if (tokenStorage.getToken() != null) {
+                                                            tokenStorage.saveLanguage(
+                                                                currentLanguage
+                                                            )
+                                                            isLoggedIn = true
+                                                        }
+                                                    },
+                                                    // Pass a lambda to change the state to Register
+                                                    onNavigateToRegister = {
+                                                        currentAuthRoute = AuthRoute.Register
+                                                    }
+                                                )
                                             }
-                                        )
+
+                                            AuthRoute.Register -> {
+                                                RegisterScreen(
+                                                    onRegisterSuccess = {
+                                                        if (tokenStorage.getToken() != null) {
+                                                            tokenStorage.saveLanguage(
+                                                                currentLanguage
+                                                            )
+                                                            isLoggedIn =
+                                                                true // Auto-login after registration!
+                                                        }
+                                                    },
+                                                    // Pass a lambda to change the state back to Login
+                                                    onNavigateToLogin = {
+                                                        currentAuthRoute = AuthRoute.Login
+                                                    }
+                                                )
+                                            }
+                                        }
                                     }
                                 }
                             }

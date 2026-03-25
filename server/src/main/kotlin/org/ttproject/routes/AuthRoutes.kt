@@ -4,6 +4,7 @@ import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier
 import com.google.api.client.http.javanet.NetHttpTransport
 import com.google.api.client.json.gson.GsonFactory
 import io.github.cdimascio.dotenv.dotenv
+import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.*
 import io.ktor.server.request.*
@@ -110,32 +111,47 @@ fun Route.authRoutes() {
         }
 
         // 2. Grab your Google ID! (Falls back to System Env if .env file is missing)
-        val googleClientId = dotenv["GOOGLE_WEB_CLIENT_ID"]
+
+        val googleWebClientId = dotenv["GOOGLE_WEB_CLIENT_ID"]
             ?: System.getenv("GOOGLE_WEB_CLIENT_ID")
             ?: throw IllegalStateException("Google Client ID is missing!")
 
-        // 3. Build your verifier
+        val googleIosClientId = dotenv["GOOGLE_IOS_CLIENT_ID"]
+            ?: System.getenv("GOOGLE_IOS_CLIENT_ID")
+            ?: throw IllegalStateException("Google Client ID is missing!")
+
+
+        // Put this outside your route so it isn't recreated on every request
         val verifier = GoogleIdTokenVerifier.Builder(NetHttpTransport(), GsonFactory())
-            .setAudience(listOf(googleClientId))
+            .setAudience(listOf(
+                googleWebClientId,
+                googleIosClientId
+            ))
             .build()
 
-        // 3. GOOGLE LOGIN
         post("/google") {
-            val req = call.receive<GoogleAuthRequest>() // { "idToken": "..." }
+            // 1. Safely parse the JSON body
+            val req = try {
+                call.receive<GoogleAuthRequest>()
+            } catch (e: Exception) {
+                return@post call.respondText("Invalid request body", status = HttpStatusCode.BadRequest)
+            }
+
+            if (req.idToken.isBlank()) {
+                return@post call.respondText("Token is empty", status = HttpStatusCode.BadRequest)
+            }
 
             try {
-                // 👇 1. Use the Verifier to decode the ID Token locally!
+                // 2. VERIFY THE ID TOKEN LOCALLY (No network request to Google needed!)
                 val googleIdToken = verifier.verify(req.idToken)
 
                 if (googleIdToken != null) {
-                    // 👇 2. Extract the data directly from the token's payload
                     val payload = googleIdToken.payload
-
-                    val googleUserId = payload.subject // The "sub" field
+                    val googleUserId = payload.subject // This is the "sub" (Google ID)
                     val googleEmail = payload.email
                     val googleName = payload["name"] as? String ?: ""
 
-                    // 3. Save or find the user in your database (Your exact same logic!)
+                    // 3. Database logic
                     val userId = transaction {
                         val existingUser = Users.select { Users.googleId eq googleUserId }.singleOrNull()
 
@@ -153,22 +169,15 @@ fun Route.authRoutes() {
                         }
                     }
 
-                    // 4. Generate the token using the user's UUID
+                    // 4. Generate your custom JWT and send it back
                     val token = JwtConfig.generateToken(userId.toString())
+                    call.respondText("""{"token": "$token"}""", ContentType.Application.Json)
 
-                    // Send it back to Android/React as a JSON response!
-                    call.respondText(
-                        """{"token": "$token"}""",
-                        io.ktor.http.ContentType.Application.Json
-                    )
                 } else {
-                    // Token was invalid (wrong audience, expired, or tampered with)
-                    call.respondText("Invalid or Expired Google Token", status = HttpStatusCode.Unauthorized)
+                    call.respondText("Invalid Google ID Token", status = HttpStatusCode.Unauthorized)
                 }
             } catch (e: Exception) {
-                // 👇 This will print to your Ktor console if Google rejects it, telling you exactly why!
-                e.printStackTrace()
-                call.respondText("Token Verification Crashed: ${e.message}", status = HttpStatusCode.Unauthorized)
+                call.respondText("Malformed token format", status = HttpStatusCode.BadRequest)
             }
         }
     }

@@ -27,33 +27,35 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 import org.ttproject.AppColors
 import org.ttproject.isDark
-import org.ttproject.shared.resources.already_have_an_account
+// Replace these with your actual shared resources if the names differ slightly
 import org.ttproject.shared.resources.continue_with_google
-import org.ttproject.shared.resources.don_t_have_an_account
-import org.ttproject.shared.resources.forgot_password
+import org.ttproject.shared.resources.create_account
+import org.ttproject.shared.resources.already_have_an_account
+import org.ttproject.shared.resources.join_the_club
+import org.ttproject.shared.resources.find
 import org.ttproject.shared.resources.login
 import org.ttproject.shared.resources.or
-import org.ttproject.viewmodel.LoginState
-import org.ttproject.viewmodel.LoginViewModel
+import org.ttproject.shared.resources.password
 import ttproject.composeapp.generated.resources.Res
 import org.ttproject.shared.resources.Res as SharedRes
 import ttproject.composeapp.generated.resources.match_logo_long
 import ttproject.composeapp.generated.resources.match_logo_long_dark
-import org.ttproject.shared.resources.password
-import org.ttproject.shared.resources.register
 import org.ttproject.util.rememberGoogleAuthClient
+import org.ttproject.viewmodel.LoginState
+import org.ttproject.viewmodel.LoginViewModel
 import ttproject.composeapp.generated.resources.google_log
 
 @Composable
-fun LoginScreen(
+fun RegisterScreen(
     viewModel: LoginViewModel = koinViewModel(),
-    onLoginSuccess: () -> Unit,
-    onNavigateToRegister: () -> Unit
+    onRegisterSuccess: () -> Unit,
+    onNavigateToLogin: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
@@ -70,18 +72,17 @@ fun LoginScreen(
 
     LaunchedEffect(uiState) {
         if (uiState is LoginState.Success) {
-            isGoogleLoading = false // Stop spinner
-            onLoginSuccess()
+            isGoogleLoading = false
+            onRegisterSuccess()
             viewModel.resetState()
         } else if (uiState is LoginState.Error) {
-            isGoogleLoading = false // Stop spinner if backend fails
+            isGoogleLoading = false
         }
     }
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            // 👇 1. Replaced hardcoded gradient with dynamic background
             .background(AppColors.Background)
             .pointerInput(Unit) {
                 detectTapGestures(onTap = { focusManager.clearFocus() })
@@ -94,23 +95,40 @@ fun LoginScreen(
                 .padding(horizontal = 32.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            // --- LOGO ---
             if (isDark) {
                 Image(
                     painter = painterResource(Res.drawable.match_logo_long),
                     contentDescription = "App Logo",
                     modifier = Modifier.height(64.dp)
                 )
-            }
-            else {
+            } else {
                 Image(
                     painter = painterResource(Res.drawable.match_logo_long_dark),
                     contentDescription = "App Logo",
                     modifier = Modifier.height(64.dp)
                 )
             }
-            Spacer(modifier = Modifier.height(48.dp))
 
-            // --- INPUT FIELDS ---
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // --- TITLE & SUBTITLE ---
+            Text(
+                text = stringResource(SharedRes.string.join_the_club),
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Bold,
+                color = AppColors.TextPrimary
+            )
+            Text(
+                text = stringResource(SharedRes.string.find),
+                fontSize = 14.sp,
+                color = AppColors.TextGray,
+                modifier = Modifier.padding(top = 4.dp)
+            )
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            // --- EMAIL INPUT ---
             OutlinedTextField(
                 value = email,
                 onValueChange = { email = it },
@@ -121,11 +139,9 @@ fun LoginScreen(
                 shape = RoundedCornerShape(16.dp),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = AppColors.AccentOrange,
-                    // 👇 2. Mapped unfocused elements to TextGray
                     unfocusedBorderColor = AppColors.TextGray.copy(alpha = 0.5f),
                     focusedLabelColor = AppColors.AccentOrange,
                     unfocusedLabelColor = AppColors.TextGray,
-                    // 👇 3. Mapped input text to TextPrimary
                     focusedTextColor = AppColors.TextPrimary,
                     unfocusedTextColor = AppColors.TextPrimary,
                     cursorColor = AppColors.AccentOrange
@@ -134,6 +150,7 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
+            // --- PASSWORD INPUT (WITH TOGGLE) ---
             OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
@@ -162,22 +179,9 @@ fun LoginScreen(
                 )
             )
 
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Forgot Password
-            Text(
-                text = stringResource(SharedRes.string.forgot_password),
-                color = AppColors.AccentOrange,
-                fontSize = 14.sp,
-                modifier = Modifier
-                    .align(Alignment.End)
-                    .clickable { /* TODO: Navigate to recovery */ }
-                    .padding(4.dp)
-            )
-
             Spacer(modifier = Modifier.height(32.dp))
 
-            // --- STATE HANDLING (Error & Loading) ---
+            // --- STATE HANDLING (Error) ---
             AnimatedVisibility(visible = uiState is LoginState.Error) {
                 if (uiState is LoginState.Error) {
                     val errorMessage = (uiState as LoginState.Error).message
@@ -192,13 +196,13 @@ fun LoginScreen(
                 }
             }
 
-            // --- PRIMARY LOGIN BUTTON ---
+            // --- PRIMARY REGISTER BUTTON ---
             Button(
                 onClick = {
                     focusManager.clearFocus()
-                    viewModel.login(email, password)
+                    viewModel.register(email, password)
                 },
-                enabled = uiState !is LoginState.Loading && email.isNotBlank() && password.isNotBlank(),
+                enabled = uiState !is LoginState.Loading && email.isNotBlank() && password.length >= 6,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
@@ -211,8 +215,12 @@ fun LoginScreen(
                 if (uiState is LoginState.Loading) {
                     CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
                 } else {
-                    // Note: Kept text white here because white text on an orange button looks great in both themes!
-                    Text(stringResource(SharedRes.string.login).uppercase(), color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    Text(
+                        text = stringResource(SharedRes.string.create_account).uppercase(),
+                        color = Color.White,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
             }
 
@@ -223,7 +231,6 @@ fun LoginScreen(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                // 👇 4. Softened dividers for both themes
                 HorizontalDivider(modifier = Modifier.weight(1f), color = AppColors.TextGray.copy(alpha = 0.3f))
                 Text(" ${stringResource(SharedRes.string.or)} ", color = AppColors.TextGray, fontSize = 14.sp, modifier = Modifier.padding(horizontal = 16.dp))
                 HorizontalDivider(modifier = Modifier.weight(1f), color = AppColors.TextGray.copy(alpha = 0.3f))
@@ -242,21 +249,22 @@ fun LoginScreen(
                 )
             }
 
-            // --- GOOGLE LOGIN BUTTON ---
+            // --- GOOGLE REGISTER BUTTON ---
             OutlinedButton(
                 onClick = {
                     focusManager.clearFocus()
                     isGoogleLoading = true
-                    googleDebugError = null // Clear previous errors
+                    googleDebugError = null
 
                     scope.launch {
                         try {
                             val idToken = googleAuthClient.signIn()
                             if (idToken != null) {
-                                viewModel.googleLogin(idToken)
+                                viewModel.googleLogin(idToken) // Same as login, backend handles auto-registration
+                            } else {
+                                isGoogleLoading = false
                             }
                         } catch (e: Exception) {
-                            // Catch the forced error and show it on screen!
                             isGoogleLoading = false
                             googleDebugError = e.message
                         }
@@ -267,7 +275,7 @@ fun LoginScreen(
                     .fillMaxWidth()
                     .height(56.dp),
                 shape = RoundedCornerShape(28.dp),
-                border = BorderStroke(1.dp, AppColors.TextGray.copy(alpha = 0.5f)), // 👇 5. Dynamic border
+                border = BorderStroke(1.dp, AppColors.TextGray.copy(alpha = 0.5f)),
                 colors = ButtonDefaults.outlinedButtonColors(
                     containerColor = Color.Transparent
                 )
@@ -298,24 +306,24 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(48.dp))
 
-            // --- FOOTER (Navigate to Register) ---
+            // --- FOOTER (Already have an account? Login) ---
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.Center,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(
-                    text = stringResource(SharedRes.string.don_t_have_an_account) + " ",
+                    text = stringResource(SharedRes.string.already_have_an_account) + " ",
                     color = AppColors.TextGray,
                     fontSize = 14.sp
                 )
                 Text(
-                    text = stringResource(SharedRes.string.register),
+                    text = stringResource(SharedRes.string.login),
                     color = AppColors.AccentOrange,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier
-                        .clickable { onNavigateToRegister() }
+                        .clickable { onNavigateToLogin() }
                         .padding(4.dp)
                 )
             }

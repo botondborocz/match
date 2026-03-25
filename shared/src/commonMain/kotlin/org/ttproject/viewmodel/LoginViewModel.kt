@@ -36,11 +36,11 @@ class LoginViewModel(
     }
 
     // --- REGISTRATION ---
-    fun register(email: String, username: String, password: String) {
+    fun register(email: String, password: String) {
         _uiState.value = LoginState.Loading
 
         viewModelScope.launch {
-            val result = authRepository.register(email, username, password)
+            val result = authRepository.register(email, password)
 
             result.fold(
                 onSuccess = {

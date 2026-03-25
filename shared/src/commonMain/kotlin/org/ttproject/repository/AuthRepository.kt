@@ -18,7 +18,7 @@ import org.ttproject.data.TokenStorage
 // 1. The Interface
 interface AuthRepository {
     suspend fun login(email: String, password: String): Result<String>
-    suspend fun register(email: String, username: String, password: String): Result<String>
+    suspend fun register(email: String, password: String): Result<String>
     suspend fun googleLogin(idToken: String): Result<String>
 }
 
@@ -50,11 +50,11 @@ class AuthRepositoryImpl(
         }
     }
 
-    override suspend fun register(email: String, username: String, password: String): Result<String> {
+    override suspend fun register(email: String, password: String): Result<String> {
         return try {
             val response = httpClient.post("${SERVER_IP}/api/auth/register") {
                 contentType(ContentType.Application.Json)
-                setBody(RegisterRequest(email.trim(), username.trim(), password))
+                setBody(RegisterRequest(email.trim(), password))
             }
 
             if (response.status.isSuccess()) {
