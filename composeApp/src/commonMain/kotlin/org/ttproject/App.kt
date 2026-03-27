@@ -1,6 +1,7 @@
 package org.ttproject
 
 import androidx.compose.animation.AnimatedContentTransitionScope
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -212,8 +213,8 @@ fun App() {
                                         // 👇 iOS Parallax Exit: Slide left only 33% and slightly fade to simulate a shadow
                                         slideOutHorizontally(
                                             targetOffsetX = { -it / 3 },
-                                            animationSpec = tween(400)
-                                        ) + fadeOut(targetAlpha = 0.5f, animationSpec = tween(400))
+                                            animationSpec = tween(400, easing = LinearEasing)
+                                        ) + fadeOut(targetAlpha = 0.5f, animationSpec = tween(400, easing = LinearEasing))
                                     } else {
                                         fadeOut(tween(200))
                                     }
@@ -223,8 +224,8 @@ fun App() {
                                         // 👇 iOS Parallax Enter: Slide back to center from the 33% mark
                                         slideInHorizontally(
                                             initialOffsetX = { -it / 3 },
-                                            animationSpec = tween(400)
-                                        ) + fadeIn(initialAlpha = 0.5f, animationSpec = tween(400))
+                                            animationSpec = tween(400, easing = LinearEasing)
+                                        ) + fadeIn(initialAlpha = 0.5f, animationSpec = tween(400, easing = LinearEasing))
                                     } else {
                                         fadeIn(tween(200))
                                     }
@@ -233,6 +234,7 @@ fun App() {
                                 MessagesScreen(
                                     // 👇 3. Pass the state to the screen
                                     playAnimation = playMessagesAnimation,
+                                    bottomNavPadding = innerPadding.calculateBottomPadding(),
                                     onNavigateToChat = { chatId ->
                                         // 👇 4. We are going to a chat! Turn off the animation for when we come back.
                                         playMessagesAnimation = false
@@ -246,14 +248,14 @@ fun App() {
                                     // 👇 Chat Detail slides in fully from the right edge
                                     slideInHorizontally(
                                         initialOffsetX = { it },
-                                        animationSpec = tween(400)
+                                        animationSpec = tween(400, easing = LinearEasing)
                                     )
                                 },
                                 popExitTransition = {
                                     // 👇 Chat Detail slides out fully to the right edge (tracks finger!)
                                     slideOutHorizontally(
                                         targetOffsetX = { it },
-                                        animationSpec = tween(400)
+                                        animationSpec = tween(400, easing = LinearEasing)
                                     )
                                 }
                             ) { backStackEntry ->

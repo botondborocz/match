@@ -52,6 +52,7 @@ data class ChatThread(
 @Composable
 fun MessagesScreen(
     playAnimation: Boolean = true,
+    bottomNavPadding: Dp,
     onNavigateToChat: (String) -> Unit
 ) {
     val chatThreads = remember {
@@ -82,6 +83,7 @@ fun MessagesScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(AppColors.Background)
+            .padding(bottomNavPadding + 10.dp) // Add some extra padding to avoid the bottom nav
     ) {
         // 👇 Local Top Bar! This will now slide left smoothly with the screen.
         MobileTopBar()
