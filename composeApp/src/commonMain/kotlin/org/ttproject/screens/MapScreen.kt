@@ -540,7 +540,7 @@ fun FloatingClubCard(club: TTClub, cardBg: Color, brandOrange: Color, onClose: (
                     Button(
                         onClick = {
                             // 👇 2. iOS checks for preference, Android forces Google!
-                            if (isIosPlatform) {
+                            if (isIosPlatform()) {
                                 // In the future, check your local storage here first!
                                 showMapChoice = true
                             } else {

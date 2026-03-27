@@ -1,3 +1,3 @@
 package org.ttproject
 
-expect val isIosPlatform: Boolean
+expect fun isIosPlatform(): Boolean

@@ -1,19 +1,26 @@
 package org.ttproject.screens
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.MutableTransitionState
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.filled.ArrowBackIosNew
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -31,6 +38,7 @@ import androidx.compose.ui.unit.sp
 import org.ttproject.AppColors
 // 👇 Make sure to import your top bar!
 import org.ttproject.components.MobileTopBar
+import org.ttproject.isIosPlatform
 
 data class ChatThread(
     val id: String,
@@ -43,6 +51,7 @@ data class ChatThread(
 
 @Composable
 fun MessagesScreen(
+    playAnimation: Boolean = true,
     onNavigateToChat: (String) -> Unit
 ) {
     val chatThreads = remember {
@@ -58,6 +67,14 @@ fun MessagesScreen(
             ChatThread("9", "Player 9", "Hey, want to play?", "Feb 25", 0, false),
             ChatThread("10", "Player 10", "Hey, want to play?", "Feb 20", 0, false)
         )
+    }
+
+    // 👇 THE MAGIC STATE:
+    // This tells Compose: "Start invisible, but immediately animate to visible."
+    // Because we use `remember` (not rememberSaveable), it resets when switching tabs,
+    // but stays "completed" when you hit the back button from a chat!
+    val listVisibleState = remember(playAnimation) {
+        MutableTransitionState(!playAnimation).apply { targetState = true }
     }
 
     // 👇 Changed this from a Box to a Column to stack the local TopBar and the Content
@@ -87,11 +104,32 @@ fun MessagesScreen(
                     Spacer(modifier = Modifier.height(8.dp))
                 }
 
-                items(chatThreads, key = { it.id }) { thread ->
-                    ChatListItem(
-                        thread = thread,
-                        onClick = { onNavigateToChat(thread.id) }
-                    )
+                // 👇 2. Use itemsIndexed to get the row number (index)
+                itemsIndexed(chatThreads, key = { _, thread -> thread.id }) { index, thread ->
+
+                    // 👇 3. Wrap the item in AnimatedVisibility
+                    AnimatedVisibility(
+                        visibleState = listVisibleState,
+                        enter = slideInVertically(
+                            // Start slightly lower (50px) and slide up to 0
+                            initialOffsetY = { 50 },
+                            // Stagger the delay by 40ms per item
+                            animationSpec = tween(
+                                durationMillis = 300,
+                                delayMillis = index * 40
+                            )
+                        ) + fadeIn(
+                            animationSpec = tween(
+                                durationMillis = 300,
+                                delayMillis = index * 40
+                            )
+                        )
+                    ) {
+                        ChatListItem(
+                            thread = thread,
+                            onClick = { onNavigateToChat(thread.id) }
+                        )
+                    }
                 }
             }
         }
@@ -107,8 +145,9 @@ fun ChatDetailScreen(
 ) {
     var messageText by remember { mutableStateOf("") }
     val chatPartnerName = if (chatId == "1") "Gábor Kovács" else "Player $chatId"
+    val bottomNavInset = remember(bottomNavPadding) { WindowInsets(bottom = bottomNavPadding + 10.dp) }
     val focusManager = LocalFocusManager.current
-    val customBottomNavInset = WindowInsets(bottom = bottomNavPadding + 10.dp)
+//    val customBottomNavInset = WindowInsets(bottom = bottomNavPadding + 10.dp)
 
     Column(
         modifier = Modifier
@@ -134,7 +173,16 @@ fun ChatDetailScreen(
             },
             navigationIcon = {
                 IconButton(onClick = onBack) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = AppColors.TextPrimary)
+                    // 👇 Swap the icon dynamically based on the platform!
+                    Icon(
+                        imageVector = if (isIosPlatform()) {
+                            Icons.Filled.ArrowBackIosNew // ⬅️ iOS Chevron
+                        } else {
+                            Icons.AutoMirrored.Filled.ArrowBack // ⬅️ Android Arrow
+                        },
+                        contentDescription = "Back",
+                        tint = AppColors.TextPrimary
+                    )
                 }
             },
             colors = TopAppBarDefaults.topAppBarColors(containerColor = AppColors.Background)
@@ -161,9 +209,7 @@ fun ChatDetailScreen(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .windowInsetsPadding(
-                    WindowInsets.ime.union(customBottomNavInset)
-                )
+                .background(AppColors.Background)
                 .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -181,7 +227,9 @@ fun ChatDetailScreen(
                 ),
                 maxLines = 3
             )
+
             Spacer(modifier = Modifier.width(8.dp))
+
             Box(
                 modifier = Modifier
                     .size(48.dp)
@@ -200,6 +248,12 @@ fun ChatDetailScreen(
                 )
             }
         }
+
+        Spacer(
+            Modifier.windowInsetsBottomHeight(
+                WindowInsets.ime.union(bottomNavInset)
+            )
+        )
     }
 }
 

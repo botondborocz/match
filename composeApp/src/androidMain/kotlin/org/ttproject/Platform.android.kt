@@ -1,4 +1,3 @@
 package org.ttproject
 
-actual val isIosPlatform: Boolean
-    get() = false
+actual fun isIosPlatform(): Boolean = false

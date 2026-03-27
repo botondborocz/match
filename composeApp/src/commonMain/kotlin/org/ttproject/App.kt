@@ -4,6 +4,8 @@ import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
@@ -47,6 +49,8 @@ fun App() {
     val tokenStorage: TokenStorage = koinInject()
     val navController = rememberNavController()
     var isLoggedIn by remember { mutableStateOf(tokenStorage.getToken() != null) }
+
+    var playMessagesAnimation by remember { mutableStateOf(true) }
 
     val systemLanguage = Locale.current.language
 
@@ -99,12 +103,15 @@ fun App() {
             var currentAuthRoute by remember { mutableStateOf(AuthRoute.Login) }
 
             val onNavigate: (NavRoute) -> Unit = { targetRoute ->
+                if (targetRoute == NavRoute.Messages) {
+                    playMessagesAnimation = true
+                }
                 navController.navigate(targetRoute) {
                     popUpTo<NavRoute.Map> {
                         saveState = true
                     }
                     launchSingleTop = true
-                    restoreState = true
+                    restoreState = targetRoute != NavRoute.Messages
                 }
             }
 
@@ -200,58 +207,59 @@ fun App() {
                                 }
                             }
                             composable<NavRoute.Messages>(
-                                // 1. When LEAVING the messages list to go to a chat, slide it out to the left
                                 exitTransition = {
                                     if (targetState.destination.hasRoute(NavRoute.ChatDetail::class)) {
-                                        slideOutOfContainer(
-                                            towards = AnimatedContentTransitionScope.SlideDirection.Left,
-                                            animationSpec = tween(300)
-                                        )
+                                        // 👇 iOS Parallax Exit: Slide left only 33% and slightly fade to simulate a shadow
+                                        slideOutHorizontally(
+                                            targetOffsetX = { -it / 3 },
+                                            animationSpec = tween(400)
+                                        ) + fadeOut(targetAlpha = 0.5f, animationSpec = tween(400))
                                     } else {
-                                        fadeOut(tween(200)) // Keep the default fade for switching bottom tabs
+                                        fadeOut(tween(200))
                                     }
                                 },
-                                // 2. When COMING BACK from a chat, slide it back in from the left
                                 popEnterTransition = {
                                     if (initialState.destination.hasRoute(NavRoute.ChatDetail::class)) {
-                                        slideIntoContainer(
-                                            towards = AnimatedContentTransitionScope.SlideDirection.Right,
-                                            animationSpec = tween(300)
-                                        )
+                                        // 👇 iOS Parallax Enter: Slide back to center from the 33% mark
+                                        slideInHorizontally(
+                                            initialOffsetX = { -it / 3 },
+                                            animationSpec = tween(400)
+                                        ) + fadeIn(initialAlpha = 0.5f, animationSpec = tween(400))
                                     } else {
                                         fadeIn(tween(200))
                                     }
                                 }
                             ) {
-                                Box(modifier = Modifier.fillMaxSize().padding(bottom = innerPadding.calculateBottomPadding() + 10.dp)) {
-                                    MessagesScreen(
-                                        onNavigateToChat = { chatId ->
-                                            navController.navigate(NavRoute.ChatDetail(chatId))
-                                        }
-                                    )
-                                }
+                                MessagesScreen(
+                                    // 👇 3. Pass the state to the screen
+                                    playAnimation = playMessagesAnimation,
+                                    onNavigateToChat = { chatId ->
+                                        // 👇 4. We are going to a chat! Turn off the animation for when we come back.
+                                        playMessagesAnimation = false
+                                        navController.navigate(NavRoute.ChatDetail(chatId))
+                                    }
+                                )
                             }
 
-// 👇 The Chat Detail Screen gets the opposite animations!
                             composable<NavRoute.ChatDetail>(
-                                // 3. When OPENING the chat, slide it in from the right
                                 enterTransition = {
-                                    slideIntoContainer(
-                                        towards = AnimatedContentTransitionScope.SlideDirection.Left,
-                                        animationSpec = tween(300)
+                                    // 👇 Chat Detail slides in fully from the right edge
+                                    slideInHorizontally(
+                                        initialOffsetX = { it },
+                                        animationSpec = tween(400)
                                     )
                                 },
-                                // 4. When CLOSING the chat (hitting back), slide it out to the right
                                 popExitTransition = {
-                                    slideOutOfContainer(
-                                        towards = AnimatedContentTransitionScope.SlideDirection.Right,
-                                        animationSpec = tween(300)
+                                    // 👇 Chat Detail slides out fully to the right edge (tracks finger!)
+                                    slideOutHorizontally(
+                                        targetOffsetX = { it },
+                                        animationSpec = tween(400)
                                     )
                                 }
                             ) { backStackEntry ->
                                 val route = backStackEntry.toRoute<NavRoute.ChatDetail>()
 
-                                Box(modifier = Modifier.fillMaxSize().padding(0.dp)) {
+                                Box(modifier = Modifier.fillMaxSize()) {
                                     ChatDetailScreen(
                                         chatId = route.chatId,
                                         bottomNavPadding = innerPadding.calculateBottomPadding(),
@@ -259,6 +267,8 @@ fun App() {
                                     )
                                 }
                             }
+
+
 
                             composable<NavRoute.Profile> {
                                 Box(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
