@@ -83,7 +83,7 @@ fun MessagesScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(AppColors.Background)
-            .padding(bottomNavPadding + 10.dp) // Add some extra padding to avoid the bottom nav
+            .padding(bottom = bottomNavPadding + 10.dp) // Add some extra padding to avoid the bottom nav
     ) {
         // 👇 Local Top Bar! This will now slide left smoothly with the screen.
         MobileTopBar()
@@ -155,6 +155,7 @@ fun ChatDetailScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(AppColors.Background)
+            .windowInsetsPadding(WindowInsets.ime.union(bottomNavInset))
             .pointerInput(Unit) {
                 detectTapGestures(onTap = { focusManager.clearFocus() })
             }
@@ -250,12 +251,6 @@ fun ChatDetailScreen(
                 )
             }
         }
-
-        Spacer(
-            Modifier.windowInsetsBottomHeight(
-                WindowInsets.ime.union(bottomNavInset)
-            )
-        )
     }
 }
 

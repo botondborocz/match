@@ -213,8 +213,8 @@ fun App() {
                                         // 👇 iOS Parallax Exit: Slide left only 33% and slightly fade to simulate a shadow
                                         slideOutHorizontally(
                                             targetOffsetX = { -it / 3 },
-                                            animationSpec = tween(400, easing = LinearEasing)
-                                        ) + fadeOut(targetAlpha = 0.5f, animationSpec = tween(400, easing = LinearEasing))
+                                            animationSpec = tween(300, easing = LinearEasing)
+                                        ) + fadeOut(targetAlpha = 0.5f, animationSpec = tween(300, easing = LinearEasing))
                                     } else {
                                         fadeOut(tween(200))
                                     }
@@ -224,8 +224,8 @@ fun App() {
                                         // 👇 iOS Parallax Enter: Slide back to center from the 33% mark
                                         slideInHorizontally(
                                             initialOffsetX = { -it / 3 },
-                                            animationSpec = tween(400, easing = LinearEasing)
-                                        ) + fadeIn(initialAlpha = 0.5f, animationSpec = tween(400, easing = LinearEasing))
+                                            animationSpec = tween(300, easing = LinearEasing)
+                                        ) + fadeIn(initialAlpha = 0.5f, animationSpec = tween(300, easing = LinearEasing))
                                     } else {
                                         fadeIn(tween(200))
                                     }
@@ -248,14 +248,14 @@ fun App() {
                                     // 👇 Chat Detail slides in fully from the right edge
                                     slideInHorizontally(
                                         initialOffsetX = { it },
-                                        animationSpec = tween(400, easing = LinearEasing)
+                                        animationSpec = tween(300, easing = LinearEasing)
                                     )
                                 },
                                 popExitTransition = {
                                     // 👇 Chat Detail slides out fully to the right edge (tracks finger!)
                                     slideOutHorizontally(
                                         targetOffsetX = { it },
-                                        animationSpec = tween(400, easing = LinearEasing)
+                                        animationSpec = tween(300, easing = LinearEasing)
                                     )
                                 }
                             ) { backStackEntry ->
