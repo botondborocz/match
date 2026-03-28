@@ -1,5 +1,8 @@
 package org.ttproject.routes
 
+import com.google.firebase.messaging.FirebaseMessaging
+import com.google.firebase.messaging.Message
+import com.google.firebase.messaging.Notification
 import io.ktor.server.routing.*
 import io.ktor.server.application.*
 import io.ktor.server.response.*
@@ -118,10 +121,7 @@ fun Route.messageRoutes() {
             // --------------------------------------------------------
             webSocket("/chat") {
                 val connectionIdStr = call.parameters["connectionId"] ?: return@webSocket close(
-                    CloseReason(
-                        CloseReason.Codes.VIOLATED_POLICY,
-                        "No connection ID"
-                    )
+                    CloseReason(CloseReason.Codes.VIOLATED_POLICY, "No connection ID")
                 )
                 val connectionId = UUID.fromString(connectionIdStr)
 
@@ -130,41 +130,72 @@ fun Route.messageRoutes() {
                     ?: return@webSocket close(CloseReason(CloseReason.Codes.VIOLATED_POLICY, "Unauthorized"))
                 val senderId = UUID.fromString(senderIdStr)
 
-                // Add this active user to our thread-safe manager
-                connectionManager.addSession(connectionId, this)
+                // 👇 FETCH RECEIVER ID AND SENDER NAME ONCE WHEN THEY CONNECT
+                val (receiverId, senderName) = transaction {
+                    val connRow = Connections.select { Connections.id eq connectionId }.singleOrNull()
+                        ?: throw Exception("Connection not found")
+
+                    val u1 = connRow[Connections.user1Id]
+                    val u2 = connRow[Connections.user2Id]
+                    val rId = if (u1 == senderId) u2 else u1
+
+                    val sName = Users.slice(Users.username).select { Users.id eq senderId }.singleOrNull()?.get(Users.username) ?: "Someone"
+
+                    Pair(rId, sName)
+                }
+
+                // 👇 Pass the senderId to the manager
+                connectionManager.addSession(connectionId, senderId, this)
 
                 try {
-                    // Keep the pipe open and listen for incoming messages from this user
                     incoming.consumeEach { frame ->
                         if (frame is Frame.Text) {
                             val textContent = frame.readText()
                             val created_at = Instant.now()
 
-                            // A. Save the new message to the database
-                            val newMessageId = transaction {
-                                Messages.insert {
-                                    it[Messages.connectionId] = connectionId
-                                    it[Messages.senderId] = senderId
-                                    it[content] = textContent
-                                    it[createdAt] = created_at
-                                    // Exposed handles the timestamp automatically based on your schema setup,
-                                    // or you can explicitly set it here using java.time.Instant.now()
-                                } get Messages.id
-                            }
+                            // Move the try/catch INSIDE the loop so one bad message doesn't drop the connection!
+                            try {
+                                val newMessageId = transaction {
+                                    Messages.insert {
+                                        it[Messages.connectionId] = connectionId
+                                        it[Messages.senderId] = senderId
+                                        it[content] = textContent
+                                        it[createdAt] = created_at
+                                    } get Messages.id
+                                }
 
-                            // B. Broadcast the message to the other user in the connection
-                            // (You would format this as JSON in a real app)
-                            val payload =
-                                """{"id": "$newMessageId", "senderId": "$senderId", "content": "$textContent", "createdAt": "$created_at"}"""
-                            connectionManager.broadcast(connectionId, payload)
+                                // 👇 Use the new ConnectionManager function!
+                                if (!connectionManager.isUserConnected(connectionId, receiverId)) {
+                                    val targetToken = transaction {
+                                        Users.slice(Users.fcmToken).select { Users.id eq receiverId }.singleOrNull()?.get(Users.fcmToken)
+                                    }
+
+                                    if (targetToken != null) {
+                                        val message = Message.builder()
+                                            .setToken(targetToken)
+                                            .setNotification(
+                                                Notification.builder()
+                                                    .setTitle("New message from $senderName")
+                                                    .setBody(textContent)
+                                                    .build()
+                                            ).build()
+                                        FirebaseMessaging.getInstance().sendAsync(message)
+                                    }
+                                }
+
+                                val payload = """{"id": "$newMessageId", "senderId": "$senderId", "content": "$textContent", "createdAt": "$created_at"}"""
+                                connectionManager.broadcast(connectionId, payload)
+
+                            } catch (e: Exception) {
+                                call.application.environment.log.error("Failed to process individual message", e)
+                            }
                         }
                     }
                 } catch (e: Exception) {
-                    // Handle disconnects or errors gracefully
-                    call.application.environment.log.error("WebSocket error", e)
+                    call.application.environment.log.info("WebSocket disconnected")
                 } finally {
-                    // Clean up the session when the user closes the app or drops connection
-                    connectionManager.removeSession(connectionId, this)
+                    // 👇 Pass the senderId during cleanup
+                    connectionManager.removeSession(connectionId, senderId)
                 }
             }
         }

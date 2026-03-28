@@ -36,5 +36,6 @@ dependencies {
     implementation("io.ktor:ktor-server-cors:3.3.3")
     implementation("io.github.cdimascio:dotenv-kotlin:6.5.0")
     implementation("io.ktor:ktor-server-websockets:3.3.3")
+    implementation("com.google.firebase:firebase-admin:9.2.0")
 
 }

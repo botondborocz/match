@@ -16,6 +16,7 @@ import org.jetbrains.exposed.sql.update
 import org.ttproject.data.PlayerResponse
 import org.ttproject.data.SwipeRequest
 import org.ttproject.data.SwipeResponse
+import org.ttproject.data.TokenResponse
 import org.ttproject.data.UpdateLanguageRequest
 import org.ttproject.data.UserProfile
 import org.ttproject.database.tables.Swipes
@@ -173,6 +174,16 @@ fun Route.userRoutes() {
                     e.printStackTrace()
                     call.respond(HttpStatusCode.InternalServerError, "Database error: ${e.message}")
                 }
+            }
+            post("/fcm-token") {
+                val principal = call.principal<JWTPrincipal>()
+                val userId = UUID.fromString(principal?.payload?.getClaim("userId")?.asString())
+                val request = call.receive<TokenResponse>() // e.g., data class TokenRequest(val token: String)
+
+                transaction {
+                    Users.update({ Users.id eq userId }) { it[fcmToken] = request.token }
+                }
+                call.respond(HttpStatusCode.OK)
             }
         }
     }

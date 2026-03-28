@@ -3,65 +3,50 @@ package org.ttproject.services
 import io.ktor.server.websocket.WebSocketServerSession
 import io.ktor.websocket.*
 import kotlinx.coroutines.isActive
-import java.util.Collections
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 
 class ConnectionManager {
 
-    /**
-     * Maps a Connection ID (the chat room) to a thread-safe Set of active WebSocket sessions.
-     * We use a ConcurrentHashMap so multiple threads can read/write simultaneously safely.
-     */
-    private val activeConnections = ConcurrentHashMap<UUID, MutableSet<WebSocketServerSession>>()
+    // Map: Connection ID -> (Map: User ID -> WebSocket Session)
+    // Using MutableMap for the inner value makes Kotlin's standard library extensions happier
+    private val activeConnections = ConcurrentHashMap<UUID, MutableMap<UUID, WebSocketServerSession>>()
 
-    /**
-     * Called when a user connects to the /chat route.
-     */
-    fun addSession(connectionId: UUID, session: WebSocketServerSession) {
-        // computeIfAbsent creates a new synchronized set ONLY if the connectionId doesn't exist yet
-        val sessions = activeConnections.computeIfAbsent(connectionId) {
-            Collections.synchronizedSet(LinkedHashSet())
+    fun addSession(connectionId: UUID, userId: UUID, session: WebSocketServerSession) {
+        // 👇 FIX 1: Use Kotlin's getOrPut, and explicitly declare the types inside the braces!
+        val room = activeConnections.getOrPut(connectionId) {
+            ConcurrentHashMap<UUID, WebSocketServerSession>()
         }
-        sessions.add(session)
+        room[userId] = session
     }
 
-    /**
-     * Called in the `finally` block of your route when a user disconnects or crashes.
-     */
-    fun removeSession(connectionId: UUID, session: WebSocketServerSession) {
-        val sessions = activeConnections[connectionId]
-        if (sessions != null) {
-            sessions.remove(session)
-
-            // Cleanup: If both users leave the chat room, remove the room from memory
-            // to prevent memory leaks over time.
-            if (sessions.isEmpty()) {
+    fun removeSession(connectionId: UUID, userId: UUID) {
+        val room = activeConnections[connectionId]
+        if (room != null) {
+            room.remove(userId)
+            if (room.isEmpty()) {
                 activeConnections.remove(connectionId)
             }
         }
     }
 
-    /**
-     * Iterates through everyone in the room and pushes the message to them.
-     */
-    suspend fun broadcast(connectionId: UUID, messagePayload: String) {
-        // Get all active sessions for this specific chat room
-        val sessions = activeConnections[connectionId] ?: return
+    fun isUserConnected(connectionId: UUID, userId: UUID): Boolean {
+        val room = activeConnections[connectionId] ?: return false
+        // 👇 FIX 2: Now that the compiler knows 'room' is a MutableMap<UUID, WebSocketSession>,
+        // containsKey will compile perfectly.
+        return room.containsKey(userId) && room[userId]?.isActive == true
+    }
 
-        // We convert the synchronized set to a static List before iterating.
-        // This is crucial! Since `session.send()` is a suspending function,
-        // the list of users could change while we are waiting to send the message.
-        val activeSessionsSnapshot = sessions.toList()
+    suspend fun broadcast(connectionId: UUID, messagePayload: String) {
+        val room = activeConnections[connectionId] ?: return
+        val activeSessionsSnapshot = room.values.toList()
 
         activeSessionsSnapshot.forEach { session ->
-            // Only send if the connection is still alive
             if (session.isActive) {
                 try {
                     session.send(Frame.Text(messagePayload))
                 } catch (e: Exception) {
-                    // If the send fails (e.g., dropped internet), forcefully remove them
-                    removeSession(connectionId, session)
+                    // Ignored here, the disconnect block in the route handles cleanup
                 }
             }
         }

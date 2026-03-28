@@ -16,6 +16,7 @@ object Users : Table("users") {
     val email = varchar("email", 255).uniqueIndex()
     val passwordHash = varchar("password_hash", 255).nullable()
     val googleId = varchar("google_id", 255).nullable().uniqueIndex()
+    val fcmToken = varchar("fcm_token", 255).nullable()
 
     val skillLevel = enumerationByName("skill_level", 20, SkillLevel::class).nullable()
     val eloRating = integer("elo_rating").default(1200)

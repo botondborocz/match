@@ -1,5 +1,8 @@
 package org.ttproject
 
+import com.google.auth.oauth2.GoogleCredentials
+import com.google.firebase.FirebaseApp
+import com.google.firebase.FirebaseOptions
 import io.github.cdimascio.dotenv.dotenv
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
@@ -32,6 +35,7 @@ import io.ktor.server.websocket.WebSockets
 import io.ktor.server.websocket.pingPeriod
 import io.ktor.server.websocket.timeout
 import org.ttproject.routes.messageRoutes
+import java.io.File
 import kotlin.time.Duration.Companion.seconds
 
 fun main() {
@@ -60,6 +64,23 @@ fun Application.module() {
         timeout = 15.seconds
         maxFrameSize = Long.MAX_VALUE
         masking = false
+    }
+
+    // Initialize Firebase Admin SDK
+    try {
+        if (FirebaseApp.getApps().isEmpty()) {
+            // Read the file directly from the Ktor resources folder
+            val serviceAccount = Thread.currentThread().contextClassLoader.getResourceAsStream("firebase-adminsdk.json")
+                ?: throw Exception("firebase-adminsdk.json not found in resources folder!")
+
+            val options = FirebaseOptions.builder()
+                .setCredentials(GoogleCredentials.fromStream(serviceAccount))
+                .build()
+            FirebaseApp.initializeApp(options)
+            println("✅ Firebase Admin SDK initialized successfully!")
+        }
+    } catch (e: Exception) {
+        println("❌ Failed to initialize Firebase: ${e.message}")
     }
 
     initDatabase()
