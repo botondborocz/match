@@ -77,6 +77,7 @@ kotlin {
             implementation("io.ktor:ktor-serialization-kotlinx-json:3.3.0")
             implementation("io.ktor:ktor-client-auth:3.3.0")
             implementation("io.github.cdimascio:dotenv-kotlin:6.5.0")
+            implementation("io.ktor:ktor-client-websockets:3.3.0")
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)

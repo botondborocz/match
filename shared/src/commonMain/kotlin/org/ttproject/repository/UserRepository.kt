@@ -43,6 +43,8 @@ class UserRepositoryImpl(
         // Step 3: Check if the server accepted it
         if (response.status.value in 200..299) {
             // Success! Ktor automatically parses the JSON into your UserProfile class
+            val userProfile: UserProfile = response.body()
+            tokenStorage.saveUserId(userProfile.id)
             return response.body()
         } else if (response.status.value == 401) {
             // 401 means the token expired or is invalid

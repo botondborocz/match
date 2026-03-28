@@ -28,6 +28,11 @@ import io.ktor.serialization.gson.*
 import org.ttproject.routes.locationRoutes
 import org.ttproject.routes.userRoutes
 import io.ktor.server.plugins.cors.routing.*
+import io.ktor.server.websocket.WebSockets
+import io.ktor.server.websocket.pingPeriod
+import io.ktor.server.websocket.timeout
+import org.ttproject.routes.messageRoutes
+import kotlin.time.Duration.Companion.seconds
 
 fun main() {
     val dotenv = dotenv {
@@ -48,6 +53,13 @@ fun Application.module() {
         allowHeader(HttpHeaders.ContentType)
         allowHeader(HttpHeaders.Authorization)
         anyHost()
+    }
+
+    install(WebSockets) {
+        pingPeriod = 15.seconds
+        timeout = 15.seconds
+        maxFrameSize = Long.MAX_VALUE
+        masking = false
     }
 
     initDatabase()
@@ -76,6 +88,7 @@ fun Application.module() {
         authRoutes()
         userRoutes()
         locationRoutes()
+        messageRoutes()
 
         get("/") {
             call.respondText("Ktor Server is Online!")

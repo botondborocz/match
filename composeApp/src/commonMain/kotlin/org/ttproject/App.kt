@@ -40,6 +40,7 @@ import org.ttproject.util.LocalThemeMode
 import org.ttproject.util.SetStatusBarColors
 import org.ttproject.util.ThemeMode
 import org.ttproject.util.changePlatformLanguage
+import org.ttproject.viewmodel.ChatViewModel
 
 enum class AuthRoute {
     Login, Register
@@ -260,9 +261,13 @@ fun App() {
                                 }
                             ) { backStackEntry ->
                                 val route = backStackEntry.toRoute<NavRoute.ChatDetail>()
+                                val chatViewModel = org.koin.compose.viewmodel.koinViewModel<ChatViewModel>(
+                                    parameters = { org.koin.core.parameter.parametersOf(route.chatId) }
+                                )
 
                                 Box(modifier = Modifier.fillMaxSize()) {
                                     ChatDetailScreen(
+                                        viewModel = chatViewModel,
                                         chatId = route.chatId,
                                         bottomNavPadding = innerPadding.calculateBottomPadding(),
                                         onBack = { navController.popBackStack() }
