@@ -4,7 +4,9 @@ import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.request.*
 import io.ktor.client.plugins.websocket.*
+import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
+import io.ktor.http.contentType
 import io.ktor.websocket.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
@@ -15,6 +17,7 @@ import org.ttproject.SERVER_IP
 import org.ttproject.data.ChatThreadDto
 import org.ttproject.data.Location
 import org.ttproject.data.MessageDto
+import org.ttproject.data.TokenResponse
 import org.ttproject.data.TokenStorage
 
 interface ChatRepository {
@@ -23,6 +26,7 @@ interface ChatRepository {
     suspend fun sendMessage(text: String)
     fun disconnect()
     suspend fun getConnections(): List<ChatThreadDto>
+    suspend fun savePushToken(fcmToken: String)
 }
 
 class ChatRepositoryImpl (
@@ -96,6 +100,20 @@ class ChatRepositoryImpl (
         } catch (e: Exception) {
             e.printStackTrace()
             emptyList()
+        }
+    }
+
+    override suspend fun savePushToken(fcmToken: String) {
+        val token = tokenStorage.getToken() ?: return
+
+        try {
+            client.post("${SERVER_IP}/api/users/fcm-token") {
+                contentType(ContentType.Application.Json)
+                header(HttpHeaders.Authorization, "Bearer $token")
+                setBody(TokenResponse(token = fcmToken))
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 }

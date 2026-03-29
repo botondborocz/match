@@ -8,6 +8,7 @@ plugins {
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.kotlinSerialization)
     alias(libs.plugins.secrets)
+    id("com.google.gms.google-services")
 }
 
 kotlin {
@@ -36,6 +37,7 @@ kotlin {
             implementation(libs.play.services.maps)
             implementation("io.insert-koin:koin-android:3.5.3")
             implementation("io.ktor:ktor-client-okhttp:3.3.0")
+            implementation("com.google.firebase:firebase-messaging:23.4.1")
         }
         commonMain.dependencies {
             implementation(libs.compose.runtime)

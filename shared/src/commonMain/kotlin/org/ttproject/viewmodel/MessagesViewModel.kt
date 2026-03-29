@@ -30,4 +30,10 @@ class MessagesViewModel(
             _isLoading.value = false
         }
     }
+
+    fun savePushToken(fcmToken: String) {
+        viewModelScope.launch {
+            repository.savePushToken(fcmToken)
+        }
+    }
 }

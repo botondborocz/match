@@ -9,36 +9,36 @@ import java.util.concurrent.ConcurrentHashMap
 class ConnectionManager {
 
     // Map: Connection ID -> (Map: User ID -> WebSocket Session)
-    // Using MutableMap for the inner value makes Kotlin's standard library extensions happier
-    private val activeConnections = ConcurrentHashMap<UUID, MutableMap<UUID, WebSocketServerSession>>()
+    private val activeConnections = ConcurrentHashMap<UUID, ConcurrentHashMap<UUID, WebSocketServerSession>>()
 
     fun addSession(connectionId: UUID, userId: UUID, session: WebSocketServerSession) {
-        // 👇 FIX 1: Use Kotlin's getOrPut, and explicitly declare the types inside the braces!
-        val room = activeConnections.getOrPut(connectionId) {
-            ConcurrentHashMap<UUID, WebSocketServerSession>()
+        // computeIfAbsent is fully atomic!
+        val room = activeConnections.computeIfAbsent(connectionId) {
+            ConcurrentHashMap()
         }
         room[userId] = session
     }
 
     fun removeSession(connectionId: UUID, userId: UUID) {
-        val room = activeConnections[connectionId]
-        if (room != null) {
+        // 👇 FIX: computeIfPresent locks this specific room for a microsecond.
+        // If the block returns 'null', the map safely deletes the room.
+        // If it returns the room, it keeps it. No race conditions!
+        activeConnections.computeIfPresent(connectionId) { _, room ->
             room.remove(userId)
-            if (room.isEmpty()) {
-                activeConnections.remove(connectionId)
-            }
+            if (room.isEmpty()) null else room
         }
     }
 
     fun isUserConnected(connectionId: UUID, userId: UUID): Boolean {
         val room = activeConnections[connectionId] ?: return false
-        // 👇 FIX 2: Now that the compiler knows 'room' is a MutableMap<UUID, WebSocketSession>,
-        // containsKey will compile perfectly.
-        return room.containsKey(userId) && room[userId]?.isActive == true
+        // 👇 CLEANUP: You don't actually need containsKey.
+        // The safe call `?.` handles the null check automatically!
+        return room[userId]?.isActive == true
     }
 
     suspend fun broadcast(connectionId: UUID, messagePayload: String) {
         val room = activeConnections[connectionId] ?: return
+        // Taking a snapshot prevents ConcurrentModificationExceptions
         val activeSessionsSnapshot = room.values.toList()
 
         activeSessionsSnapshot.forEach { session ->

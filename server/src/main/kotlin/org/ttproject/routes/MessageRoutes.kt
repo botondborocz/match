@@ -1,5 +1,7 @@
 package org.ttproject.routes
 
+import com.google.firebase.messaging.AndroidConfig
+import com.google.firebase.messaging.AndroidNotification
 import com.google.firebase.messaging.FirebaseMessaging
 import com.google.firebase.messaging.Message
 import com.google.firebase.messaging.Notification
@@ -170,17 +172,45 @@ fun Route.messageRoutes() {
                                         Users.slice(Users.fcmToken).select { Users.id eq receiverId }.singleOrNull()?.get(Users.fcmToken)
                                     }
 
-                                    if (targetToken != null) {
-                                        val message = Message.builder()
-                                            .setToken(targetToken)
-                                            .setNotification(
-                                                Notification.builder()
-                                                    .setTitle("New message from $senderName")
-                                                    .setBody(textContent)
-                                                    .build()
-                                            ).build()
-                                        FirebaseMessaging.getInstance().sendAsync(message)
+                                    println("🔍 Checking push notification for Receiver: $receiverId")
+                                    println("🔍 Token found in DB: $targetToken")
+
+                                    // Check for isNullOrBlank instead of just null!
+                                    if (!targetToken.isNullOrBlank()) {
+                                        try {
+                                            val message = Message.builder()
+                                                .setToken(targetToken)
+                                                .setNotification(
+                                                    Notification.builder()
+                                                        .setTitle("New message from $senderName")
+                                                        .setBody(textContent)
+                                                        .build()
+                                                )
+                                                .setAndroidConfig(
+                                                    AndroidConfig.builder()
+                                                        .setPriority(AndroidConfig.Priority.HIGH) // 🚨 Forces the heads-up banner!
+                                                        .setNotification(
+                                                            AndroidNotification.builder()
+                                                                .setChannelId("chat_messages") // We will create this channel next
+                                                                .build()
+                                                        )
+                                                        .build()
+                                                )
+                                                .build()
+
+                                            // 👇 Use synchronous .send() so we can actually catch the Google API errors
+                                            val response = FirebaseMessaging.getInstance().send(message)
+                                            println("✅ FCM Success Response: $response")
+
+                                        } catch (e: Exception) {
+                                            println("❌ FCM Sending Failed!")
+                                            e.printStackTrace() // This will tell us exactly why Google rejected it
+                                        }
+                                    } else {
+                                        println("⚠️ Warning: targetToken is empty or null for user $receiverId. Cannot send push.")
                                     }
+                                } else {
+                                    println("ℹ️ User $receiverId is currently connected to the WebSocket, skipping push notification.")
                                 }
 
                                 val payload = """{"id": "$newMessageId", "senderId": "$senderId", "content": "$textContent", "createdAt": "$created_at"}"""

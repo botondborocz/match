@@ -27,6 +27,8 @@ import platform.UIKit.UIUserInterfaceStyle
 import platform.darwin.NSObject
 import kotlinx.cinterop.useContents
 import platform.CoreLocation.kCLAuthorizationStatusNotDetermined
+import platform.CoreLocation.kCLAuthorizationStatusAuthorizedAlways
+import platform.CoreLocation.kCLAuthorizationStatusAuthorizedWhenInUse
 
 @OptIn(ExperimentalComposeUiApi::class, ExperimentalForeignApi::class)
 @Composable
@@ -102,9 +104,23 @@ actual fun NativeMap(
             mapView.delegate = mapDelegate
             mapView.showsUserLocation = true
 
-            val budapestCoord = CLLocationCoordinate2DMake(47.4979, 19.0402)
-            val region = MKCoordinateRegionMakeWithDistance(budapestCoord, 8000.0, 8000.0)
+            // 👇 1. Check if iOS has already granted us location access
+            val isAuthorized = locationManager.authorizationStatus == kCLAuthorizationStatusAuthorizedWhenInUse ||
+                    locationManager.authorizationStatus == kCLAuthorizationStatusAuthorizedAlways
+
+            // 👇 2. Grab the last known iOS location synchronously!
+            val userCoord = if (isAuthorized) locationManager.location?.coordinate else null
+
+            // 👇 3. Use their location if we have it, otherwise fallback to Budapest
+            // We also shrink the viewing distance to 2000m (tighter zoom) for a faster cold start!
+            val startCoord = userCoord ?: CLLocationCoordinate2DMake(47.4979, 19.0402)
+            val region = MKCoordinateRegionMakeWithDistance(startCoord, 2000.0, 2000.0)
+
             mapView.setRegion(region, animated = false)
+
+//            val budapestCoord = CLLocationCoordinate2DMake(47.4979, 19.0402)
+//            val region = MKCoordinateRegionMakeWithDistance(budapestCoord, 8000.0, 8000.0)
+//            mapView.setRegion(region, animated = false)
 
             mapView
         },

@@ -1,3 +1,3 @@
 package org.ttproject
 
-expect fun isIosPlatform(): Boolean
+fun isIosPlatform(): Boolean = getPlatform().name.contains("iOS", ignoreCase = true)

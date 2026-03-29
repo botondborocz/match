@@ -42,6 +42,7 @@ import org.koin.compose.viewmodel.koinViewModel
 import org.ttproject.AppColors
 // 👇 Make sure to import your top bar!
 import org.ttproject.components.MobileTopBar
+import org.ttproject.components.PushNotificationManager
 import org.ttproject.data.ChatThreadDto
 import org.ttproject.data.TokenStorage
 import org.ttproject.isIosPlatform
@@ -81,6 +82,11 @@ fun MessagesScreen(
 //    }
     val chatThreads by viewModel.threads.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
+
+    PushNotificationManager { fcmToken ->
+        println("✅ User opened Messages. Got FCM Token: $fcmToken")
+        viewModel.savePushToken(fcmToken)
+    }
 
     // 👇 THE MAGIC STATE:
     // This tells Compose: "Start invisible, but immediately animate to visible."

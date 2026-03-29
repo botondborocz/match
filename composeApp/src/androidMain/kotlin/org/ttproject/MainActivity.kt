@@ -19,6 +19,10 @@ import org.koin.core.context.GlobalContext
 import org.koin.core.context.startKoin
 import org.ttproject.di.appModule
 import android.content.pm.ActivityInfo
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.content.Context
+import android.os.Build
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -40,6 +44,20 @@ class MainActivity : ComponentActivity() {
                 androidContext(this@MainActivity)
                 modules(appModule)
             }
+        }
+
+        // 👇 ADD THIS TO CREATE THE HIGH PRIORITY CHANNEL
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channelId = "chat_messages"
+            val channelName = "Chat Messages"
+            // IMPORTANCE_HIGH is the magic word that makes it drop down!
+            val importance = NotificationManager.IMPORTANCE_HIGH
+            val channel = NotificationChannel(channelId, channelName, importance).apply {
+                description = "Notifications for new chat messages"
+            }
+            val notificationManager: NotificationManager =
+                getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            notificationManager.createNotificationChannel(channel)
         }
 
         setContent {
