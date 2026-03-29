@@ -1,6 +1,8 @@
 package org.ttproject
 
 import androidx.compose.animation.AnimatedContentTransitionScope
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -178,10 +180,10 @@ fun App() {
                                 startDestination = NavRoute.Map,
                                 modifier = Modifier
                                     .fillMaxSize(),
-                                enterTransition = { fadeIn(animationSpec = tween(200)) },
-                                exitTransition = { fadeOut(animationSpec = tween(200)) },
-                                popEnterTransition = { fadeIn(animationSpec = tween(200)) },
-                                popExitTransition = { fadeOut(animationSpec = tween(200)) }
+                                enterTransition = { EnterTransition.None },
+                                exitTransition = { ExitTransition.None },
+                                popEnterTransition = { EnterTransition.None },
+                                popExitTransition = { ExitTransition.None }
                             ) {
                                 composable<NavRoute.Map> {
 //                                    Box(
