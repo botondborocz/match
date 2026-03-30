@@ -59,6 +59,8 @@ kotlin {
             // 👇 ADD THESE TWO FOR KMP VIEWMODELS
             implementation("io.insert-koin:koin-core-viewmodel:4.1.0")    // Fixes AppModule.kt
             implementation("io.insert-koin:koin-compose-viewmodel:4.1.0") // Fixes LoginScreen.kt
+            // In your commonMain dependencies block:
+            implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.5.0") // Or whatever the latest version is
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)

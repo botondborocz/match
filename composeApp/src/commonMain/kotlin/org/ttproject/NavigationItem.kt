@@ -5,10 +5,13 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Place
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.LocalFireDepartment
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.graphics.vector.ImageVector
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.StringResource
 import kotlinx.serialization.Serializable
+import org.koin.compose.viewmodel.koinViewModel
 
 // 👇 IMPORTS
 // 1. Import your Shared Strings (from the shared module)
@@ -19,6 +22,7 @@ import org.ttproject.shared.resources.ai_coach
 import org.ttproject.shared.resources.match
 import org.ttproject.shared.resources.messages
 import org.ttproject.shared.resources.profile
+import org.ttproject.viewmodel.MessagesViewModel
 
 // 2. Import your App Resources (where brain.xml is)
 import ttproject.composeapp.generated.resources.Res as AppRes
@@ -43,7 +47,7 @@ sealed class NavRoute {
     @Serializable data object Coach : NavRoute()
     @Serializable data object Messages : NavRoute()
     @Serializable data object Profile : NavRoute()
-    @Serializable data class ChatDetail(val chatId: String) : NavRoute()
+    @Serializable data class ChatDetail(val chatId: String, val otherUsername: String) : NavRoute()
 }
 
 // 2. Your Navigation Item Data Class

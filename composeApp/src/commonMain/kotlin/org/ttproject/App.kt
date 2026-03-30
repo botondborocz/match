@@ -29,6 +29,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import org.koin.compose.koinInject
+import org.koin.compose.viewmodel.koinViewModel
 import org.ttproject.components.DesktopSidebar
 import org.ttproject.components.MobileBottomNav
 import org.ttproject.components.MobileTopBar
@@ -45,6 +46,7 @@ import org.ttproject.util.SetStatusBarColors
 import org.ttproject.util.ThemeMode
 import org.ttproject.util.changePlatformLanguage
 import org.ttproject.viewmodel.ChatViewModel
+import org.ttproject.viewmodel.MessagesViewModel
 
 enum class AuthRoute {
     Login, Register
@@ -289,10 +291,10 @@ fun App(
                                         // 👇 3. Pass the state to the screen
                                         playAnimation = playMessagesAnimation,
                                         bottomNavPadding = innerPadding.calculateBottomPadding(),
-                                        onNavigateToChat = { chatId ->
+                                        onNavigateToChat = { chatId, otherUsername ->
                                             // 👇 4. We are going to a chat! Turn off the animation for when we come back.
                                             playMessagesAnimation = false
-                                            navController.navigate(NavRoute.ChatDetail(chatId))
+                                            navController.navigate(NavRoute.ChatDetail(chatId, otherUsername))
                                         }
                                     )
                                 }
@@ -327,6 +329,7 @@ fun App(
                                         ChatDetailScreen(
                                             viewModel = chatViewModel,
                                             chatId = route.chatId,
+                                            otherUsername = route.otherUsername,
                                             bottomNavPadding = innerPadding.calculateBottomPadding(),
                                             onBack = { navController.popBackStack() }
                                         )

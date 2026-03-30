@@ -28,6 +28,8 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
         val senderName = remoteMessage.data["senderName"] ?: "New Message"
         val text = remoteMessage.data["text"] ?: ""
 
+        NotificationEventBus.triggerRefresh()
+
         // 1. Check Permissions (Prevents crashes on Android 13+)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {

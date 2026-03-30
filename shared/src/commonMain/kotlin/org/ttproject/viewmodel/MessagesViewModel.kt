@@ -20,7 +20,16 @@ class MessagesViewModel(
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
     init {
+        // Load data when the ViewModel is first created
         loadConnections()
+
+        // 👇 THE FIX: Listen for FCM background pings!
+//        viewModelScope.launch {
+//            NotificationEventBus.refreshEvents.collect {
+//                // Whenever FCM receives a message, silently reload the list in the background
+//                loadConnections()
+//            }
+//        }
     }
 
     fun loadConnections() {
