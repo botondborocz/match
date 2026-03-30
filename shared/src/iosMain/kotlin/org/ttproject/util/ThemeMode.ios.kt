@@ -1,6 +1,7 @@
 package org.ttproject.util
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import platform.UIKit.UIApplication
 import platform.UIKit.UIUserInterfaceStyle
 import platform.UIKit.UIWindowScene
@@ -20,4 +21,12 @@ actual fun SetStatusBarColors(isDark: Boolean) {
         ?.firstOrNull() as? UIWindow // 👈 2. Add 'as? UIWindow' right here
 
     window?.overrideUserInterfaceStyle = style
+}
+
+@Composable
+actual fun ClearChatNotificationEffect(chatId: String) {
+    LaunchedEffect(chatId) {
+        // iOS notification clearing logic goes here later!
+        // (Uses UNUserNotificationCenter)
+    }
 }

@@ -49,4 +49,10 @@ class ChatViewModel(
             repository.sendMessage(text)
         }
     }
+
+    fun markMessagesAsRead() {
+        viewModelScope.launch {
+            repository.markMessagesAsRead(connectionId)
+        }
+    }
 }

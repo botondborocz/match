@@ -5,6 +5,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
+import android.app.NotificationManager
+import android.content.Context
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.platform.LocalContext
 
 @Composable
 actual fun SetStatusBarColors(isDark: Boolean) {
@@ -17,5 +21,16 @@ actual fun SetStatusBarColors(isDark: Boolean) {
             // We want the opposite, so we pass !isDark
             WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !isDark
         }
+    }
+}
+
+@Composable
+actual fun ClearChatNotificationEffect(chatId: String) {
+    val context = LocalContext.current
+
+    LaunchedEffect(chatId) {
+        val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        // Cancel the specific notification using the hashcode!
+        notificationManager.cancel(chatId.hashCode())
     }
 }

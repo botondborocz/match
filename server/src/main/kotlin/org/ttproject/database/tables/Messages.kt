@@ -8,6 +8,7 @@ object Messages : Table("messages") {
     val connectionId = reference("connection_id", Connections.id)
     val senderId = reference("sender_id", Users.id)
     val content = text("content")
+    val isRead = bool("is_read").default(false)
     val createdAt = timestamp("created_at")
 
     override val primaryKey = PrimaryKey(id)

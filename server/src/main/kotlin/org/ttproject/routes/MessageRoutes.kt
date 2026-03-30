@@ -21,15 +21,18 @@ import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.SqlExpressionBuilder
+import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.or
 import org.jetbrains.exposed.sql.selectAll
+import org.jetbrains.exposed.sql.update
 import org.ttproject.data.ChatThreadDto
 import org.ttproject.data.MessageDto
 import org.ttproject.database.tables.Connections
 import org.ttproject.database.tables.Messages
 import org.ttproject.database.tables.Users
 import org.ttproject.services.ConnectionManager
+import java.lang.reflect.Array.set
 import java.time.Instant
 import java.util.UUID
 
@@ -74,12 +77,19 @@ fun Route.messageRoutes() {
                     val lastMessageText = lastMessageRow?.get(Messages.content) ?: "No messages yet"
                     val timestamp = lastMessageRow?.get(Messages.createdAt)?.toString() ?: ""
 
+                    val unreadMessagesCount = Messages.selectAll()
+                        .where {
+                            (Messages.connectionId eq connectionId) and
+                                    (Messages.senderId eq otherUserId) and // Only count messages THEY sent
+                                    (Messages.isRead eq false)             // That haven't been read yet
+                        }.count().toInt()
+
                     ChatThreadDto(
                         id = connectionId.toString(),
                         otherUserName = otherUserName,
                         lastMessage = lastMessageText,
                         timestamp = timestamp,
-                        unreadCount = 0, // Implement unread logic later
+                        unreadCount = unreadMessagesCount, // Implement unread logic later
                         isOnline = false // Implement presence logic later
                     )
                 }
@@ -116,6 +126,30 @@ fun Route.messageRoutes() {
                         }
                 }
                 call.respond(HttpStatusCode.OK, messages)
+            }
+
+            post("/messages/read") {
+                val connectionIdStr = call.parameters["connectionId"] ?: return@post call.respond(
+                    HttpStatusCode.BadRequest,
+                    "Missing connection ID"
+                )
+                val connectionId = UUID.fromString(connectionIdStr)
+
+                // Grab the user who is currently reading the chat
+                val principal = call.principal<JWTPrincipal>()
+                val currentUserIdStr = principal?.payload?.getClaim("userId")?.asString()
+                    ?: return@post call.respond(HttpStatusCode.Unauthorized)
+                val currentUserId = UUID.fromString(currentUserIdStr)
+
+                transaction {
+                    // 👇 Only mark messages as read IF they belong to this chat AND were sent by the other person
+                    Messages.update({
+                        (Messages.connectionId eq connectionId) and (Messages.senderId neq currentUserId)
+                    }) {
+                        it[isRead] = true
+                    }
+                }
+                call.respond(HttpStatusCode.OK, "Messages marked as read")
             }
 
             // --------------------------------------------------------
@@ -178,24 +212,33 @@ fun Route.messageRoutes() {
                                     // Check for isNullOrBlank instead of just null!
                                     if (!targetToken.isNullOrBlank()) {
                                         try {
+//                                            val message = Message.builder()
+//                                                .setToken(targetToken)
+//                                                .setNotification(
+//                                                    Notification.builder()
+//                                                        .setTitle("New message from $senderName")
+//                                                        .setBody(textContent)
+//                                                        .build()
+//                                                )
+//                                                .setAndroidConfig(
+//                                                    AndroidConfig.builder()
+//                                                        .setPriority(AndroidConfig.Priority.HIGH) // 🚨 Forces the heads-up banner!
+//                                                        .setNotification(
+//                                                            AndroidNotification.builder()
+//                                                                .setChannelId("chat_messages") // We will create this channel next
+//                                                                .build()
+//                                                        )
+//                                                        .build()
+//                                                )
+//                                                .putData("chatId", connectionId.toString())
+//                                                .build()
                                             val message = Message.builder()
                                                 .setToken(targetToken)
-                                                .setNotification(
-                                                    Notification.builder()
-                                                        .setTitle("New message from $senderName")
-                                                        .setBody(textContent)
-                                                        .build()
-                                                )
-                                                .setAndroidConfig(
-                                                    AndroidConfig.builder()
-                                                        .setPriority(AndroidConfig.Priority.HIGH) // 🚨 Forces the heads-up banner!
-                                                        .setNotification(
-                                                            AndroidNotification.builder()
-                                                                .setChannelId("chat_messages") // We will create this channel next
-                                                                .build()
-                                                        )
-                                                        .build()
-                                                )
+                                                // 🚨 NO .setNotification() HERE! 🚨
+                                                // We send raw data, forcing the Android app to wake up and handle it.
+                                                .putData("chatId", connectionId.toString())
+                                                .putData("senderName", senderName)
+                                                .putData("text", textContent)
                                                 .build()
 
                                             // 👇 Use synchronous .send() so we can actually catch the Google API errors

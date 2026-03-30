@@ -10,3 +10,6 @@ val LocalThemeMode = staticCompositionLocalOf { ThemeMode.System }
 
 @Composable
 expect fun SetStatusBarColors(isDark: Boolean)
+
+@Composable
+expect fun ClearChatNotificationEffect(chatId: String)

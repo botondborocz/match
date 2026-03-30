@@ -27,6 +27,7 @@ interface ChatRepository {
     fun disconnect()
     suspend fun getConnections(): List<ChatThreadDto>
     suspend fun savePushToken(fcmToken: String)
+    suspend fun markMessagesAsRead(chatId: String)
 }
 
 class ChatRepositoryImpl (
@@ -116,4 +117,20 @@ class ChatRepositoryImpl (
             e.printStackTrace()
         }
     }
+
+    override suspend fun markMessagesAsRead(chatId: String) {
+        try {
+            val token = tokenStorage.getToken() ?: return
+            // Hit the endpoint we just created
+            client.post("$SERVER_IP/api/connections/$chatId/messages/read") {
+                header(HttpHeaders.Authorization, "Bearer $token")
+            }
+            // Optional: If you want to trigger a UI refresh immediately, you can do it here.
+        } catch (e: Exception) {
+            e.printStackTrace()
+            // It's okay if this fails silently in the background,
+            // the user will just try again next time they open the chat.
+        }
+    }
+
 }

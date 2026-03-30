@@ -36,4 +36,10 @@ class MessagesViewModel(
             repository.savePushToken(fcmToken)
         }
     }
+
+    fun markMessagesAsRead(chatId: String) {
+        viewModelScope.launch {
+            repository.markMessagesAsRead(chatId)
+        }
+    }
 }

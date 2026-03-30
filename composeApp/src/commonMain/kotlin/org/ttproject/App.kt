@@ -1,6 +1,7 @@
 package org.ttproject
 
 import androidx.compose.animation.AnimatedContentTransitionScope
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.core.LinearEasing
@@ -50,7 +51,10 @@ enum class AuthRoute {
 }
 
 @Composable
-fun App() {
+fun App(
+    pendingChatId: String? = null,
+    onChatConsumed: () -> Unit = {}
+) {
     val tokenStorage: TokenStorage = koinInject()
     val navController = rememberNavController()
     var isLoggedIn by remember { mutableStateOf(tokenStorage.getToken() != null) }
@@ -73,6 +77,15 @@ fun App() {
     if (!isLanguageApplied) {
         Box(modifier = Modifier.fillMaxSize().background(AppColors.Background))
         return
+    }
+
+    // 👇 ADD THIS LAUNCHED EFFECT:
+    // If pendingChatId is not null, instantly jump to that chat!
+    LaunchedEffect(pendingChatId) {
+        if (pendingChatId != null) {
+            navController.navigate(NavRoute.Messages) // Use your actual route name here
+            onChatConsumed() // Clear it so it doesn't trigger again on rotation
+        }
     }
 
     var currentThemeMode by remember {
@@ -175,6 +188,21 @@ fun App() {
                             ) {
                                 MapScreen(isActive = isMapActive)
                             }
+
+                            Column(modifier = Modifier.fillMaxSize()) {
+                                AnimatedVisibility(
+                                    visible = currentRoute != NavRoute.Map,
+                                    enter = fadeIn(tween(200)),
+                                    exit = fadeOut(tween(200))
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxSize()
+                                            .background(AppColors.Background)
+                                    )
+                                }
+                            }
+
                             NavHost(
                                 navController = navController,
                                 startDestination = NavRoute.Map,
