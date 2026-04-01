@@ -6,6 +6,7 @@ import com.google.firebase.FirebaseOptions
 import io.github.cdimascio.dotenv.dotenv
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
+import io.ktor.http.auth.HttpAuthHeader
 import io.ktor.server.application.*
 import io.ktor.server.auth.Authentication
 import io.ktor.server.auth.authenticate
@@ -28,6 +29,7 @@ import org.ttproject.security.JwtConfig
 import kotlin.collections.map
 import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.serialization.gson.*
+import io.ktor.server.auth.parseAuthorizationHeader
 import org.ttproject.routes.locationRoutes
 import org.ttproject.routes.userRoutes
 import io.ktor.server.plugins.cors.routing.*
@@ -101,6 +103,22 @@ fun Application.module() {
                 if (credential.payload.getClaim("userId").asString() != "") {
                     JWTPrincipal(credential.payload)
                 } else null
+            }
+            authHeader { call ->
+                // 1. Try to get the standard Bearer token from headers (Your Mobile App)
+                val headerToken = call.request.parseAuthorizationHeader()
+                if (headerToken != null) {
+                    return@authHeader headerToken
+                }
+
+                // 2. Fallback to the URL query parameter (Your React Web App)
+                val queryToken = call.request.queryParameters["token"]
+                if (queryToken != null) {
+                    return@authHeader HttpAuthHeader.Single("Bearer", queryToken)
+                }
+
+                // 3. No token found anywhere, reject the request
+                null
             }
         }
     }

@@ -27,6 +27,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -40,6 +41,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.preat.peekaboo.image.picker.SelectionMode
+import com.preat.peekaboo.image.picker.rememberImagePickerLauncher
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 import org.ttproject.AppColors
@@ -70,6 +73,22 @@ fun ProfileScreen(
     viewModel: ProfileViewModel = koinViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    var isAvatarExpanded by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+
+    // 👇 1. Initialize the Peekaboo Image Picker
+    val singleImagePicker = rememberImagePickerLauncher(
+        selectionMode = SelectionMode.Single,
+        scope = scope,
+        onResult = { byteArrays ->
+            // byteArrays is a List<ByteArray>. Since we chose Single, get the first.
+            byteArrays.firstOrNull()?.let { imageBytes ->
+                println("✅ Image picked! Size: ${imageBytes.size} bytes")
+                // TODO: Trigger your Ktor upload function here
+                // viewModel.uploadProfileImage(imageBytes)
+            }
+        }
+    )
 //    var currentLanguage: String by remember { mutableStateOf(currentLanguage) }
 
     LaunchedEffect(Unit) {
@@ -108,6 +127,23 @@ fun ProfileScreen(
 
             val scrollState = rememberScrollState()
 
+            // 👇 2. NEW: THE AVATAR PREVIEW DIALOG ---
+            // It only renders when isAvatarExpanded is true.
+            if (isAvatarExpanded) {
+                AvatarPreviewDialog(
+                    username = userData.name ?: "Player",
+                    imageUrl = null, // Update when photos are implemented
+                    onDismissRequest = { isAvatarExpanded = false }, // Close callback
+                    onEditClick = {
+                        // 👇 Trigger your photo picker logic here!
+                        singleImagePicker.launch() // Opens the image picker
+                        isAvatarExpanded = false // Close the preview after clicking edit
+                        println("✅ User clicked Edit from full-screen preview!")
+                    }
+                )
+            }
+            // --- END DIALOG ---
+
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -121,7 +157,16 @@ fun ProfileScreen(
                     enter = fadeIn(tween(400)) + slideInVertically(tween(400)) { 50 }
                 ) {
                     Column {
-                        ProfileHeader(userData.name ?: "Player")
+                        ProfileHeader(
+                            username = userData.name ?: "Player",
+                            imageUrl = null, // Use user image when available
+                            onAvatarClick = { isAvatarExpanded = false }, // NEW: Click main area to expand
+                            onEditClick = {
+                                // 👇 Trigger your photo picker logic here!
+                                singleImagePicker.launch() // Opens the image picker
+                                println("✅ User clicked the small camera icon!")
+                            }
+                        )
                         Spacer(modifier = Modifier.height(32.dp))
                     }
                 }
@@ -167,32 +212,75 @@ fun ProfileScreen(
 
 @Composable
 private fun ProfileHeader(
-    username: String
+    username: String,
+    imageUrl: String? = null, // Placeholder for when you implement image loading
+    onEditClick: () -> Unit, // Callback for the small overlay icon
+    onAvatarClick: () -> Unit // 👇 NEW: Callback for clicking the main avatar
 ) {
+    // Keep your gradient logic
     val avatarGradient = Brush.linearGradient(
         colors = listOf(Color(0xFFFF4B4B), Color(0xFF9C27B0))
     )
 
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        // Avatar
+
+        // --- 1. THE MAIN INTERACTIVE AVATAR BOX ---
         Box(
             modifier = Modifier
                 .size(100.dp)
-                .clip(CircleShape)
-                .background(AppColors.SurfaceDark)
-                .border(4.dp, avatarGradient, CircleShape),
-            contentAlignment = Alignment.Center
+                // 👇 This Box is now clickable to expand the photo!
+                .clickable { onAvatarClick() }
         ) {
-            Text(
-                text = "JD",
-                color = AppColors.TextPrimary,
-                fontSize = 28.sp,
-                fontWeight = FontWeight.Bold
-            )
+            // A. The Main Avatar circle (your existing code)
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clip(CircleShape)
+                    .background(AppColors.SurfaceDark)
+                    .border(4.dp, avatarGradient, CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                // FALLBACK INITIALS
+                Text(
+                    text = getInitials(username),
+                    color = AppColors.TextPrimary,
+                    fontSize = 32.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            // B. THE EDIT ICON OVERLAY bubble (your existing code)
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .offset(x = (-2).dp, y = (-2).dp)
+                    .clip(CircleShape)
+                    .background(AppColors.Background)
+                    .padding(3.dp)
+            ) {
+                // The actual clickable bubble
+                Box(
+                    modifier = Modifier
+                        .size(26.dp)
+                        .clip(CircleShape)
+                        .clickable { onEditClick() }
+                        .background(AppColors.AccentOrange),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.CameraAlt,
+                        contentDescription = "Edit Profile Picture",
+                        tint = Color.White,
+                        modifier = Modifier.size(14.dp)
+                    )
+                }
+            }
         }
+        // --- END INTERACTIVE AVATAR ---
 
         Spacer(modifier = Modifier.height(16.dp))
 
+        // ... (The rest of your Name and Badges code stays exactly the same) ...
         // Name
         Text(
             text = username,
@@ -228,6 +316,96 @@ private fun ProfileHeader(
                 color = AppColors.TextGray,
                 fontSize = 14.sp
             )
+        }
+    }
+}
+
+@Composable
+private fun AvatarPreviewDialog(
+    username: String,
+    imageUrl: String?, // For when you implement photo storage
+    onEditClick: () -> Unit,
+    onDismissRequest: () -> Unit
+) {
+    // 👇 The Compose Dialog creates a seamless overlay on top of the screen
+    androidx.compose.ui.window.Dialog(
+        onDismissRequest = onDismissRequest,
+        properties = androidx.compose.ui.window.DialogProperties(
+            // Allows us to style the dialog to be almost full screen
+            usePlatformDefaultWidth = false
+        )
+    ) {
+        // --- 1. A LARGE FULL-SCREEN CONTAINER ---
+        // (Allows us to capture clicks outside the card to close it)
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                // A dark, semi-transparent overlay to focus attention on the card
+                .background(Color.Black.copy(alpha = 0.8f))
+                .clickable(
+                    interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                    indication = null, // No visual ripple when clicking the overlay
+                    onClick = onDismissRequest // Clicking the dark overlay closes the dialog
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            // --- 2. THE ALMOST FULL-SCREEN PHOTO CARD ---
+            Column(
+                modifier = Modifier
+                    // "Almost" full screen: We take 90% of the screen size and center it
+                    .fillMaxWidth(0.9f)
+                    .aspectRatio(1f) // Keep it a perfect square
+                    .clip(RoundedCornerShape(32.dp)) // Nice premium rounded corners
+                    .background(AppColors.SurfaceDark)
+                    .clickable(enabled = false) {} // Stop clicks from propagating to the overlay behind it
+                    // Gives it visual depth
+                    .border(2.dp, Brush.linearGradient(colors = listOf(Color(0xFFFF4B4B).copy(alpha = 0.1f), Color(0xFF9C27B0).copy(alpha = 0.1f))), RoundedCornerShape(32.dp))
+                    .padding(32.dp), // Breathing room inside the card
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                // FALLBACK INITIALS (Large version)
+                // (When you implement photos, you'll put Coil's AsyncImage here
+                // and show this only if the AsyncImage loads a placeholder!)
+                Text(
+                    text = getInitials(username),
+                    color = AppColors.TextPrimary,
+                    fontSize = 80.sp, // Made much larger for the preview
+                    fontWeight = FontWeight.ExtraBold
+                )
+            }
+
+            // --- 3. FLOATING CLOSE BUTTON (Top Right) ---
+            IconButton(
+                onClick = onDismissRequest,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(top = 40.dp, end = 24.dp) // Offset slightly from the screen edges
+                    .background(Color.Black.copy(alpha = 0.4f), CircleShape) // Dark background for contrast
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Close,
+                    contentDescription = "Close Preview",
+                    tint = Color.White
+                )
+            }
+
+            // --- 4. THE EDIT PHOTO BUTTON (Bottom Center) ---
+            Button(
+                onClick = {
+                    onEditClick() // Trigger the upload logic
+                    onDismissRequest() // Close the preview after clicking edit
+                },
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 60.dp), // Space from the bottom of the screen
+                colors = ButtonDefaults.buttonColors(containerColor = AppColors.AccentOrange),
+                shape = RoundedCornerShape(24.dp)
+            ) {
+                Icon(Icons.Filled.CameraAlt, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Edit Photo", color = Color.White, fontWeight = FontWeight.Bold)
+            }
         }
     }
 }

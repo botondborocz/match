@@ -563,7 +563,7 @@ fun EmptyMessagesState() {
     }
 }
 
-private fun getInitials(name: String): String {
+fun getInitials(name: String): String {
     val parts = name.trim().split(Regex("\\s+"))
     return if (parts.size >= 2) "${parts[0].first().uppercase()}${parts[1].first().uppercase()}"
     else if (name.isNotEmpty()) name.take(2).uppercase() else "?"

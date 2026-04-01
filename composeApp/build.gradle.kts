@@ -61,6 +61,7 @@ kotlin {
             implementation("io.insert-koin:koin-compose-viewmodel:4.1.0") // Fixes LoginScreen.kt
             // In your commonMain dependencies block:
             implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.5.0") // Or whatever the latest version is
+            implementation("io.github.onseok:peekaboo-image-picker:0.5.2") // Check for the latest version
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
