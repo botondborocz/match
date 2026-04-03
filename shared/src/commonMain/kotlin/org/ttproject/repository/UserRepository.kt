@@ -17,14 +17,14 @@ import io.ktor.http.isSuccess
 import org.ttproject.SERVER_IP
 import org.ttproject.data.TokenStorage
 import org.ttproject.data.UpdateLanguageRequest
+import org.ttproject.data.UpdateProfileRequest
 import org.ttproject.data.UserProfile
 
 // 1. The Interface
 interface UserRepository {
     suspend fun getMyProfile(): UserProfile
+    suspend fun updateProfile(name: String, blade: String, forehand: String, backhand: String): Result<Boolean>
     suspend fun updateLanguage(language: String): Result<Boolean>
-
-    // 👇 Added interface method
     suspend fun uploadProfileImage(imageBytes: ByteArray): Result<Boolean>
 }
 
@@ -50,6 +50,30 @@ class UserRepositoryImpl(
             throw Exception("Session expired. Please log in again.")
         } else {
             throw Exception("Server error: ${response.status.description}")
+        }
+    }
+
+    override suspend fun updateProfile(
+        name: String,
+        blade: String,
+        forehand: String,
+        backhand: String
+    ): Result<Boolean> {
+        return try {
+            val response = httpClient.put("${SERVER_IP}/api/users/me") {
+                contentType(ContentType.Application.Json)
+                setBody(UpdateProfileRequest(name, blade, forehand, backhand))
+                bearerAuth(tokenStorage.getToken()!!)
+            }
+
+            if (response.status.isSuccess()) {
+                Result.success(true)
+            } else {
+                Result.failure(Exception("Failed to update profile. Server returned: ${response.status}"))
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Result.failure(e)
         }
     }
 

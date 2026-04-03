@@ -24,6 +24,7 @@ import org.ttproject.data.SwipeRequest
 import org.ttproject.data.SwipeResponse
 import org.ttproject.data.TokenResponse
 import org.ttproject.data.UpdateLanguageRequest
+import org.ttproject.data.UpdateProfileRequest
 import org.ttproject.data.UserProfile
 import org.ttproject.database.tables.Swipes
 import org.ttproject.services.MatchService
@@ -136,7 +137,10 @@ fun Route.userRoutes() {
                                 elo = row[Users.eloRating],
                                 winRate = "50%", // Placeholder, calculate based on your matches table
                                 preferredLanguage = row[Users.preferred_language],
-                                imageUrl = row[Users.profileImageUrl] // Make sure this column exists in your DB and is selected here!
+                                imageUrl = row[Users.profileImageUrl], // Make sure this column exists in your DB and is selected here!
+                                blade = row[Users.gearBlade],
+                                rubberFh = row[Users.gearRubberFh],
+                                rubberBh = row[Users.gearRubberBh]
                             )
                     }
                 }
@@ -145,6 +149,60 @@ fun Route.userRoutes() {
                     call.respond(userProfile)
                 } else {
                     call.respond(HttpStatusCode.NotFound, "User not found")
+                }
+            }
+            put("/me") {
+                // 1. Grab the user's ID from their secure JWT token
+                val principal = call.principal<JWTPrincipal>()
+                val userId = principal?.payload?.getClaim("userId")?.asString()
+
+                if (userId == null) {
+                    call.respond(HttpStatusCode.Unauthorized, "Invalid token")
+                    return@put
+                }
+
+                // 2. Parse the JSON body from the React/KMP app
+                val request = try {
+                    call.receive<UpdateProfileRequest>()
+                } catch (e: Exception) {
+                    call.respond(HttpStatusCode.BadRequest, "Invalid JSON format")
+                    return@put
+                }
+
+                // 3. Update the database!
+                try {
+                    val userUuid = UUID.fromString(userId)
+
+                    // 👇 1. Check if the username is taken by SOMEONE ELSE
+                    val isNameTaken = transaction {
+                        Users.selectAll()
+                            .where { (Users.username eq request.name) and (Users.id neq userUuid) }
+                            .count() > 0
+                    }
+
+                    if (isNameTaken) {
+                        // 409 Conflict is the standard HTTP status for "Duplicate Resource"
+                        call.respond(HttpStatusCode.Conflict, "Username is already taken.")
+                        return@put
+                    }
+
+                    val updatedRows = transaction {
+                        Users.update({ Users.id eq userUuid }) {
+                            it[username] = request.name
+                            it[gearBlade] = request.blade
+                            it[gearRubberFh] = request.forehand
+                            it[gearRubberBh] = request.backhand
+                        }
+                    }
+
+                    if (updatedRows > 0) {
+                        call.respond(HttpStatusCode.OK, mapOf("message" to "Profile updated successfully!"))
+                    } else {
+                        call.respond(HttpStatusCode.NotFound, "User not found in database.")
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    call.respond(HttpStatusCode.InternalServerError, "Database error: ${e.message}")
                 }
             }
             put("/language") {

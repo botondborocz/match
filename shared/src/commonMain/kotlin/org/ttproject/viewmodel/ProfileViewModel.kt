@@ -16,7 +16,10 @@ sealed class ProfileState {
         val elo: Int,
         val winRate: String,
         val language: String?,
-        val imageUrl: String? = null
+        val imageUrl: String? = null,
+        val blade: String? = null,
+        val rubberFh: String? = null,
+        val rubberBh: String? = null
     ) : ProfileState()
     data class Error(val message: String) : ProfileState()
 }
@@ -53,10 +56,29 @@ class ProfileViewModel(
                     elo = user.elo,
                     winRate = user.winRate,
                     language = user.preferredLanguage,
-                    imageUrl = user.imageUrl // 👈 Make sure your UserProfile data class has this property!
+                    imageUrl = user.imageUrl, // 👈 Make sure your UserProfile data class has this property!
+                    blade = user.blade,
+                    rubberFh = user.rubberFh,
+                    rubberBh = user.rubberBh
                 )
             } catch (e: Exception) {
                 _uiState.value = ProfileState.Error("Failed to load profile: ${e.message}")
+            }
+        }
+    }
+
+    fun updateProfile(name: String, blade: String, forehand: String, backhand: String) {
+        viewModelScope.launch {
+            _updateState.value = UpdateState.Loading
+
+            val result = userRepository.updateProfile(name, blade, forehand, backhand)
+
+            if (result.isSuccess) {
+                _updateState.value = UpdateState.Success
+                fetchUserProfile() // Refresh profile data after successful update
+            } else {
+                val errorMsg = result.exceptionOrNull()?.message ?: "Unknown error"
+                _updateState.value = UpdateState.Error(errorMsg)
             }
         }
     }

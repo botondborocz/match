@@ -30,6 +30,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.BiasAlignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
@@ -41,14 +42,12 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.preat.peekaboo.image.picker.SelectionMode
 import com.preat.peekaboo.image.picker.rememberImagePickerLauncher
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 import org.ttproject.AppColors
 import org.ttproject.AppColors.TextGray
-import org.ttproject.data.UserProfile
 import org.ttproject.shared.resources.backhand
 import org.ttproject.shared.resources.blade
 import org.ttproject.shared.resources.dark
@@ -64,6 +63,10 @@ import org.ttproject.viewmodel.ProfileViewModel
 import org.ttproject.util.ThemeMode
 import org.ttproject.shared.resources.Res as SharedRes
 import coil3.compose.AsyncImage
+import org.ttproject.shared.resources.cancel
+import org.ttproject.shared.resources.edit_profile
+import org.ttproject.shared.resources.save
+import org.ttproject.shared.resources.username
 
 @Composable
 fun ProfileScreen(
@@ -76,21 +79,34 @@ fun ProfileScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var isAvatarExpanded by remember { mutableStateOf(false) }
-    val scope = rememberCoroutineScope()
 
-    // 👇 1. Initialize the Peekaboo Image Picker
+    // 👇 NEW: State for the Edit Profile Modal
+    var isEditProfileModalOpen by remember { mutableStateOf(false) }
+
+    val scope = rememberCoroutineScope()
+    var imageToUpload by remember { mutableStateOf<ByteArray?>(null) }
+
     val singleImagePicker = rememberImagePickerLauncher(
-        selectionMode = SelectionMode.Multiple(maxSelection = 1),
+        selectionMode = SelectionMode.Single,
         scope = scope,
         onResult = { byteArrays ->
-            // byteArrays is a List<ByteArray>. Since we chose Single, get the first.
             byteArrays.firstOrNull()?.let { imageBytes ->
                 println("✅ Image picked! Size: ${imageBytes.size} bytes")
-                 viewModel.uploadProfileImage(imageBytes)
+                imageToUpload = imageBytes
             }
         }
     )
-//    var currentLanguage: String by remember { mutableStateOf(currentLanguage) }
+
+    if (imageToUpload != null) {
+        AvatarFramerDialog(
+            imageBytes = imageToUpload!!,
+            onDismiss = { imageToUpload = null },
+            onConfirm = { selectedBias ->
+                viewModel.uploadProfileImage(imageToUpload!!)
+                imageToUpload = null
+            }
+        )
+    }
 
     LaunchedEffect(Unit) {
         if (viewModel.uiState.value !is ProfileState.Success) {
@@ -108,19 +124,17 @@ fun ProfileScreen(
         is ProfileState.Error -> {
             val error = (uiState as ProfileState.Error).message
             Text(text = error, color = Color.Red)
-            // Add a retry button here
         }
 
         is ProfileState.Success -> {
             val userData = uiState as ProfileState.Success
             var animateTrigger by remember { mutableStateOf(false) }
+
             LaunchedEffect(Unit) {
                 animateTrigger = true
             }
-            println("asd")
-            println(userData)
+
             LaunchedEffect(userData.language) {
-                // Only trigger the change if the database language is different from the current UI language
                 if (userData.language != null && userData.language != currentLanguage) {
                     onChangeLanguage(userData.language!!)
                 }
@@ -128,27 +142,39 @@ fun ProfileScreen(
 
             val scrollState = rememberScrollState()
 
-            // 👇 2. NEW: THE AVATAR PREVIEW DIALOG ---
-            // It only renders when isAvatarExpanded is true.
+            // AVATAR PREVIEW DIALOG
             if (isAvatarExpanded) {
                 AvatarPreviewDialog(
                     username = userData.name ?: "Player",
-                    imageUrl = userData.imageUrl, // Update when photos are implemented
-                    onDismissRequest = { isAvatarExpanded = false }, // Close callback
+                    imageUrl = userData.imageUrl,
+                    onDismissRequest = { isAvatarExpanded = false },
                     onEditClick = {
-                        // 👇 Trigger your photo picker logic here!
-                        singleImagePicker.launch() // Opens the image picker
-                        isAvatarExpanded = false // Close the preview after clicking edit
-                        println("✅ User clicked Edit from full-screen preview!")
+                        singleImagePicker.launch()
+                        isAvatarExpanded = false
                     }
                 )
             }
-            // --- END DIALOG ---
+
+            // 👇 NEW: EDIT PROFILE DIALOG
+            if (isEditProfileModalOpen) {
+                EditProfileDialog(
+                    initialName = userData.name ?: "",
+                    initialBlade = userData.blade ?: "Butterfly Viscaria",
+                    initialForehand = userData.rubberFh ?: "Tenergy 05",
+                    initialBackhand = userData.rubberBh ?: "DHS Hurricane 3 Neo",
+                    onDismiss = { isEditProfileModalOpen = false },
+                    onSave = { newName, newBlade, newFh, newBh ->
+                        // 👇 Call ViewModel to update data!
+                        viewModel.updateProfile(newName, newBlade, newFh, newBh)
+                        isEditProfileModalOpen = false
+                    }
+                )
+            }
 
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(AppColors.Background) // Use AppColors.Background if available
+                    .background(AppColors.Background)
                     .verticalScroll(scrollState)
                     .padding(horizontal = 24.dp, vertical = 32.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
@@ -159,29 +185,26 @@ fun ProfileScreen(
                 ) {
                     Column {
                         ProfileHeader(
-                            username = userData.name ?: "Player",
-                            imageUrl = userData.imageUrl, // Use user image when available
-                            onAvatarClick = { isAvatarExpanded = true  }, // NEW: Click main area to expand
-                            onEditClick = {
-                                // 👇 Trigger your photo picker logic here!
-                                singleImagePicker.launch() // Opens the image picker
-                                println("✅ User clicked the small camera icon!")
-                            }
+                            profileData = userData,
+                            onAvatarClick = { isAvatarExpanded = true  },
+                            onPhotoEditClick = { singleImagePicker.launch() },
+                            // 👇 Pass callback to open text edit modal
+                            onProfileEditClick = { isEditProfileModalOpen = true }
                         )
                         Spacer(modifier = Modifier.height(32.dp))
                     }
                 }
-
-//                StatsGrid()
-//
-//                Spacer(modifier = Modifier.height(32.dp))
 
                 AnimatedVisibility(
                     visible = animateTrigger,
                     enter = fadeIn(tween(400, delayMillis = 150)) + slideInVertically(tween(400, delayMillis = 150)) { 50 }
                 ) {
                     Column {
-                        GearSection()
+                        GearSection(
+                            profileData = userData,
+                            // 👇 Pass callback to open text edit modal
+                            onGearEditClick = { isEditProfileModalOpen = true }
+                        )
                         Spacer(modifier = Modifier.height(16.dp))
                     }
                 }
@@ -208,31 +231,103 @@ fun ProfileScreen(
             }
         }
     }
+}
 
+// 👇 NEW: Edit Profile Dialog Composable
+@Composable
+fun EditProfileDialog(
+    initialName: String,
+    initialBlade: String,
+    initialForehand: String,
+    initialBackhand: String,
+    onDismiss: () -> Unit,
+    onSave: (String, String, String, String) -> Unit
+) {
+    var name by remember { mutableStateOf(initialName) }
+    var blade by remember { mutableStateOf(initialBlade) }
+    var forehand by remember { mutableStateOf(initialForehand) }
+    var backhand by remember { mutableStateOf(initialBackhand) }
+
+    androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(24.dp))
+                .background(AppColors.SurfaceDark)
+                .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(stringResource(SharedRes.string.edit_profile), color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Custom styled text fields
+            EditTextField(stringResource(SharedRes.string.username), name) { name = it }
+            Spacer(modifier = Modifier.height(12.dp))
+            EditTextField(stringResource(SharedRes.string.blade), blade) { blade = it }
+            Spacer(modifier = Modifier.height(12.dp))
+            EditTextField(stringResource(SharedRes.string.forehand), forehand) { forehand = it }
+            Spacer(modifier = Modifier.height(12.dp))
+            EditTextField(stringResource(SharedRes.string.backhand), backhand) { backhand = it }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                TextButton(onClick = onDismiss) {
+                    Text(stringResource(SharedRes.string.cancel), color = Color.Gray)
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+                Button(
+                    onClick = { onSave(name, blade, forehand, backhand) },
+                    colors = ButtonDefaults.buttonColors(containerColor = AppColors.AccentOrange)
+                ) {
+                    Text(stringResource(SharedRes.string.save), color = Color.White)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun EditTextField(label: String, value: String, onValueChange: (String) -> Unit) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Text(text = label.uppercase(), color = AppColors.TextGray, fontSize = 12.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.5.sp)
+        Spacer(modifier = Modifier.height(6.dp))
+        OutlinedTextField(
+            value = value,
+            onValueChange = onValueChange,
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedTextColor = Color.White,
+                unfocusedTextColor = Color.White,
+                focusedBorderColor = AppColors.AccentOrange,
+                unfocusedBorderColor = Color.White.copy(alpha = 0.3f),
+                cursorColor = AppColors.AccentOrange
+            ),
+            shape = RoundedCornerShape(12.dp)
+        )
+    }
 }
 
 @Composable
 private fun ProfileHeader(
-    username: String,
-    imageUrl: String? = null, // Placeholder for when you implement image loading
-    onEditClick: () -> Unit, // Callback for the small overlay icon
-    onAvatarClick: () -> Unit // 👇 NEW: Callback for clicking the main avatar
+    profileData: ProfileState.Success,
+    onPhotoEditClick: () -> Unit,
+    onProfileEditClick: () -> Unit, // 👇 Added to trigger edit
+    onAvatarClick: () -> Unit
 ) {
-    // Keep your gradient logic
+    val username = profileData.name ?: "Player"
+    val imageUrl = profileData.imageUrl
     val avatarGradient = Brush.linearGradient(
         colors = listOf(Color(0xFFFF4B4B), Color(0xFF9C27B0))
     )
 
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-
-        // --- 1. THE MAIN INTERACTIVE AVATAR BOX ---
         Box(
             modifier = Modifier
                 .size(100.dp)
-                // 👇 This Box is now clickable to expand the photo!
                 .clickable { onAvatarClick() }
         ) {
-            // A. The Main Avatar circle
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -241,16 +336,15 @@ private fun ProfileHeader(
                     .border(4.dp, avatarGradient, CircleShape),
                 contentAlignment = Alignment.Center
             ) {
-                // 👇 NEW: Check if imageUrl exists
                 if (!imageUrl.isNullOrBlank()) {
                     AsyncImage(
                         model = imageUrl,
                         contentDescription = "Profile Picture",
                         modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop // Ensures the image fills the circle perfectly without stretching
+                        contentScale = ContentScale.Crop,
+                        alignment = BiasAlignment(0f, 0f)
                     )
                 } else {
-                    // FALLBACK INITIALS
                     Text(
                         text = getInitials(username),
                         color = AppColors.TextPrimary,
@@ -260,7 +354,6 @@ private fun ProfileHeader(
                 }
             }
 
-            // B. THE EDIT ICON OVERLAY bubble (your existing code)
             Box(
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
@@ -269,12 +362,11 @@ private fun ProfileHeader(
                     .background(AppColors.Background)
                     .padding(3.dp)
             ) {
-                // The actual clickable bubble
                 Box(
                     modifier = Modifier
                         .size(26.dp)
                         .clip(CircleShape)
-                        .clickable { onEditClick() }
+                        .clickable { onPhotoEditClick() }
                         .background(AppColors.AccentOrange),
                     contentAlignment = Alignment.Center
                 ) {
@@ -287,24 +379,30 @@ private fun ProfileHeader(
                 }
             }
         }
-        // --- END INTERACTIVE AVATAR ---
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // ... (The rest of your Name and Badges code stays exactly the same) ...
-        // Name
-        Text(
-            text = username,
-            color = AppColors.TextPrimary,
-            fontSize = 28.sp,
-            fontWeight = FontWeight.ExtraBold
-        )
+        // 👇 Make the username row clickable to open the edit modal
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .clip(RoundedCornerShape(8.dp))
+                .clickable { onProfileEditClick() }
+                .padding(horizontal = 8.dp, vertical = 4.dp)
+        ) {
+            Text(
+                text = username,
+                color = AppColors.TextPrimary,
+                fontSize = 28.sp,
+                fontWeight = FontWeight.ExtraBold
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Icon(Icons.Default.Edit, contentDescription = "Edit Profile", tint = AppColors.TextGray, modifier = Modifier.size(18.dp))
+        }
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // Badges
         Row(verticalAlignment = Alignment.CenterVertically) {
-            // ELO Badge
             Box(
                 modifier = Modifier
                     .clip(RoundedCornerShape(16.dp))
@@ -313,17 +411,15 @@ private fun ProfileHeader(
                     .padding(horizontal = 12.dp, vertical = 6.dp)
             ) {
                 Text(
-                    text = "ELO 1380",
+                    text = "ELO ${profileData.elo}",
                     color = Color(0xFFFF4B4B),
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold
                 )
             }
-
             Spacer(modifier = Modifier.width(12.dp))
-
             Text(
-                text = "Member since 2023",
+                text = "Win Rate: ${profileData.winRate}",
                 color = AppColors.TextGray,
                 fontSize = 14.sp
             )
@@ -423,6 +519,77 @@ private fun AvatarPreviewDialog(
 }
 
 @Composable
+fun AvatarFramerDialog(
+    imageBytes: ByteArray, // The image they just picked
+    onDismiss: () -> Unit,
+    onConfirm: (Float) -> Unit // Returns the Y-Bias they chose
+) {
+    // State to hold the slider value (-1f to 1f)
+    var verticalBias by remember { mutableStateOf(0f) }
+
+    androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(24.dp))
+                .background(AppColors.SurfaceDark)
+                .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text("Frame Your Avatar", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // --- THE 1:1 PREVIEW BOX ---
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(0.8f)
+                    .aspectRatio(1f) // Strict 1:1 Square
+                    .clip(CircleShape) // Show it exactly how the profile will look
+                    .border(2.dp, AppColors.AccentOrange, CircleShape)
+            ) {
+                AsyncImage(
+                    model = imageBytes,
+                    contentDescription = "Avatar Preview",
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop,
+                    alignment = BiasAlignment(0f, verticalBias)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // --- THE SLIDER ---
+            Text("Adjust Position", color = Color.Gray, fontSize = 14.sp)
+            Slider(
+                value = verticalBias,
+                onValueChange = { verticalBias = it },
+                valueRange = -1f..1f, // -1 is Top, 1 is Bottom
+                colors = SliderDefaults.colors(
+                    thumbColor = AppColors.AccentOrange,
+                    activeTrackColor = AppColors.AccentOrange
+                )
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // --- BUTTONS ---
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                TextButton(onClick = onDismiss) {
+                    Text("Cancel", color = Color.Gray)
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+                Button(
+                    onClick = { onConfirm(verticalBias) },
+                    colors = ButtonDefaults.buttonColors(containerColor = AppColors.AccentOrange)
+                ) {
+                    Text("Save & Upload", color = Color.White)
+                }
+            }
+        }
+    }
+}
+
+@Composable
 private fun StatsGrid() {
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Row(
@@ -490,31 +657,44 @@ private fun StatCard(
 }
 
 @Composable
-private fun GearSection() {
+private fun GearSection(
+    profileData: ProfileState.Success,
+    onGearEditClick: () -> Unit // 👇 Callback for gear edit
+) {
     Column(modifier = Modifier.fillMaxWidth()) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth()
+        ) {
             Icon(Icons.Default.Build, contentDescription = null, tint = AppColors.TextGray, modifier = Modifier.size(20.dp))
             Spacer(modifier = Modifier.width(8.dp))
             Text(stringResource(SharedRes.string.my_gear), color = AppColors.TextPrimary, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+
+            Spacer(modifier = Modifier.weight(1f))
+
+            // 👇 Edit Button for gear
+            IconButton(onClick = onGearEditClick, modifier = Modifier.size(24.dp)) {
+                Icon(Icons.Default.Edit, contentDescription = "Edit Gear", tint = AppColors.TextGray, modifier = Modifier.size(20.dp))
+            }
         }
 
         Spacer(modifier = Modifier.height(16.dp))
 
         GearItem(
             label = stringResource(SharedRes.string.blade).uppercase(),
-            value = "Butterfly Viscaria",
-            iconContent = { Text("🏓", fontSize = 16.sp) } // Using an emoji/text block as a placeholder for paddle
+            value = profileData.blade ?: "Butterfly Viscaria",
+            iconContent = { Text("🏓", fontSize = 16.sp) }
         )
         Spacer(modifier = Modifier.height(12.dp))
         GearItem(
             label = stringResource(SharedRes.string.forehand).uppercase(),
-            value = "Tenergy 05",
+            value = profileData.rubberFh ?: "Tenergy 05",
             iconContent = { Box(modifier = Modifier.size(12.dp).clip(CircleShape).background(Color(0xFFFF4B4B))) }
         )
         Spacer(modifier = Modifier.height(12.dp))
         GearItem(
             label = stringResource(SharedRes.string.backhand).uppercase(),
-            value = "Dignics 09C",
+            value = profileData.rubberBh ?: "DHS Hurricane 3 Neo",
             iconContent = { Box(modifier = Modifier.size(12.dp).clip(CircleShape).background(Color.Black)) }
         )
     }

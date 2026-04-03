@@ -11,7 +11,18 @@ data class UserProfile(
     val elo: Int,
     val winRate: String,
     val preferredLanguage: String? = "en", // Optional fallback
-    val imageUrl: String? = null // Optional profile picture URL
+    val imageUrl: String? = null, // Optional profile picture URL
+    val blade: String? = null,
+    val rubberFh: String? = null,
+    val rubberBh: String? = null,
+)
+
+@Serializable
+data class UpdateProfileRequest(
+    val name: String,
+    val blade: String,
+    val forehand: String,
+    val backhand: String
 )
 
 @Serializable
