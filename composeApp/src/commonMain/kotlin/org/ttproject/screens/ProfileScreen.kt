@@ -80,7 +80,7 @@ fun ProfileScreen(
 
     // 👇 1. Initialize the Peekaboo Image Picker
     val singleImagePicker = rememberImagePickerLauncher(
-        selectionMode = SelectionMode.Single,
+        selectionMode = SelectionMode.Multiple(maxSelection = 1),
         scope = scope,
         onResult = { byteArrays ->
             // byteArrays is a List<ByteArray>. Since we chose Single, get the first.
