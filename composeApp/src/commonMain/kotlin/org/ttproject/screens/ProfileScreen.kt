@@ -37,6 +37,7 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -62,6 +63,7 @@ import org.ttproject.viewmodel.ProfileState
 import org.ttproject.viewmodel.ProfileViewModel
 import org.ttproject.util.ThemeMode
 import org.ttproject.shared.resources.Res as SharedRes
+import coil3.compose.AsyncImage
 
 @Composable
 fun ProfileScreen(
@@ -84,8 +86,7 @@ fun ProfileScreen(
             // byteArrays is a List<ByteArray>. Since we chose Single, get the first.
             byteArrays.firstOrNull()?.let { imageBytes ->
                 println("✅ Image picked! Size: ${imageBytes.size} bytes")
-                // TODO: Trigger your Ktor upload function here
-                // viewModel.uploadProfileImage(imageBytes)
+                 viewModel.uploadProfileImage(imageBytes)
             }
         }
     )
@@ -132,7 +133,7 @@ fun ProfileScreen(
             if (isAvatarExpanded) {
                 AvatarPreviewDialog(
                     username = userData.name ?: "Player",
-                    imageUrl = null, // Update when photos are implemented
+                    imageUrl = userData.imageUrl, // Update when photos are implemented
                     onDismissRequest = { isAvatarExpanded = false }, // Close callback
                     onEditClick = {
                         // 👇 Trigger your photo picker logic here!
@@ -159,8 +160,8 @@ fun ProfileScreen(
                     Column {
                         ProfileHeader(
                             username = userData.name ?: "Player",
-                            imageUrl = null, // Use user image when available
-                            onAvatarClick = { isAvatarExpanded = false }, // NEW: Click main area to expand
+                            imageUrl = userData.imageUrl, // Use user image when available
+                            onAvatarClick = { isAvatarExpanded = true  }, // NEW: Click main area to expand
                             onEditClick = {
                                 // 👇 Trigger your photo picker logic here!
                                 singleImagePicker.launch() // Opens the image picker
@@ -231,7 +232,7 @@ private fun ProfileHeader(
                 // 👇 This Box is now clickable to expand the photo!
                 .clickable { onAvatarClick() }
         ) {
-            // A. The Main Avatar circle (your existing code)
+            // A. The Main Avatar circle
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -240,13 +241,23 @@ private fun ProfileHeader(
                     .border(4.dp, avatarGradient, CircleShape),
                 contentAlignment = Alignment.Center
             ) {
-                // FALLBACK INITIALS
-                Text(
-                    text = getInitials(username),
-                    color = AppColors.TextPrimary,
-                    fontSize = 32.sp,
-                    fontWeight = FontWeight.Bold
-                )
+                // 👇 NEW: Check if imageUrl exists
+                if (!imageUrl.isNullOrBlank()) {
+                    AsyncImage(
+                        model = imageUrl,
+                        contentDescription = "Profile Picture",
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop // Ensures the image fills the circle perfectly without stretching
+                    )
+                } else {
+                    // FALLBACK INITIALS
+                    Text(
+                        text = getInitials(username),
+                        color = AppColors.TextPrimary,
+                        fontSize = 32.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
             }
 
             // B. THE EDIT ICON OVERLAY bubble (your existing code)
@@ -323,56 +334,57 @@ private fun ProfileHeader(
 @Composable
 private fun AvatarPreviewDialog(
     username: String,
-    imageUrl: String?, // For when you implement photo storage
+    imageUrl: String?,
     onEditClick: () -> Unit,
     onDismissRequest: () -> Unit
 ) {
-    // 👇 The Compose Dialog creates a seamless overlay on top of the screen
     androidx.compose.ui.window.Dialog(
         onDismissRequest = onDismissRequest,
         properties = androidx.compose.ui.window.DialogProperties(
-            // Allows us to style the dialog to be almost full screen
             usePlatformDefaultWidth = false
         )
     ) {
-        // --- 1. A LARGE FULL-SCREEN CONTAINER ---
-        // (Allows us to capture clicks outside the card to close it)
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                // A dark, semi-transparent overlay to focus attention on the card
                 .background(Color.Black.copy(alpha = 0.8f))
                 .clickable(
                     interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
-                    indication = null, // No visual ripple when clicking the overlay
-                    onClick = onDismissRequest // Clicking the dark overlay closes the dialog
+                    indication = null,
+                    onClick = onDismissRequest
                 ),
             contentAlignment = Alignment.Center
         ) {
             // --- 2. THE ALMOST FULL-SCREEN PHOTO CARD ---
-            Column(
+            // 👇 Changed to Box so the image can fill the entire container
+            Box(
                 modifier = Modifier
-                    // "Almost" full screen: We take 90% of the screen size and center it
                     .fillMaxWidth(0.9f)
-                    .aspectRatio(1f) // Keep it a perfect square
-                    .clip(RoundedCornerShape(32.dp)) // Nice premium rounded corners
+                    .aspectRatio(1f) // Perfect square
+                    .clip(RoundedCornerShape(32.dp))
                     .background(AppColors.SurfaceDark)
-                    .clickable(enabled = false) {} // Stop clicks from propagating to the overlay behind it
-                    // Gives it visual depth
-                    .border(2.dp, Brush.linearGradient(colors = listOf(Color(0xFFFF4B4B).copy(alpha = 0.1f), Color(0xFF9C27B0).copy(alpha = 0.1f))), RoundedCornerShape(32.dp))
-                    .padding(32.dp), // Breathing room inside the card
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
+                    .clickable(enabled = false) {}
+                    .border(2.dp, Brush.linearGradient(colors = listOf(Color(0xFFFF4B4B).copy(alpha = 0.1f), Color(0xFF9C27B0).copy(alpha = 0.1f))), RoundedCornerShape(32.dp)),
+                contentAlignment = Alignment.Center
             ) {
-                // FALLBACK INITIALS (Large version)
-                // (When you implement photos, you'll put Coil's AsyncImage here
-                // and show this only if the AsyncImage loads a placeholder!)
-                Text(
-                    text = getInitials(username),
-                    color = AppColors.TextPrimary,
-                    fontSize = 80.sp, // Made much larger for the preview
-                    fontWeight = FontWeight.ExtraBold
-                )
+                // 👇 NEW: Check if imageUrl exists
+                if (!imageUrl.isNullOrBlank()) {
+                    AsyncImage(
+                        model = imageUrl,
+                        contentDescription = "Full Screen Profile Picture",
+                        modifier = Modifier.fillMaxSize(), // Fills the rounded corner card perfectly
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    // FALLBACK INITIALS
+                    Text(
+                        text = getInitials(username),
+                        color = AppColors.TextPrimary,
+                        fontSize = 80.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        modifier = Modifier.padding(32.dp) // Kept padding here for the text
+                    )
+                }
             }
 
             // --- 3. FLOATING CLOSE BUTTON (Top Right) ---
@@ -380,8 +392,8 @@ private fun AvatarPreviewDialog(
                 onClick = onDismissRequest,
                 modifier = Modifier
                     .align(Alignment.TopEnd)
-                    .padding(top = 40.dp, end = 24.dp) // Offset slightly from the screen edges
-                    .background(Color.Black.copy(alpha = 0.4f), CircleShape) // Dark background for contrast
+                    .padding(top = 40.dp, end = 24.dp)
+                    .background(Color.Black.copy(alpha = 0.4f), CircleShape)
             ) {
                 Icon(
                     imageVector = Icons.Default.Close,
@@ -393,12 +405,12 @@ private fun AvatarPreviewDialog(
             // --- 4. THE EDIT PHOTO BUTTON (Bottom Center) ---
             Button(
                 onClick = {
-                    onEditClick() // Trigger the upload logic
-                    onDismissRequest() // Close the preview after clicking edit
+                    onEditClick()
+                    onDismissRequest()
                 },
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
-                    .padding(bottom = 60.dp), // Space from the bottom of the screen
+                    .padding(bottom = 60.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = AppColors.AccentOrange),
                 shape = RoundedCornerShape(24.dp)
             ) {

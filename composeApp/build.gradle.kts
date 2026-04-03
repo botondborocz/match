@@ -62,6 +62,14 @@ kotlin {
             // In your commonMain dependencies block:
             implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.5.0") // Or whatever the latest version is
             implementation("io.github.onseok:peekaboo-image-picker:0.5.2") // Check for the latest version
+            // 1. Core Compose library for AsyncImage
+            implementation("io.coil-kt.coil3:coil-compose:3.0.4")
+
+            // 2. The Network fetcher (use ktor2 if you are on Ktor 2.x, or ktor3 if on Ktor 3.x)
+            implementation("io.coil-kt.coil3:coil-network-ktor3:3.0.4")
+
+            // Optional but recommended: The core library to ensure version alignment
+            implementation("io.coil-kt.coil3:coil:3.0.4")
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)

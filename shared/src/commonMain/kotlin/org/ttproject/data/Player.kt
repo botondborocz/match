@@ -12,5 +12,6 @@ data class Player(
     // We'll calculate mock values for the UI display based on your design
     val age: Int = (18..45).random(),
     val elo: Int = (1000..2000).random(),
-    val distanceKm: Int = (1..10).random()
+    val distanceKm: Int = (1..10).random(),
+    val imageUrl: String? = null
 )

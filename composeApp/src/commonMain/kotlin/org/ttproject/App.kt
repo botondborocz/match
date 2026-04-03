@@ -291,10 +291,10 @@ fun App(
                                         // 👇 3. Pass the state to the screen
                                         playAnimation = playMessagesAnimation,
                                         bottomNavPadding = innerPadding.calculateBottomPadding(),
-                                        onNavigateToChat = { chatId, otherUsername ->
+                                        onNavigateToChat = { chatId, otherUsername, otherUserImageUrl ->
                                             // 👇 4. We are going to a chat! Turn off the animation for when we come back.
                                             playMessagesAnimation = false
-                                            navController.navigate(NavRoute.ChatDetail(chatId, otherUsername))
+                                            navController.navigate(NavRoute.ChatDetail(chatId, otherUsername, otherUserImageUrl))
                                         }
                                     )
                                 }
@@ -330,6 +330,7 @@ fun App(
                                             viewModel = chatViewModel,
                                             chatId = route.chatId,
                                             otherUsername = route.otherUsername,
+                                            otherUserImageUrl = route.otherUserImageUrl,
                                             bottomNavPadding = innerPadding.calculateBottomPadding(),
                                             onBack = { navController.popBackStack() }
                                         )

@@ -77,6 +77,7 @@ fun Application.module() {
 
             val options = FirebaseOptions.builder()
                 .setCredentials(GoogleCredentials.fromStream(serviceAccount))
+                .setStorageBucket("match-79922.firebasestorage.app")
                 .build()
             FirebaseApp.initializeApp(options)
             println("✅ Firebase Admin SDK initialized successfully!")

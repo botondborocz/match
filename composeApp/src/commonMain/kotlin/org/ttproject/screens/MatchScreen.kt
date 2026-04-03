@@ -27,11 +27,13 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil3.compose.AsyncImage
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
@@ -145,6 +147,7 @@ fun MatchScreen(
 
                         uiState is MatchUiState.Success -> {
                             val players = (uiState as MatchUiState.Success).players
+                            println(players)
                             val topPlayer = players.firstOrNull()
                             val offsetX = remember(topPlayer?.id) { Animatable(0f) }
                             val offsetY = remember(topPlayer?.id) { Animatable(0f) }
@@ -397,10 +400,9 @@ fun SwipeableMatchCard(
 
     Box(
         modifier = modifier
-            .heightIn(max = 800.dp)
-            .fillMaxHeight(0.9f)
-            .padding(bottom = 120.dp) // Make room for the buttons floating over it
+            .fillMaxWidth()
             .widthIn(max = 400.dp)
+            .padding(bottom = 120.dp) // Make room for the buttons floating over it
             .padding(horizontal = 24.dp)
             .graphicsLayer {
                 translationX = offsetX.value
@@ -457,24 +459,61 @@ fun MatchCardContent(
     player: Player,
     backgroundBrush: Brush
 ) {
+    // Determine if we have a valid image URL
+    val hasImage = !player.imageUrl.isNullOrBlank()
+
     Box(
         modifier = Modifier
-            .fillMaxSize()
+            .fillMaxWidth()
+            .aspectRatio(3f / 4f)
             .clip(RoundedCornerShape(24.dp))
-            .background(backgroundBrush)
+            // Apply the fallback brush ONLY if there is no image
+            .then(if (hasImage) Modifier else Modifier.background(backgroundBrush))
     ) {
+
+        // --- 1. BACKGROUND IMAGE & SCRIM ---
+        if (hasImage) {
+            // The Image
+            AsyncImage(
+                model = player.imageUrl,
+                contentDescription = "Profile picture of ${player.username}",
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop // Ensures it fills the rounded card without stretching
+            )
+
+            // The Scrim (Dark gradient overlay at the bottom to protect text readability)
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(
+                                Color.Transparent, // Top is fully clear
+                                Color.Black.copy(alpha = 0.1f),
+                                Color.Black.copy(alpha = 0.8f) // Bottom is dark
+                            )
+                        )
+                    )
+            )
+        }
+
+        // --- 2. FOREGROUND CONTENT ---
         Column(
             modifier = Modifier.fillMaxSize(),
             verticalArrangement = Arrangement.Bottom
         ) {
-
+            // Top/Center Spacer Area
             Box(
                 modifier = Modifier.weight(1f).fillMaxWidth(),
                 contentAlignment = Alignment.Center
             ) {
-                Box(modifier = Modifier.size(120.dp).clip(CircleShape).background(Color.White.copy(alpha = 0.2f)))
+                // 👇 Only show the placeholder circle if there is no real image
+                if (!hasImage) {
+                    Box(modifier = Modifier.size(120.dp).clip(CircleShape).background(Color.White.copy(alpha = 0.2f)))
+                }
             }
 
+            // Bottom Info Area (Text, Badges, etc.)
             Column(
                 modifier = Modifier.fillMaxWidth().padding(24.dp)
             ) {
@@ -517,7 +556,7 @@ fun MatchCardContent(
                     Icon(Icons.Default.LocationOn, contentDescription = null, tint = Color.LightGray, modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
-                        text = "${player.distanceKm} km away",
+                        text = "${player.distanceKm} km away", // Or whatever calculation you have
                         color = Color.LightGray,
                         fontSize = 14.sp
                     )

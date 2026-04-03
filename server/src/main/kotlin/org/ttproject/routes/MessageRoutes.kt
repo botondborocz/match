@@ -66,6 +66,7 @@ fun Route.messageRoutes() {
                     // Fetch the other user's details
                     val otherUser = Users.selectAll().where { Users.id eq otherUserId }.singleOrNull()
                     val otherUserName = otherUser?.get(Users.username) ?: "Unknown Player"
+                    val otherUserImageUrl = otherUser?.get(Users.profileImageUrl) // Optional: If you have profile images
 
                     // Optional: Fetch the actual last message (Keep it simple for MVP)
                     val lastMessageRow = Messages.selectAll()
@@ -87,6 +88,7 @@ fun Route.messageRoutes() {
                     ChatThreadDto(
                         id = connectionId.toString(),
                         otherUserName = otherUserName,
+                        otherUserImageUrl = otherUserImageUrl,
                         lastMessage = lastMessageText,
                         timestamp = timestamp,
                         unreadCount = unreadMessagesCount, // Implement unread logic later

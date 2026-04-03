@@ -32,6 +32,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -39,6 +40,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil3.compose.AsyncImage
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
 import org.koin.compose.koinInject
@@ -73,7 +75,7 @@ fun MessagesScreen(
     viewModel: MessagesViewModel = koinViewModel(),
     playAnimation: Boolean = true,
     bottomNavPadding: Dp,
-    onNavigateToChat: (String, String) -> Unit
+    onNavigateToChat: (String, String, String?) -> Unit
 ) {
     val chatThreads by viewModel.threads.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
@@ -147,7 +149,7 @@ fun MessagesScreen(
                                 ) {
                                     ChatListItem(
                                         thread = thread,
-                                        onClick = { onNavigateToChat(thread.id, thread.otherUserName) }
+                                        onClick = { onNavigateToChat(thread.id, thread.otherUserName, thread.otherUserImageUrl) }
                                     )
                                 }
                             }
@@ -165,6 +167,7 @@ fun ChatDetailScreen(
     viewModel: ChatViewModel = koinViewModel<ChatViewModel>(),
     chatId: String,
     otherUsername: String,
+    otherUserImageUrl: String?,
     bottomNavPadding: Dp,
     onBack: () -> Unit
 ) {
@@ -221,7 +224,23 @@ fun ChatDetailScreen(
                         modifier = Modifier.size(36.dp).clip(CircleShape).background(AppColors.SurfaceDark),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(getInitials(otherUsername), color = AppColors.AccentOrange, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                        // 👇 NEW: Check if there is an image URL
+                        if (!otherUserImageUrl.isNullOrBlank()) {
+                            AsyncImage(
+                                model = otherUserImageUrl,
+                                contentDescription = "Profile picture of $otherUsername",
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop // Keeps the image perfectly circular without squishing
+                            )
+                        } else {
+                            // FALLBACK INITIALS
+                            Text(
+                                text = getInitials(otherUsername),
+                                color = AppColors.AccentOrange,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 18.sp
+                            )
+                        }
                     }
                     Spacer(modifier = Modifier.width(12.dp))
                     Text(otherUsername, color = AppColors.TextPrimary, fontSize = 18.sp, fontWeight = FontWeight.Bold)
@@ -263,10 +282,6 @@ fun ChatDetailScreen(
                 val olderMessage = displayMessages.getOrNull(index + 1)
                 // The "newer" message is physically BELOW this one
                 val newerMessage = displayMessages.getOrNull(index - 1)
-
-                println(olderMessage?.createdAt)
-                println(msg.createdAt)
-                println(newerMessage?.createdAt)
 
                 // 👇 1. Should we show the centered time above this specific message?
                 val showTimeHeader = olderMessage == null ||
@@ -508,20 +523,44 @@ fun ChatListItem(thread: ChatThreadDto, onClick: () -> Unit) {
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp).fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
+
+            // --- AVATAR BOX ---
             Box(modifier = Modifier.size(52.dp)) {
+                // The main circular container
                 Box(
                     modifier = Modifier.size(52.dp).clip(CircleShape).background(AppColors.SurfaceDark),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(getInitials(thread.otherUserName), color = AppColors.AccentOrange, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                    // 👇 NEW: Check if there is an image URL
+                    if (!thread.otherUserImageUrl.isNullOrBlank()) {
+                        AsyncImage(
+                            model = thread.otherUserImageUrl,
+                            contentDescription = "Profile picture of ${thread.otherUserName}",
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop // Keeps the image perfectly circular without squishing
+                        )
+                    } else {
+                        // FALLBACK INITIALS
+                        Text(
+                            text = getInitials(thread.otherUserName),
+                            color = AppColors.AccentOrange,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 18.sp
+                        )
+                    }
                 }
+
+                // Online Indicator (Stays exactly the same)
                 if (thread.isOnline) {
                     Box(modifier = Modifier.size(14.dp).align(Alignment.BottomEnd).offset(x = (-2).dp, y = (-2).dp).clip(CircleShape).background(Color(0xFF4CAF50)).padding(2.dp)) {
                         Box(modifier = Modifier.fillMaxSize().clip(CircleShape).background(Color(0xFF4CAF50)))
                     }
                 }
             }
+
             Spacer(modifier = Modifier.width(16.dp))
+
+            // --- TEXT CONTENT ---
             Column(modifier = Modifier.weight(1f)) {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                     Text(thread.otherUserName, color = AppColors.TextPrimary, fontWeight = if (thread.unreadCount > 0) FontWeight.Bold else FontWeight.Medium, fontSize = 16.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))

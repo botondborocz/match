@@ -8,11 +8,16 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import org.ttproject.repository.UserRepository
 
-// You'll need a repository for user API calls
-
 sealed class ProfileState {
     object Loading : ProfileState()
-    data class Success(val name: String?, val elo: Int, val winRate: String, val language: String?) : ProfileState()
+    // 👇 Added imageUrl here
+    data class Success(
+        val name: String?,
+        val elo: Int,
+        val winRate: String,
+        val language: String?,
+        val imageUrl: String? = null
+    ) : ProfileState()
     data class Error(val message: String) : ProfileState()
 }
 
@@ -41,18 +46,35 @@ class ProfileViewModel(
         viewModelScope.launch {
             _uiState.value = ProfileState.Loading
             try {
-                // This repository function should use Ktor to call your GET /me endpoint
-                // and automatically attach the JWT from TokenStorage
                 val user = userRepository.getMyProfile()
 
                 _uiState.value = ProfileState.Success(
                     name = user.name,
                     elo = user.elo,
                     winRate = user.winRate,
-                    language = user.preferredLanguage
+                    language = user.preferredLanguage,
+                    imageUrl = user.imageUrl // 👈 Make sure your UserProfile data class has this property!
                 )
             } catch (e: Exception) {
                 _uiState.value = ProfileState.Error("Failed to load profile: ${e.message}")
+            }
+        }
+    }
+
+    // 👇 New function to handle the image upload
+    fun uploadProfileImage(imageBytes: ByteArray) {
+        viewModelScope.launch {
+            _updateState.value = UpdateState.Loading
+
+            val result = userRepository.uploadProfileImage(imageBytes)
+
+            if (result.isSuccess) {
+                _updateState.value = UpdateState.Success
+                // Re-fetch the profile so the UI gets the new Firebase Download URL from the server
+                fetchUserProfile()
+            } else {
+                val errorMsg = result.exceptionOrNull()?.message ?: "Unknown upload error"
+                _updateState.value = UpdateState.Error(errorMsg)
             }
         }
     }

@@ -1,53 +1,52 @@
 package org.ttproject.repository
 
-import org.ttproject.data.UserProfile
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.bearerAuth
+import io.ktor.client.request.forms.MultiPartFormDataContent
+import io.ktor.client.request.forms.formData
 import io.ktor.client.request.get
-import io.ktor.client.request.header
+import io.ktor.client.request.post
 import io.ktor.client.request.put
 import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
+import io.ktor.http.Headers
 import io.ktor.http.HttpHeaders
 import io.ktor.http.contentType
 import io.ktor.http.isSuccess
 import org.ttproject.SERVER_IP
-import org.ttproject.data.PlayerResponse
 import org.ttproject.data.TokenStorage
 import org.ttproject.data.UpdateLanguageRequest
+import org.ttproject.data.UserProfile
 
-// 1. The Interface (The Blueprint)
+// 1. The Interface
 interface UserRepository {
     suspend fun getMyProfile(): UserProfile
     suspend fun updateLanguage(language: String): Result<Boolean>
+
+    // 👇 Added interface method
+    suspend fun uploadProfileImage(imageBytes: ByteArray): Result<Boolean>
 }
 
-// 2. The Implementation (The actual Ktor network calls)
+// 2. The Implementation
 class UserRepositoryImpl(
     private val httpClient: HttpClient,
     private val tokenStorage: TokenStorage
 ) : UserRepository {
 
     override suspend fun getMyProfile(): UserProfile {
-        // Step 1: Grab the saved token
         val token = tokenStorage.getToken()
             ?: throw Exception("No auth token found! User should be logged out.")
 
-        // Step 2: Make the GET request to your /me endpoint
         val response = httpClient.get("${SERVER_IP}/api/users/me") {
-            // 👇 THIS IS THE CRITICAL LINE! It attaches your token to the request.
-            bearerAuth(tokenStorage.getToken()!!)
+            bearerAuth(token)
         }
 
-        // Step 3: Check if the server accepted it
         if (response.status.value in 200..299) {
-            // Success! Ktor automatically parses the JSON into your UserProfile class
             val userProfile: UserProfile = response.body()
             tokenStorage.saveUserId(userProfile.id)
-            return response.body()
+            return userProfile
         } else if (response.status.value == 401) {
-            // 401 means the token expired or is invalid
             throw Exception("Session expired. Please log in again.")
         } else {
             throw Exception("Server error: ${response.status.description}")
@@ -66,6 +65,37 @@ class UserRepositoryImpl(
                 Result.success(true)
             } else {
                 Result.failure(Exception("Failed to update language. Server returned: ${response.status}"))
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Result.failure(e)
+        }
+    }
+
+    // 👇 New implementation for sending the image via Multipart Form Data
+    override suspend fun uploadProfileImage(imageBytes: ByteArray): Result<Boolean> {
+        return try {
+            val token = tokenStorage.getToken() ?: throw Exception("No auth token")
+
+            val response = httpClient.post("${SERVER_IP}/api/users/profile-image") {
+                bearerAuth(token)
+                setBody(
+                    MultiPartFormDataContent(
+                        formData {
+                            append("image", imageBytes, Headers.build {
+                                append(HttpHeaders.ContentType, "image/jpeg")
+                                // The filename doesn't matter too much here since the server assigns a new one
+                                append(HttpHeaders.ContentDisposition, "filename=\"profile_pic.jpg\"")
+                            })
+                        }
+                    )
+                )
+            }
+
+            if (response.status.isSuccess()) {
+                Result.success(true)
+            } else {
+                Result.failure(Exception("Upload failed. Server returned: ${response.status}"))
             }
         } catch (e: Exception) {
             e.printStackTrace()

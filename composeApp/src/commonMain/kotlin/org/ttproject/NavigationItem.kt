@@ -32,6 +32,7 @@ import ttproject.composeapp.generated.resources.house
 import ttproject.composeapp.generated.resources.map
 import ttproject.composeapp.generated.resources.user
 import ttproject.composeapp.generated.resources.message_circle
+import ttproject.composeapp.generated.resources.zap
 
 // --- THE WRAPPER CLASS ---
 sealed interface AppIcon {
@@ -47,7 +48,7 @@ sealed class NavRoute {
     @Serializable data object Coach : NavRoute()
     @Serializable data object Messages : NavRoute()
     @Serializable data object Profile : NavRoute()
-    @Serializable data class ChatDetail(val chatId: String, val otherUsername: String) : NavRoute()
+    @Serializable data class ChatDetail(val chatId: String, val otherUsername: String, val otherUserImageUrl: String?) : NavRoute()
 }
 
 // 2. Your Navigation Item Data Class
@@ -62,7 +63,7 @@ val MainNavItems = listOf(
 
     // Standard Icon -> Wrap in AppIcon.Vector
     NavigationItem(NavRoute.Map, SharedRes.string.map, AppIcon.Drawable(AppRes.drawable.map)),
-    NavigationItem(NavRoute.Match, SharedRes.string.match, AppIcon.Drawable(AppRes.drawable.flame)),
+    NavigationItem(NavRoute.Match, SharedRes.string.match, AppIcon.Drawable(AppRes.drawable.zap)),
 
     // YOUR CUSTOM XML -> Wrap in AppIcon.Drawable
     NavigationItem(

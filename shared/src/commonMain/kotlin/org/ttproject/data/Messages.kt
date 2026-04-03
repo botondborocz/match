@@ -14,6 +14,7 @@ data class MessageDto(
 data class ChatThreadDto(
     val id: String, // This is the connectionId
     val otherUserName: String,
+    val otherUserImageUrl: String? = null,
     val lastMessage: String,
     val timestamp: String,
     val unreadCount: Int = 0,

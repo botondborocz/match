@@ -10,7 +10,8 @@ data class UserProfile(
     val email: String,
     val elo: Int,
     val winRate: String,
-    val preferredLanguage: String? = "en" // Optional fallback
+    val preferredLanguage: String? = "en", // Optional fallback
+    val imageUrl: String? = null // Optional profile picture URL
 )
 
 @Serializable
@@ -20,5 +21,6 @@ data class PlayerResponse(
     val skillLevel: String,
     val lat: Double?,
     val lng: Double?,
-    val preferredLanguage: String? = null
+    val preferredLanguage: String? = null,
+    val imageUrl: String? = null
 )
