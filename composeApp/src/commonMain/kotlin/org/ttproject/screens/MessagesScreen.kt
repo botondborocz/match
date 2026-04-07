@@ -58,6 +58,7 @@ import org.ttproject.viewmodel.MessagesViewModel
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Instant
 import kotlinx.datetime.toInstant
+import org.ttproject.components.AdaptivePullToRefresh
 import kotlin.time.Duration.Companion.minutes
 
 data class ChatThread(
@@ -110,11 +111,9 @@ fun MessagesScreen(
                 CircularProgressIndicator(color = AppColors.AccentOrange)
             }
         } else {
-            // 👇 2. Use the new PullToRefreshBox! It handles the nested scroll automatically.
-            PullToRefreshBox(
-                isRefreshing = isLoading, // Binds directly to your ViewModel state!
-                onRefresh = { viewModel.loadConnections() }, // Triggers when the user swipes down
-                state = pullToRefreshState,
+            AdaptivePullToRefresh(
+                isRefreshing = isLoading,
+                onRefresh = { viewModel.loadConnections() },
                 modifier = Modifier.fillMaxSize()
             ) {
                 if (chatThreads.isEmpty()) {
