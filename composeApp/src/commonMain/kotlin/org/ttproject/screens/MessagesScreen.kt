@@ -177,7 +177,7 @@ fun ChatDetailScreen(
 
     // 1. Create a conditional WindowInsets for the keyboard
     val imeInsets = if (isIosPlatform()) {
-        WindowInsets(0.dp) // iOS is handled by SwiftUI resizing
+        WindowInsets.ime // iOS is handled by SwiftUI resizing
     } else {
         WindowInsets.ime   // Android needs Compose to handle the inset
     }
