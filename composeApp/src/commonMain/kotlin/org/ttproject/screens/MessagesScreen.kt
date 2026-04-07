@@ -175,6 +175,14 @@ fun ChatDetailScreen(
     val isLoading by viewModel.isLoading.collectAsState()
 
     var messageText by remember { mutableStateOf("") }
+
+    // 1. Create a conditional WindowInsets for the keyboard
+    val imeInsets = if (isIosPlatform()) {
+        WindowInsets(0.dp) // iOS is handled by SwiftUI resizing
+    } else {
+        WindowInsets.ime   // Android needs Compose to handle the inset
+    }
+
     val bottomNavInset = remember(bottomNavPadding) { WindowInsets(bottom = bottomNavPadding + 10.dp) }
     val focusManager = LocalFocusManager.current
     val tokenStorage: TokenStorage = koinInject()
@@ -209,7 +217,7 @@ fun ChatDetailScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(AppColors.Background)
-            .windowInsetsPadding(WindowInsets.ime.union(bottomNavInset))
+            .windowInsetsPadding(bottomNavInset.union(imeInsets))
             .pointerInput(Unit) {
                 detectTapGestures(onTap = {
                     focusManager.clearFocus()
