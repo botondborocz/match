@@ -271,7 +271,7 @@ fun App(
                                         composable<NavRoute.Map> { Spacer(modifier = Modifier.fillMaxSize()) }
 
                                         composable<NavRoute.Match> {
-                                            Box(modifier = Modifier.fillMaxSize().padding(bottom = frozenBottomPadding)) {
+                                            Box(modifier = Modifier.fillMaxSize().padding(innerPadding).padding(bottom = frozenBottomPadding)) {
                                                 MatchScreen(
                                                     onNavigateToLogin = {
                                                         currentAuthRoute = AuthRoute.Login
@@ -283,7 +283,7 @@ fun App(
                                         }
 
                                         composable<NavRoute.Coach> {
-                                            Box(modifier = Modifier.fillMaxSize().padding(bottom = frozenBottomPadding).padding(16.dp)) {
+                                            Box(modifier = Modifier.fillMaxSize().padding(innerPadding).padding(bottom = frozenBottomPadding).padding(16.dp)) {
                                                 Text("Coach Screen", color = AppColors.TextPrimary)
                                                 Button(
                                                     onClick = {
@@ -311,7 +311,7 @@ fun App(
                                         }
 
                                         composable<NavRoute.Profile> {
-                                            Box(modifier = Modifier.fillMaxSize().padding(bottom = frozenBottomPadding)) {
+                                            Box(modifier = Modifier.fillMaxSize().padding(innerPadding).padding(bottom = frozenBottomPadding)) {
                                                 if (isLoggedIn) {
                                                     ProfileScreen(
                                                         bottomNavPadding = 0.dp,
