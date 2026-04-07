@@ -208,7 +208,7 @@ fun ChatDetailScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-//            .background(AppColors.Background)
+            .background(AppColors.Background)
             .windowInsetsPadding(WindowInsets.ime.union(bottomNavInset))
             .pointerInput(Unit) {
                 detectTapGestures(onTap = {
