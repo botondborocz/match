@@ -222,7 +222,7 @@ fun App(
                             // Scaffold is now INSIDE the route, so it slides beautifully!
                             Scaffold(
                                 topBar = {
-                                    if (isMobile && currentRoute != NavRoute.Map && currentRoute != NavRoute.Messages) {
+                                    if (isMobile && currentRoute != NavRoute.Map && currentRoute != NavRoute.Messages && currentRoute != NavRoute.Match) {
                                         MobileTopBar()
                                     }
                                 },
