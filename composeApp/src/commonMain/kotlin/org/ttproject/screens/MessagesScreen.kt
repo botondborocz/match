@@ -100,7 +100,7 @@ fun MessagesScreen(
         modifier = Modifier
             .fillMaxSize()
 //            .background(AppColors.Background)
-            .padding(bottom = bottomNavPadding + 10.dp)
+            .padding(bottom = bottomNavPadding + 0.dp)
     ) {
         MobileTopBar()
 
