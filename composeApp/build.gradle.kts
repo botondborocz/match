@@ -38,6 +38,7 @@ kotlin {
             implementation("io.insert-koin:koin-android:3.5.3")
             implementation("io.ktor:ktor-client-okhttp:3.3.0")
             implementation("com.google.firebase:firebase-messaging:23.4.1")
+            implementation("androidx.lifecycle:lifecycle-process:2.7.0")
         }
         commonMain.dependencies {
             implementation(libs.compose.runtime)

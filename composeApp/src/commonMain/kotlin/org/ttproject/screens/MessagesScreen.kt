@@ -99,7 +99,7 @@ fun MessagesScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(AppColors.Background)
+//            .background(AppColors.Background)
             .padding(bottom = bottomNavPadding + 10.dp)
     ) {
         MobileTopBar()
@@ -140,18 +140,18 @@ fun MessagesScreen(
 
                         itemsIndexed(chatThreads, key = { _, thread -> thread.id }) { index, thread ->
                             Column {
-                                AnimatedVisibility(
-                                    visibleState = listVisibleState,
-                                    enter = slideInVertically(
-                                        initialOffsetY = { 50 },
-                                        animationSpec = tween(durationMillis = 300, delayMillis = index * 40)
-                                    ) + fadeIn(animationSpec = tween(durationMillis = 300, delayMillis = index * 40))
-                                ) {
+//                                AnimatedVisibility(
+//                                    visibleState = listVisibleState,
+//                                    enter = slideInVertically(
+//                                        initialOffsetY = { 50 },
+//                                        animationSpec = tween(durationMillis = 300, delayMillis = index * 40)
+//                                    ) + fadeIn(animationSpec = tween(durationMillis = 300, delayMillis = index * 40))
+//                                ) {
                                     ChatListItem(
                                         thread = thread,
                                         onClick = { onNavigateToChat(thread.id, thread.otherUserName, thread.otherUserImageUrl) }
                                     )
-                                }
+//                                }
                             }
                         }
                     }
@@ -208,7 +208,7 @@ fun ChatDetailScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(AppColors.Background)
+//            .background(AppColors.Background)
             .windowInsetsPadding(WindowInsets.ime.union(bottomNavInset))
             .pointerInput(Unit) {
                 detectTapGestures(onTap = {

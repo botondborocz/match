@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import org.ttproject.data.ChatThreadDto
 import org.ttproject.repository.ChatRepository
+import org.ttproject.util.NotificationEventBus
 
 class MessagesViewModel(
     private val repository: ChatRepository
@@ -24,12 +25,12 @@ class MessagesViewModel(
         loadConnections()
 
         // 👇 THE FIX: Listen for FCM background pings!
-//        viewModelScope.launch {
-//            NotificationEventBus.refreshEvents.collect {
-//                // Whenever FCM receives a message, silently reload the list in the background
-//                loadConnections()
-//            }
-//        }
+        viewModelScope.launch {
+            NotificationEventBus.refreshEvents.collect {
+                // Whenever FCM receives a message, silently reload the list in the background
+                loadConnections()
+            }
+        }
     }
 
     fun loadConnections() {

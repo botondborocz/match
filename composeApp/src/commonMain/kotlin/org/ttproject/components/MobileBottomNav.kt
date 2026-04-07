@@ -150,34 +150,14 @@ fun MobileBottomNav(
                                 label = label,
                                 glowColor = glowColor
                             )
-                        } else if (item.route == NavRoute.Messages) {
-                            BadgedBox(
-                                badge = {
-                                    // 👇 2. Only show the badge if the count is greater than 0
-                                    if (unreadChatsCount > 0) {
-                                        Badge(
-                                            containerColor = AppColors.AccentOrange, // Your custom orange!
-                                            contentColor = Color.White
-                                        ) {
-                                            Text(text = unreadChatsCount.toString())
-                                        }
-                                    }
-                                }
-                            ) {
-                                StandardTabItem(
-                                    item = item,
-                                    isSelected = isSelected,
-                                    label = label,
-                                    activeColor = glowColor
-                                )
-                            }
                         } else {
                             // --- STANDARD TAB ITEM ---
                             StandardTabItem(
                                 item = item,
                                 isSelected = isSelected,
                                 label = label,
-                                activeColor = glowColor
+                                activeColor = glowColor,
+                                badgeCount = if (item.route == NavRoute.Messages) unreadChatsCount else 0
                             )
                         }
                     }
@@ -192,7 +172,8 @@ fun StandardTabItem(
     item: org.ttproject.NavigationItem,
     isSelected: Boolean,
     label: String,
-    activeColor: Color
+    activeColor: Color,
+    badgeCount: Int = 0
 ) {
     // Animate the vertical position (Move UP when selected)
     val animatedOffsetY by animateDpAsState(
@@ -208,20 +189,35 @@ fun StandardTabItem(
         val tint = if (isSelected) activeColor else AppColors.TextSecondary
         val iconSize = 26.dp
 
-        // Render Icon Wrapper
-        when (val icon = item.icon) {
-            is AppIcon.Vector -> Icon(
-                imageVector = icon.value,
-                contentDescription = label,
-                tint = tint,
-                modifier = Modifier.size(iconSize).offset(y = animatedOffsetY)
-            )
-            is AppIcon.Drawable -> Icon(
-                painter = painterResource(icon.value),
-                contentDescription = label,
-                tint = tint,
-                modifier = Modifier.size(iconSize).offset(y = animatedOffsetY)
-            )
+        BadgedBox(
+            badge = {
+                if (badgeCount > 0) {
+                    Badge(
+                        containerColor = AppColors.AccentOrange,
+                        contentColor = Color.White,
+                        modifier = Modifier.offset(x = 4.dp, y = (-4).dp)
+                    ) {
+                        Text(text = badgeCount.toString())
+                    }
+                }
+            },
+            modifier = Modifier.offset(y = animatedOffsetY) // 👈 Icon and Badge move together!
+        ) {
+            // Render Icon Wrapper WITHOUT the individual offset
+            when (val icon = item.icon) {
+                is AppIcon.Vector -> Icon(
+                    imageVector = icon.value,
+                    contentDescription = label,
+                    tint = tint,
+                    modifier = Modifier.size(iconSize)
+                )
+                is AppIcon.Drawable -> Icon(
+                    painter = painterResource(icon.value),
+                    contentDescription = label,
+                    tint = tint,
+                    modifier = Modifier.size(iconSize)
+                )
+            }
         }
         Text(
             text = label,

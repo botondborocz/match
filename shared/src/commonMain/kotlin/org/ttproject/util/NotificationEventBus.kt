@@ -1,4 +1,4 @@
-package org.ttproject.notifications
+package org.ttproject.util
 
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow

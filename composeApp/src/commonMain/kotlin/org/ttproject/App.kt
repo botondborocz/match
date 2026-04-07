@@ -9,7 +9,9 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
@@ -17,10 +19,13 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.intl.Locale
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
@@ -109,6 +114,10 @@ fun App(
             val navBackStackEntry by navController.currentBackStackEntryAsState()
             val currentDestination = navBackStackEntry?.destination
 
+            // This tracks every screen currently active or animating on the screen.
+            val visibleEntries by navController.visibleEntries.collectAsState()
+            val isChatDetailVisible = visibleEntries.any { it.destination.hasRoute(NavRoute.ChatDetail::class) }
+
             var currentRoute = remember(currentDestination) {
                 when {
                     currentDestination?.hasRoute(NavRoute.Match::class) == true -> NavRoute.Match
@@ -149,6 +158,7 @@ fun App(
             BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
 
                 val isMobile = maxWidth < 600.dp
+                val isChatDetailScreen = currentDestination?.hasRoute(NavRoute.ChatDetail::class) == true
 
                 Row(modifier = Modifier.fillMaxSize().background(AppColors.Background)) {
 
@@ -160,6 +170,7 @@ fun App(
                         )
                     }
 
+
                     // Main Content Area: Replaced Column with Scaffold
                     Scaffold(
                         topBar = {
@@ -167,83 +178,76 @@ fun App(
                                 MobileTopBar()
                             }
                         },
-                        bottomBar = {
-                            if (isMobile) {
-                                MobileBottomNav(
-                                    currentRoute = currentRoute,
-                                    onNavigate = onNavigate
-                                )
-                            }
-                        },
                         containerColor = Color.Transparent,
-                        modifier = Modifier.weight(1f) // Takes the remaining width next to the Sidebar
+                        modifier = Modifier.weight(1f).clipToBounds()
                     ) { innerPadding ->
-                        Box(modifier = Modifier.fillMaxSize()) {
-                            val isMapActive = currentRoute == NavRoute.Map
 
-                            // 👇 2. THE PERMANENT MAP LAYER
-                            // This never gets destroyed. It stays alive in the background.
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .padding(bottom = innerPadding.calculateBottomPadding())
-                            ) {
+                        // Calculate standard bottom nav height (80.dp + system insets)
+                        val bottomNavHeight = 80.dp + WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+                        val frozenBottomPadding = if (isMobile) bottomNavHeight else 0.dp
+                        val isMapActive = currentRoute == NavRoute.Map
+
+                        Box(modifier = Modifier.fillMaxSize()) {
+
+                            // --- LAYER 1: MAP ---
+                            Box(modifier = Modifier.fillMaxSize().padding(bottom = frozenBottomPadding)) {
                                 MapScreen(isActive = isMapActive)
                             }
 
-                            Column(modifier = Modifier.fillMaxSize()) {
-                                AnimatedVisibility(
-                                    visible = currentRoute != NavRoute.Map,
-                                    enter = fadeIn(tween(200)),
-                                    exit = fadeOut(tween(200))
-                                ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxSize()
-                                            .background(AppColors.Background)
+                            // --- LAYER 2: GLOBAL SOLID BACKGROUND ---
+                            // This guarantees a dark canvas so the map doesn't show through.
+                            androidx.compose.animation.AnimatedVisibility(
+                                visible = currentRoute != NavRoute.Map,
+                                enter = fadeIn(tween(200)),
+                                exit = fadeOut(tween(200))
+                            ) {
+                                Box(modifier = Modifier.fillMaxSize().background(AppColors.Background))
+                            }
+
+                            // --- LAYER 3: BOTTOM NAV BAR ---
+                            // Placed under the NavHost so ChatDetail can slide over it.
+                            Box(modifier = Modifier.align(Alignment.BottomCenter).zIndex(if (isChatDetailVisible) 0f else 1f)) {
+                                androidx.compose.animation.AnimatedVisibility(
+                                    visible = isMobile && !isChatDetailScreen,
+                                    enter = slideInHorizontally(
+                                        initialOffsetX = { -it / 3 },
+                                        animationSpec = tween(300, easing = LinearEasing)
+                                    ),
+                                    exit = slideOutHorizontally(
+                                        targetOffsetX = { -it / 3 },
+                                        animationSpec = tween(300, easing = LinearEasing)
                                     )
+                                ) {
+                                    MobileBottomNav(currentRoute = currentRoute, onNavigate = onNavigate)
                                 }
                             }
 
+                            // --- LAYER 4: NAVHOST ---
                             NavHost(
                                 navController = navController,
                                 startDestination = NavRoute.Map,
-                                modifier = Modifier
-                                    .fillMaxSize(),
+                                modifier = Modifier.fillMaxSize().zIndex(if (isChatDetailVisible) 1f else 0f),
                                 enterTransition = { EnterTransition.None },
                                 exitTransition = { ExitTransition.None },
                                 popEnterTransition = { EnterTransition.None },
                                 popExitTransition = { ExitTransition.None }
                             ) {
-                                composable<NavRoute.Map> {
-//                                    Box(
-//                                        modifier = Modifier
-//                                            .fillMaxSize()
-////                                        .padding(innerPadding)
-//                                            .padding(bottom = innerPadding.calculateBottomPadding())
-//                                    ) {
-//                                        MapScreen()
-//                                    }
-                                    Spacer(modifier = Modifier.fillMaxSize())
-                                }
+                                composable<NavRoute.Map> { Spacer(modifier = Modifier.fillMaxSize()) }
+
                                 composable<NavRoute.Match> {
-                                    Box(modifier = Modifier.fillMaxSize().background(AppColors.Background).padding(innerPadding)) {
+                                    // 👇 Fixed: Added padding, REMOVED solid background
+                                    Box(modifier = Modifier.fillMaxSize().padding(bottom = frozenBottomPadding)) {
                                         MatchScreen(
                                             onNavigateToLogin = {
                                                 currentAuthRoute = AuthRoute.Login
                                                 onNavigate(NavRoute.Profile)
                                             },
-                                            onNavigateToMessages = {
-                                                onNavigate(NavRoute.Messages)
-                                            }
+                                            onNavigateToMessages = { onNavigate(NavRoute.Messages) }
                                         )
                                     }
                                 }
                                 composable<NavRoute.Coach> {
-                                    Box(
-                                        modifier = Modifier.fillMaxSize().background(AppColors.Background).padding(innerPadding)
-                                            .padding(16.dp)
-                                    ) {
+                                    Box(modifier = Modifier.fillMaxSize().padding(bottom = frozenBottomPadding).padding(16.dp)) {
                                         Text("Coach Screen", color = AppColors.TextPrimary)
                                         Button(
                                             onClick = {
@@ -260,12 +264,9 @@ fun App(
                                 composable<NavRoute.Messages>(
                                     exitTransition = {
                                         if (targetState.destination.hasRoute(NavRoute.ChatDetail::class)) {
-                                            // 👇 iOS Parallax Exit: Slide left only 33% and slightly fade to simulate a shadow
+                                            // 👇 Just the slide, no fade!
                                             slideOutHorizontally(
                                                 targetOffsetX = { -it / 3 },
-                                                animationSpec = tween(300, easing = LinearEasing)
-                                            ) + fadeOut(
-                                                targetAlpha = 0.5f,
                                                 animationSpec = tween(300, easing = LinearEasing)
                                             )
                                         } else {
@@ -274,12 +275,9 @@ fun App(
                                     },
                                     popEnterTransition = {
                                         if (initialState.destination.hasRoute(NavRoute.ChatDetail::class)) {
-                                            // 👇 iOS Parallax Enter: Slide back to center from the 33% mark
+                                            // 👇 Just the slide, no fade!
                                             slideInHorizontally(
                                                 initialOffsetX = { -it / 3 },
-                                                animationSpec = tween(300, easing = LinearEasing)
-                                            ) + fadeIn(
-                                                initialAlpha = 0.5f,
                                                 animationSpec = tween(300, easing = LinearEasing)
                                             )
                                         } else {
@@ -290,7 +288,7 @@ fun App(
                                     MessagesScreen(
                                         // 👇 3. Pass the state to the screen
                                         playAnimation = playMessagesAnimation,
-                                        bottomNavPadding = innerPadding.calculateBottomPadding(),
+                                        bottomNavPadding = frozenBottomPadding,
                                         onNavigateToChat = { chatId, otherUsername, otherUserImageUrl ->
                                             // 👇 4. We are going to a chat! Turn off the animation for when we come back.
                                             playMessagesAnimation = false
@@ -331,7 +329,7 @@ fun App(
                                             chatId = route.chatId,
                                             otherUsername = route.otherUsername,
                                             otherUserImageUrl = route.otherUserImageUrl,
-                                            bottomNavPadding = innerPadding.calculateBottomPadding(),
+                                            bottomNavPadding = 0.dp, // ChatDetail is full screen, no need to account for bottom nav
                                             onBack = { navController.popBackStack() }
                                         )
                                     }
@@ -340,9 +338,10 @@ fun App(
 
 
                                 composable<NavRoute.Profile> {
-                                    Box(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
+                                    Box(modifier = Modifier.fillMaxSize().padding(bottom = frozenBottomPadding)) {
                                         if (isLoggedIn) {
                                             ProfileScreen(
+                                                bottomNavPadding = 0.dp,
                                                 currentLanguage = currentLanguage,
                                                 currentThemeMode = currentThemeMode,
                                                 onLogoutClick = {

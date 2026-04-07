@@ -40,6 +40,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.preat.peekaboo.image.picker.SelectionMode
@@ -70,6 +71,7 @@ import org.ttproject.shared.resources.username
 
 @Composable
 fun ProfileScreen(
+    bottomNavPadding: Dp, // 👈 1. ADD THIS PARAMETER
     currentLanguage: String = "en",
     currentThemeMode: ThemeMode = ThemeMode.System,
     onLogoutClick: () -> Unit = {},
@@ -128,11 +130,11 @@ fun ProfileScreen(
 
         is ProfileState.Success -> {
             val userData = uiState as ProfileState.Success
-            var animateTrigger by remember { mutableStateOf(false) }
+            var animateTrigger by remember { mutableStateOf(true) }
 
-            LaunchedEffect(Unit) {
-                animateTrigger = true
-            }
+//            LaunchedEffect(Unit) {
+//                animateTrigger = true
+//            }
 
             LaunchedEffect(userData.language) {
                 if (userData.language != null && userData.language != currentLanguage) {
@@ -171,11 +173,15 @@ fun ProfileScreen(
                 )
             }
 
+            // 👇 2. UPDATE YOUR MAIN COLUMN MODIFIER
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(AppColors.Background)
+                    // 1st: Shave off the bottom so it never touches the Nav Bar
+                    .padding(bottom = bottomNavPadding)
+                    // 2nd: Make the remaining safe area scrollable
                     .verticalScroll(scrollState)
+                    // 3rd: Add your inner aesthetic padding
                     .padding(horizontal = 24.dp, vertical = 32.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
@@ -225,7 +231,7 @@ fun ProfileScreen(
                             onChangeTheme = onChangeTheme,
                             viewModel = viewModel
                         )
-                        Spacer(modifier = Modifier.height(80.dp))
+//                        Spacer(modifier = Modifier.height(80.dp))
                     }
                 }
             }
