@@ -40,14 +40,14 @@ class ChatViewModel(
         }
     }
 
-    fun sendMessage(text: String) {
+    fun sendMessage(text: String, replyToMessageId: String? = null) {
         if (text.isBlank()) return
 
         viewModelScope.launch {
             // Send it to the server.
             // The server will broadcast it back, which will be caught by `observeLiveMessages`
             // and automatically added to the UI!
-            repository.sendMessage(text)
+            repository.sendMessage(text, replyToMessageId)
             NotificationEventBus.triggerRefresh()
         }
     }

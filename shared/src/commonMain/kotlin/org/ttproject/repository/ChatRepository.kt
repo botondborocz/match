@@ -15,6 +15,7 @@ import org.ttproject.ORACLE_IP
 import org.ttproject.SERVER_DNS
 import org.ttproject.SERVER_IP
 import org.ttproject.data.ChatThreadDto
+import org.ttproject.data.IncomingMessageDto
 import org.ttproject.data.Location
 import org.ttproject.data.MessageDto
 import org.ttproject.data.TokenResponse
@@ -23,7 +24,7 @@ import org.ttproject.data.TokenStorage
 interface ChatRepository {
     suspend fun getMessageHistory(connectionId: String): List<MessageDto>
     fun observeLiveMessages(connectionId: String): Flow<MessageDto>
-    suspend fun sendMessage(text: String)
+    suspend fun sendMessage(text: String, replyToMessageId: String? = null)
     fun disconnect()
     suspend fun getConnections(): List<ChatThreadDto>
     suspend fun savePushToken(fcmToken: String)
@@ -82,8 +83,18 @@ class ChatRepositoryImpl (
     }
 
     // 3. Send a message through the active WebSocket
-    override suspend fun sendMessage(text: String) {
-        webSocketSession?.send(Frame.Text(text))
+    override suspend fun sendMessage(text: String, replyToMessageId: String?) {
+        // Create the object
+        val payload = IncomingMessageDto(
+            content = text,
+            replyToMessageId = replyToMessageId
+        )
+
+        // Convert it to a JSON string
+        val jsonString = Json.encodeToString(payload)
+
+        // Send the JSON string to the server!
+        webSocketSession?.send(Frame.Text(jsonString))
     }
 
     override fun disconnect() {

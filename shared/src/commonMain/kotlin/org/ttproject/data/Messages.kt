@@ -7,7 +7,14 @@ data class MessageDto(
     val id: String,
     val senderId: String,
     val content: String,
-    val createdAt: String
+    val createdAt: String,
+    val replyToMessageId: String? = null
+)
+
+@Serializable
+data class IncomingMessageDto(
+    val content: String,
+    val replyToMessageId: String? = null // Null if it's a normal message
 )
 
 @Serializable

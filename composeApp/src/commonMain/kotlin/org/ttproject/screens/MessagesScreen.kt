@@ -65,6 +65,12 @@ import kotlin.time.Duration.Companion.minutes
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.foundation.border
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
+import kotlinx.coroutines.launch
 
 data class ChatThread(
     val id: String,
@@ -244,26 +250,23 @@ fun ChatDetailScreen(
 
     var messageText by remember { mutableStateOf("") }
 
-    // 1. Create a conditional WindowInsets for the keyboard
-    val imeInsets = if (isIosPlatform()) {
-        WindowInsets.ime // iOS is handled by SwiftUI resizing
-    } else {
-        WindowInsets.ime   // Android needs Compose to handle the inset
+    // 👇 1. New State to track the reply!
+    var replyingToMessageId by remember { mutableStateOf<String?>(null) }
+    val replyingToMessage = remember(replyingToMessageId, messages) {
+        messages.find { it.id == replyingToMessageId }
     }
 
+    val imeInsets = if (isIosPlatform()) WindowInsets.ime else WindowInsets.ime
     val bottomNavInset = remember(bottomNavPadding) { WindowInsets(bottom = bottomNavPadding + 10.dp) }
     val focusManager = LocalFocusManager.current
     val tokenStorage: TokenStorage = koinInject()
 
     var selectedMessageId by remember { mutableStateOf<String?>(null) }
-
     val listState = rememberLazyListState()
 
     ClearChatNotificationEffect(chatId = chatId)
 
-    LaunchedEffect(chatId) {
-        viewModel.markMessagesAsRead()
-    }
+    LaunchedEffect(chatId) { viewModel.markMessagesAsRead() }
 
     val presentedMessageIds = remember { mutableSetOf<String>() }
     var isInitialLoad by remember { mutableStateOf(true) }
@@ -287,9 +290,7 @@ fun ChatDetailScreen(
             .background(AppColors.Background)
             .windowInsetsPadding(bottomNavInset.union(imeInsets))
             .pointerInput(Unit) {
-                detectTapGestures(onTap = {
-                    focusManager.clearFocus()
-                })
+                detectTapGestures(onTap = { focusManager.clearFocus() })
             }
     ) {
         // --- ANCHORED TOP BAR ---
@@ -300,16 +301,14 @@ fun ChatDetailScreen(
                         modifier = Modifier.size(36.dp).clip(CircleShape).background(AppColors.SurfaceDark),
                         contentAlignment = Alignment.Center
                     ) {
-                        // 👇 NEW: Check if there is an image URL
                         if (!otherUserImageUrl.isNullOrBlank()) {
                             AsyncImage(
                                 model = otherUserImageUrl,
-                                contentDescription = "Profile picture of $otherUsername",
+                                contentDescription = "Profile picture",
                                 modifier = Modifier.fillMaxSize(),
-                                contentScale = ContentScale.Crop // Keeps the image perfectly circular without squishing
+                                contentScale = ContentScale.Crop
                             )
                         } else {
-                            // FALLBACK INITIALS
                             Text(
                                 text = getInitials(otherUsername),
                                 color = AppColors.AccentOrange,
@@ -338,46 +337,37 @@ fun ChatDetailScreen(
 
         LazyColumn(
             state = listState,
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth(),
+            modifier = Modifier.weight(1f).fillMaxWidth(),
             contentPadding = PaddingValues(16.dp),
             reverseLayout = true
         ) {
             val currentUserId = tokenStorage.getUserId() ?: ""
-
-            // 👇 1. Save the reversed list to a variable so we can look up indexes safely
             val displayMessages = messages.reversed()
 
             itemsIndexed(displayMessages, key = { _, msg -> msg.id }) { index, msg ->
                 val isMe = msg.senderId == currentUserId
                 val isSelected = selectedMessageId == msg.id
 
-                // 👇 2. Look ahead and behind!
-                // Because reverseLayout = true, the "older" message is physically ABOVE this one
                 val olderMessage = displayMessages.getOrNull(index + 1)
-                // The "newer" message is physically BELOW this one
                 val newerMessage = displayMessages.getOrNull(index - 1)
 
-                // 👇 1. Should we show the centered time above this specific message?
-                val showTimeHeader = olderMessage == null ||
-                        isTimeGapGreater(olderMessage.createdAt, msg.createdAt, 30)
+                val showTimeHeader = olderMessage == null || isTimeGapGreater(olderMessage.createdAt, msg.createdAt, 30)
+                val newerShowsHeader = newerMessage != null && isTimeGapGreater(msg.createdAt, newerMessage.createdAt, 30)
 
-                // 👇 2. Will the message BELOW this one show a time header?
-                val newerShowsHeader = newerMessage != null &&
-                        isTimeGapGreater(msg.createdAt, newerMessage.createdAt, 30)
-
-                // 👇 3. Only connect the bubbles if they are the same sender AND no time header interrupts them!
                 val visuallyConnectToOlder = olderMessage?.senderId == msg.senderId && !showTimeHeader
                 val visuallyConnectToNewer = newerMessage?.senderId == msg.senderId && !newerShowsHeader
 
                 val shouldAnimate = !presentedMessageIds.contains(msg.id)
 
-                LaunchedEffect(msg.id) {
-                    presentedMessageIds.add(msg.id)
-                }
+                LaunchedEffect(msg.id) { presentedMessageIds.add(msg.id) }
 
-                // 👇 3. Pass the new grouping flags down to the bubble!
+                // 👇 1. FIND THE REPLIED MESSAGE!
+                val repliedMessage = msg.replyToMessageId?.let { replyId ->
+                    messages.find { it.id == replyId }
+                }
+                val repliedText = repliedMessage?.content
+                val repliedSender = if (repliedMessage?.senderId == currentUserId) "You" else otherUsername
+
                 AnimatedMessageBubble(
                     text = msg.content,
                     isMe = isMe,
@@ -386,57 +376,78 @@ fun ChatDetailScreen(
                     showTimeHeader = showTimeHeader,
                     isOlderSame = visuallyConnectToOlder,
                     isNewerSame = visuallyConnectToNewer,
-                    isSelected = isSelected, // 👈 Pass the selection state
-                    onClick = {
-                        // 👇 4. Toggle the selection! If it's already selected, clear it.
-                        selectedMessageId = if (isSelected) null else msg.id
-                    }
+                    isSelected = isSelected,
+                    // 👇 2. Pass the preview data down!
+                    repliedText = repliedText,
+                    repliedSender = repliedSender,
+                    onClick = { selectedMessageId = if (isSelected) null else msg.id },
+                    onSwipeToReply = { replyingToMessageId = msg.id }
                 )
             }
         }
 
-        // --- THE KEYBOARD-AWARE INPUT ---
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(AppColors.Background)
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            OutlinedTextField(
-                value = messageText,
-                onValueChange = { messageText = it },
-                placeholder = { Text("Type a message...", color = AppColors.TextGray) },
-                modifier = Modifier.weight(1f),
-                shape = RoundedCornerShape(24.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = AppColors.AccentOrange,
-                    unfocusedBorderColor = AppColors.TextGray.copy(alpha = 0.5f),
-                    focusedTextColor = AppColors.TextPrimary,
-                    unfocusedTextColor = AppColors.TextPrimary
-                ),
-                maxLines = 3
-            )
+        // --- THE KEYBOARD-AWARE INPUT AREA ---
+        Column(modifier = Modifier.fillMaxWidth().background(AppColors.Background)) {
 
-            Spacer(modifier = Modifier.width(8.dp))
-
-            Box(
-                modifier = Modifier
-                    .size(48.dp)
-                    .clip(CircleShape)
-                    .background(if (messageText.isNotBlank()) AppColors.AccentOrange else AppColors.SurfaceDark)
-                    .clickable(enabled = messageText.isNotBlank()) {
-                        viewModel.sendMessage(messageText)
-                        messageText = ""
-                    },
-                contentAlignment = Alignment.Center
+            // 👇 3. THE REPLY PREVIEW BANNER
+            AnimatedVisibility(
+                visible = replyingToMessage != null,
+                enter = expandVertically() + fadeIn(),
+                exit = shrinkVertically() + fadeOut()
             ) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.Send,
-                    contentDescription = "Send",
-                    tint = if (messageText.isNotBlank()) Color.White else AppColors.TextGray,
-                    modifier = Modifier.size(20.dp).offset(x = 2.dp)
+                if (replyingToMessage != null) {
+                    ReplyPreview(
+                        messageContent = replyingToMessage.content,
+                        onCancel = { replyingToMessageId = null }
+                    )
+                }
+            }
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                OutlinedTextField(
+                    value = messageText,
+                    onValueChange = { messageText = it },
+                    placeholder = { Text("Type a message...", color = AppColors.TextGray) },
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(24.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = AppColors.AccentOrange,
+                        unfocusedBorderColor = AppColors.TextGray.copy(alpha = 0.5f),
+                        focusedTextColor = AppColors.TextPrimary,
+                        unfocusedTextColor = AppColors.TextPrimary
+                    ),
+                    maxLines = 3
                 )
+
+                Spacer(modifier = Modifier.width(8.dp))
+
+                Box(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(CircleShape)
+                        .background(if (messageText.isNotBlank()) AppColors.AccentOrange else AppColors.SurfaceDark)
+                        .clickable(enabled = messageText.isNotBlank()) {
+                            // 👇 4. Pass BOTH the text and the reply ID to the ViewModel
+                            viewModel.sendMessage(messageText, replyingToMessageId)
+
+                            // Reset everything
+                            messageText = ""
+                            replyingToMessageId = null
+                        },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.Send,
+                        contentDescription = "Send",
+                        tint = if (messageText.isNotBlank()) Color.White else AppColors.TextGray,
+                        modifier = Modifier.size(20.dp).offset(x = 2.dp)
+                    )
+                }
             }
         }
     }
@@ -449,14 +460,22 @@ fun AnimatedMessageBubble(
     time: String,
     playAnimation: Boolean,
     showTimeHeader: Boolean,
-    isOlderSame: Boolean, // 👈 Add this
-    isNewerSame: Boolean,  // 👈 Add this
+    isOlderSame: Boolean,
+    isNewerSame: Boolean,
     isSelected: Boolean,
-    onClick: () -> Unit
+    repliedText: String?,
+    repliedSender: String?,
+    onClick: () -> Unit,
+    onSwipeToReply: () -> Unit // 👈 New Parameter
 ) {
     val visibleState = remember {
         MutableTransitionState(initialState = !playAnimation).apply { targetState = true }
     }
+
+    // 👇 Physics and Haptics for the swipe
+    val offsetX = remember { androidx.compose.animation.core.Animatable(0f) }
+    val coroutineScope = rememberCoroutineScope()
+    val haptic = LocalHapticFeedback.current
 
     AnimatedVisibility(
         visibleState = visibleState,
@@ -467,20 +486,17 @@ fun AnimatedMessageBubble(
         ) + fadeIn(),
     ) {
         Column {
-            // 👇 THE CENTERED TIMESTAMP!
             if (showTimeHeader) {
                 Text(
-                    text = formatMessageTime(time), // You can format this to say "Today 14:30" etc.
+                    text = formatMessageTime(time),
                     color = AppColors.TextGray,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Medium,
                     modifier = Modifier
                         .align(Alignment.CenterHorizontally)
-                        .padding(top = 16.dp, bottom = 8.dp) // Gives it nice breathing room
+                        .padding(top = 16.dp, bottom = 8.dp)
                 )
             } else {
-                // 👇 THE TOGGLEABLE TIMESTAMP!
-                // It sits right above the bubble and animates its height/fade
                 AnimatedVisibility(
                     visible = isSelected,
                     enter = fadeIn() + expandVertically(expandFrom = Alignment.Top),
@@ -493,7 +509,7 @@ fun AnimatedMessageBubble(
                         fontWeight = FontWeight.Medium,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(top = 8.dp, bottom = 8.dp), // Tiny gap before the bubble
+                            .padding(top = 8.dp, bottom = 8.dp),
                         textAlign = TextAlign.Center
                     )
                 }
@@ -505,11 +521,46 @@ fun AnimatedMessageBubble(
                 isOlderSame = isOlderSame,
                 isNewerSame = isNewerSame,
                 isSelected = isSelected,
-                onClick = onClick
+                onClick = onClick,
+                repliedText = repliedText,
+                repliedSender = repliedSender,
+                // 👇 Apply the gesture mechanics
+                modifier = Modifier
+                    .graphicsLayer { translationX = offsetX.value }
+                    .pointerInput(Unit) {
+                        var hasTriggeredHaptic = false
+                        detectHorizontalDragGestures(
+                            onDragEnd = {
+                                if (offsetX.value > 120f) {
+                                    onSwipeToReply() // Trigger the reply state!
+                                }
+                                // Spring back to original position
+                                coroutineScope.launch {
+                                    offsetX.animateTo(0f, androidx.compose.animation.core.spring(dampingRatio = androidx.compose.animation.core.Spring.DampingRatioMediumBouncy))
+                                }
+                                hasTriggeredHaptic = false
+                            },
+                            onDragCancel = {
+                                coroutineScope.launch { offsetX.animateTo(0f, androidx.compose.animation.core.spring(dampingRatio = androidx.compose.animation.core.Spring.DampingRatioMediumBouncy)) }
+                                hasTriggeredHaptic = false
+                            },
+                            onHorizontalDrag = { change, dragAmount ->
+                                change.consume()
+                                // Only allow swiping to the right (coerceIn prevents left swipes)
+                                val newOffset = (offsetX.value + dragAmount).coerceIn(0f, 200f)
+                                coroutineScope.launch { offsetX.snapTo(newOffset) }
+
+                                // Buzz the phone slightly when they pull far enough to trigger the reply
+                                if (newOffset > 120f && !hasTriggeredHaptic) {
+                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    hasTriggeredHaptic = true
+                                } else if (newOffset < 120f) {
+                                    hasTriggeredHaptic = false
+                                }
+                            }
+                        )
+                    }
             )
-            // 👇 Dynamic Spacing!
-            // If the message below this one is from the same user, gap is 4dp.
-            // If it's a new user (or the end of the chat), gap is 16dp.
             Spacer(modifier = Modifier.height(if (isNewerSame) 4.dp else 16.dp))
         }
     }
@@ -522,29 +573,22 @@ fun ChatBubble(
     isOlderSame: Boolean,
     isNewerSame: Boolean,
     isSelected: Boolean,
+    // 👇 Accept the new parameters
+    repliedText: String?,
+    repliedSender: String?,
+    modifier: Modifier = Modifier,
     onClick: () -> Unit
 ) {
-    // 👇 1. The Corner Radius Math
-    // If it's my message (right side), we flatten the right corners to connect them.
-    // If it's their message (left side), we flatten the left corners to connect them.
     val topStart = if (!isMe && isOlderSame) 4.dp else 16.dp
     val bottomStart = if (!isMe && isNewerSame) 4.dp else 16.dp
-
     val topEnd = if (isMe && isOlderSame) 4.dp else 16.dp
     val bottomEnd = if (isMe && isNewerSame) 4.dp else 16.dp
 
-    // 👇 Animate the background color based on selection state!
     val baseColor = if (isMe) AppColors.AccentOrange else AppColors.SurfaceDark
-
-    // If selected, we slightly darken the bubble (or lighten it, depending on your theme)
-    // Adjust the overlay color to match your design.
     val targetColor = if (isSelected) {
-        // Blends a bit of black over the base color for a "pressed" look
         Color(
-            red = baseColor.red * 0.85f,
-            green = baseColor.green * 0.85f,
-            blue = baseColor.blue * 0.85f,
-            alpha = baseColor.alpha
+            red = baseColor.red * 0.85f, green = baseColor.green * 0.85f,
+            blue = baseColor.blue * 0.85f, alpha = baseColor.alpha
         )
     } else {
         baseColor
@@ -552,37 +596,71 @@ fun ChatBubble(
 
     val animatedBackgroundColor by androidx.compose.animation.animateColorAsState(
         targetValue = targetColor,
-        animationSpec = tween(durationMillis = 200) // Smooth transition
+        animationSpec = tween(durationMillis = 200)
     )
 
     BoxWithConstraints(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         contentAlignment = if (isMe) Alignment.TopEnd else Alignment.TopStart
     ) {
-        val maxBubbleWidth = maxWidth * 0.75f
+        // Slightly wider max bubble width to accommodate quotes beautifully
+        val maxBubbleWidth = maxWidth * 0.80f
 
-        Column(
-            horizontalAlignment = if (isMe) Alignment.End else Alignment.Start
-        ) {
-            Box(
+        Column(horizontalAlignment = if (isMe) Alignment.End else Alignment.Start) {
+
+            // 👇 Change the inner box to a Column so we can stack the Quote and the Message
+            Column(
                 modifier = Modifier
                     .widthIn(max = maxBubbleWidth)
-                    .clip(
-                        RoundedCornerShape(
-                            topStart = topStart,
-                            topEnd = topEnd,
-                            bottomStart = bottomStart,
-                            bottomEnd = bottomEnd
-                        )
-                    )
+                    .clip(RoundedCornerShape(topStart, topEnd, bottomEnd, bottomStart))
                     .background(animatedBackgroundColor)
                     .clickable { onClick() }
-                    .padding(horizontal = 16.dp, vertical = 12.dp)
+                    .padding(horizontal = 12.dp, vertical = 10.dp) // Adjusted padding slightly
             ) {
+
+                // 👇 THE QUOTE PREVIEW UI
+                if (repliedText != null && repliedSender != null) {
+                    Row(
+                        modifier = Modifier
+                            .padding(bottom = 6.dp)
+                            .clip(RoundedCornerShape(6.dp))
+                            // Darken the background slightly for the quote box
+                            .background(Color.Black.copy(alpha = 0.15f))
+                            .height(IntrinsicSize.Min) // Forces the Row to wrap the text height tightly
+                    ) {
+                        // The left accent line
+                        Box(
+                            modifier = Modifier
+                                .width(4.dp)
+                                .fillMaxHeight()
+                                .background(if (isMe) Color.White else AppColors.AccentOrange)
+                        )
+
+                        // The quoted sender and text
+                        Column(modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)) {
+                            Text(
+                                text = repliedSender,
+                                color = if (isMe) Color.White else AppColors.AccentOrange,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = repliedText,
+                                color = if (isMe) Color.White.copy(alpha = 0.85f) else AppColors.TextPrimary.copy(alpha = 0.85f),
+                                fontSize = 13.sp,
+                                maxLines = 3,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    }
+                }
+
+                // The actual message
                 Text(
                     text = text,
                     color = if (isMe) Color.White else AppColors.TextPrimary,
-                    fontSize = 15.sp
+                    fontSize = 15.sp,
+                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
                 )
             }
         }
@@ -698,6 +776,50 @@ fun EmptyMessagesState() {
         Text("No Messages Yet", color = AppColors.TextPrimary, fontSize = 20.sp, fontWeight = FontWeight.Bold)
         Spacer(modifier = Modifier.height(8.dp))
         Text("Swipe on players nearby or join a table to start a conversation.", color = Color.Gray, fontSize = 14.sp, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+    }
+}
+
+@Composable
+fun ReplyPreview(
+    messageContent: String,
+    onCancel: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 16.dp, end = 16.dp, top = 8.dp)
+            .clip(RoundedCornerShape(8.dp))
+            .background(AppColors.SurfaceDark)
+            .border(
+                width = 1.dp,
+                color = AppColors.TextGray.copy(alpha = 0.2f),
+                shape = RoundedCornerShape(8.dp)
+            ),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // Left accent bar
+        Box(
+            modifier = Modifier
+                .width(4.dp)
+                .height(40.dp)
+                .background(AppColors.AccentOrange)
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+
+        Column(modifier = Modifier.weight(1f).padding(vertical = 8.dp)) {
+            Text("Replying to", color = AppColors.AccentOrange, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+            Text(
+                text = messageContent,
+                color = AppColors.TextPrimary,
+                fontSize = 14.sp,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+
+        IconButton(onClick = onCancel) {
+            Icon(Icons.Default.Close, contentDescription = "Cancel Reply", tint = AppColors.TextGray)
+        }
     }
 }
 

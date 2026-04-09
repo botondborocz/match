@@ -15,6 +15,7 @@ import io.ktor.server.auth.authenticate
 import io.ktor.server.auth.jwt.JWTPrincipal
 import io.ktor.server.auth.principal
 import kotlinx.coroutines.channels.consumeEach
+import kotlinx.serialization.json.Json
 import org.jetbrains.exposed.sql.Op
 import org.jetbrains.exposed.sql.insertAndGetId
 import org.jetbrains.exposed.sql.select
@@ -28,6 +29,7 @@ import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.update
 import org.ttproject.data.ChatThreadDto
 import org.ttproject.data.MessageDto
+import org.ttproject.data.IncomingMessageDto
 import org.ttproject.database.tables.Connections
 import org.ttproject.database.tables.Messages
 import org.ttproject.database.tables.Users
@@ -123,7 +125,8 @@ fun Route.messageRoutes() {
                                 id = it[Messages.id].toString(),
                                 senderId = it[Messages.senderId].toString(),
                                 content = it[Messages.content],
-                                createdAt = it[Messages.createdAt].toString()
+                                createdAt = it[Messages.createdAt].toString(),
+                                replyToMessageId = it[Messages.replyToMessageId]?.toString()
                             )
                         }
                 }
@@ -185,20 +188,31 @@ fun Route.messageRoutes() {
                 // 👇 Pass the senderId to the manager
                 connectionManager.addSession(connectionId, senderId, this)
 
+                // Create a lenient JSON parser
+                val jsonParser = Json { ignoreUnknownKeys = true }
+
                 try {
                     incoming.consumeEach { frame ->
                         if (frame is Frame.Text) {
-                            val textContent = frame.readText()
+                            val rawPayload = frame.readText()
                             val created_at = Instant.now()
 
-                            // Move the try/catch INSIDE the loop so one bad message doesn't drop the connection!
                             try {
+                                // 👇 1. Parse the incoming JSON from the client
+                                val incomingMessage = jsonParser.decodeFromString<IncomingMessageDto>(rawPayload)
+                                val textContent = incomingMessage.content
+
+                                // Safely convert the string ID to a UUID if it exists
+                                val replyToId = incomingMessage.replyToMessageId?.let { UUID.fromString(it) }
+
                                 val newMessageId = transaction {
                                     Messages.insert {
                                         it[Messages.connectionId] = connectionId
                                         it[Messages.senderId] = senderId
                                         it[content] = textContent
                                         it[createdAt] = created_at
+                                        // 👇 2. Save the reply ID to the database!
+                                        it[replyToMessageId] = replyToId
                                     } get Messages.id
                                 }
 
@@ -258,7 +272,19 @@ fun Route.messageRoutes() {
                                     println("ℹ️ User $receiverId is currently connected to the WebSocket, skipping push notification.")
                                 }
 
-                                val payload = """{"id": "$newMessageId", "senderId": "$senderId", "content": "$textContent", "createdAt": "$created_at"}"""
+                                // 👇 3. Include the replyToMessageId in the broadcast payload back to the clients
+                                val replyJsonStr = if (replyToId != null) "\"$replyToId\"" else "null"
+
+                                val payload = """
+                                            {
+                                                "id": "$newMessageId", 
+                                                "senderId": "$senderId", 
+                                                "content": "${textContent.replace("\"", "\\\"")}", 
+                                                "createdAt": "$created_at",
+                                                "replyToMessageId": $replyJsonStr
+                                            }
+                                        """.trimIndent()
+
                                 connectionManager.broadcast(connectionId, payload)
 
                             } catch (e: Exception) {
