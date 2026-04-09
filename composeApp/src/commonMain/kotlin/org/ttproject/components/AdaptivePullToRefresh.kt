@@ -8,6 +8,7 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.pullToRefresh
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -16,6 +17,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 import org.ttproject.AppColors
 import org.ttproject.isIosPlatform
+import org.ttproject.util.triggerRefreshHaptic
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -29,6 +31,12 @@ fun AdaptivePullToRefresh(
         // --- 🍎 iOS NATIVE FEEL ---
         // Content physically slides down to reveal a spinner behind it.
         val state = rememberPullToRefreshState()
+
+        LaunchedEffect(isRefreshing) {
+            if (isRefreshing) {
+                triggerRefreshHaptic()
+            }
+        }
 
         Box(
             modifier = modifier.pullToRefresh(
@@ -50,12 +58,10 @@ fun AdaptivePullToRefresh(
                     label = "spinner_alpha"
                 )
                 if (alpha > 0f) {
-                    CircularProgressIndicator(
+                    PlatformSpinner(
                         modifier = Modifier
                             .size(24.dp)
-                            .graphicsLayer { this.alpha = alpha },
-                        color = AppColors.TextGray,
-                        strokeWidth = 2.dp
+                            .graphicsLayer { this.alpha = alpha }
                     )
                 }
             }
