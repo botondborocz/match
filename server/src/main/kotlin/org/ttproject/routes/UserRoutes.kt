@@ -1,10 +1,16 @@
 package org.ttproject.routes
 
+import com.google.firebase.cloud.StorageClient
 import io.ktor.http.HttpStatusCode
+import io.ktor.http.content.PartData
+import io.ktor.http.content.forEachPart
+import io.ktor.http.content.readAllParts
+import io.ktor.http.content.streamProvider
 import io.ktor.server.auth.authenticate
 import io.ktor.server.auth.jwt.JWTPrincipal
 import io.ktor.server.auth.principal
 import io.ktor.server.request.receive
+import io.ktor.server.request.receiveMultipart
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import org.jetbrains.exposed.sql.selectAll
@@ -16,10 +22,14 @@ import org.jetbrains.exposed.sql.update
 import org.ttproject.data.PlayerResponse
 import org.ttproject.data.SwipeRequest
 import org.ttproject.data.SwipeResponse
+import org.ttproject.data.TokenResponse
 import org.ttproject.data.UpdateLanguageRequest
+import org.ttproject.data.UpdateProfileRequest
 import org.ttproject.data.UserProfile
 import org.ttproject.database.tables.Swipes
 import org.ttproject.services.MatchService
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
 import java.util.UUID
 
 fun Route.userRoutes() {
@@ -46,7 +56,8 @@ fun Route.userRoutes() {
                             username = row[Users.username],
                             skillLevel = row[Users.skillLevel].toString(),
                             lat = row[Users.lastLat],
-                            lng = row[Users.lastLng]
+                            lng = row[Users.lastLng],
+                            imageUrl = row[Users.profileImageUrl]
                         )
                     }.filter { it.id != currentUserId }
                 }
@@ -125,7 +136,11 @@ fun Route.userRoutes() {
                                 email = row[Users.email],
                                 elo = row[Users.eloRating],
                                 winRate = "50%", // Placeholder, calculate based on your matches table
-                                preferredLanguage = row[Users.preferred_language]
+                                preferredLanguage = row[Users.preferred_language],
+                                imageUrl = row[Users.profileImageUrl], // Make sure this column exists in your DB and is selected here!
+                                blade = row[Users.gearBlade],
+                                rubberFh = row[Users.gearRubberFh],
+                                rubberBh = row[Users.gearRubberBh]
                             )
                     }
                 }
@@ -134,6 +149,60 @@ fun Route.userRoutes() {
                     call.respond(userProfile)
                 } else {
                     call.respond(HttpStatusCode.NotFound, "User not found")
+                }
+            }
+            put("/me") {
+                // 1. Grab the user's ID from their secure JWT token
+                val principal = call.principal<JWTPrincipal>()
+                val userId = principal?.payload?.getClaim("userId")?.asString()
+
+                if (userId == null) {
+                    call.respond(HttpStatusCode.Unauthorized, "Invalid token")
+                    return@put
+                }
+
+                // 2. Parse the JSON body from the React/KMP app
+                val request = try {
+                    call.receive<UpdateProfileRequest>()
+                } catch (e: Exception) {
+                    call.respond(HttpStatusCode.BadRequest, "Invalid JSON format")
+                    return@put
+                }
+
+                // 3. Update the database!
+                try {
+                    val userUuid = UUID.fromString(userId)
+
+                    // 👇 1. Check if the username is taken by SOMEONE ELSE
+                    val isNameTaken = transaction {
+                        Users.selectAll()
+                            .where { (Users.username eq request.name) and (Users.id neq userUuid) }
+                            .count() > 0
+                    }
+
+                    if (isNameTaken) {
+                        // 409 Conflict is the standard HTTP status for "Duplicate Resource"
+                        call.respond(HttpStatusCode.Conflict, "Username is already taken.")
+                        return@put
+                    }
+
+                    val updatedRows = transaction {
+                        Users.update({ Users.id eq userUuid }) {
+                            it[username] = request.name
+                            it[gearBlade] = request.blade
+                            it[gearRubberFh] = request.forehand
+                            it[gearRubberBh] = request.backhand
+                        }
+                    }
+
+                    if (updatedRows > 0) {
+                        call.respond(HttpStatusCode.OK, mapOf("message" to "Profile updated successfully!"))
+                    } else {
+                        call.respond(HttpStatusCode.NotFound, "User not found in database.")
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    call.respond(HttpStatusCode.InternalServerError, "Database error: ${e.message}")
                 }
             }
             put("/language") {
@@ -172,6 +241,84 @@ fun Route.userRoutes() {
                 } catch (e: Exception) {
                     e.printStackTrace()
                     call.respond(HttpStatusCode.InternalServerError, "Database error: ${e.message}")
+                }
+            }
+            post("/fcm-token") {
+                val principal = call.principal<JWTPrincipal>()
+                val userId = UUID.fromString(principal?.payload?.getClaim("userId")?.asString())
+                val request = call.receive<TokenResponse>() // e.g., data class TokenRequest(val token: String)
+
+                transaction {
+                    Users.update({ Users.id eq userId }) { it[fcmToken] = request.token }
+                }
+                call.respond(HttpStatusCode.OK)
+            }
+            post("/profile-image") {
+                val principal = call.principal<JWTPrincipal>()
+                val userId = principal?.payload?.getClaim("userId")?.asString()
+
+                if (userId == null) {
+                    call.respond(HttpStatusCode.Unauthorized, "Invalid token")
+                    return@post
+                }
+
+                var imageBytes: ByteArray? = null
+
+                // 1. Read the multipart form data safely using forEachPart
+                val multipartData = call.receiveMultipart()
+
+                multipartData.forEachPart { part ->
+                    when (part) {
+                        is PartData.FileItem -> {
+                            // Read the bytes from the file stream
+                            imageBytes = part.streamProvider().readBytes()
+                        }
+                        else -> {
+                            // If you send other text fields in the multipart form later,
+                            // you would handle PartData.FormItem here.
+                        }
+                    }
+                    part.dispose() // Important: clears the memory for this specific part!
+                }
+
+                if (imageBytes != null) {
+                    try {
+                        // 1. Create a unique file name for the user
+                        // Using timestamp ensures cache breaking if they upload a new picture
+                        val fileName = "profile_images/${userId}_${System.currentTimeMillis()}.jpg"
+
+                        // 2. Get the Firebase Storage Bucket and upload the bytes
+                        val bucket = StorageClient.getInstance().bucket()
+                        val blob = bucket.create(fileName, imageBytes, "image/jpeg")
+
+                        // 3. Construct the public Download URL
+                        // (The Admin SDK doesn't return a client-friendly URL by default, so we format it standardly)
+                        val encodedFilePath = URLEncoder.encode(fileName, StandardCharsets.UTF_8.toString())
+                        val publicDownloadUrl = "https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/$encodedFilePath?alt=media"
+
+                        // 4. Save the URL to your database
+                        val userUuid = UUID.fromString(userId)
+                        val updatedRows = transaction {
+                            Users.update({ Users.id eq userUuid }) {
+                                it[profileImageUrl] = publicDownloadUrl // Replace with your actual column name
+                            }
+                        }
+
+                        if (updatedRows > 0) {
+                            call.respond(HttpStatusCode.OK, mapOf(
+                                "message" to "Image uploaded successfully",
+                                "imageUrl" to publicDownloadUrl
+                            ))
+                        } else {
+                            call.respond(HttpStatusCode.NotFound, "User not found in database to update image")
+                        }
+
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                        call.respond(HttpStatusCode.InternalServerError, "Failed to upload image: ${e.message}")
+                    }
+                } else {
+                    call.respond(HttpStatusCode.BadRequest, "No image file provided")
                 }
             }
         }

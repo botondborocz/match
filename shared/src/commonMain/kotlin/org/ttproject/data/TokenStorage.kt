@@ -5,6 +5,9 @@ interface TokenStorage {
     fun saveToken(token: String)
     fun getToken(): String?
     fun clearToken()
+    fun saveUserId(userId: String)
+    fun getUserId(): String?
+    fun clearUserId()
     fun saveLanguage(languageCode: String)
     fun getLanguage(): String?
     fun clearLanguage()

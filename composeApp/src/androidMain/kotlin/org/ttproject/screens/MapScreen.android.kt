@@ -32,6 +32,7 @@ import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MapStyleOptions
 import com.google.maps.android.compose.*
+import org.ttproject.AppColors
 
 @Composable
 actual fun NativeMap(
@@ -56,8 +57,33 @@ actual fun NativeMap(
     var userLocation by remember { mutableStateOf<LatLng?>(null) }
 
     val budapest = LatLng(47.4979, 19.0402)
+//    val cameraPositionState = rememberCameraPositionState {
+//        position = CameraPosition.fromLatLngZoom(budapest, 15f)
+//    }
+
+    // 👇 2. Try to grab the exact last known location synchronously
+    val initialUserLocation = remember(hasLocationPermission) {
+        if (hasLocationPermission) {
+            try {
+                val locationManager = ContextCompat.getSystemService(context, LocationManager::class.java)
+                val loc = locationManager?.getLastKnownLocation(LocationManager.GPS_PROVIDER)
+                    ?: locationManager?.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)
+
+                if (loc != null) LatLng(loc.latitude, loc.longitude) else null
+            } catch (e: SecurityException) {
+                null
+            }
+        } else null
+    }
+
+    // 👇 3. Initialize the camera state!
     val cameraPositionState = rememberCameraPositionState {
-        position = CameraPosition.fromLatLngZoom(budapest, 12f)
+        // If we found their location, use it! Otherwise, fallback to Budapest.
+        val startingLatLng = initialUserLocation ?: LatLng(47.4979, 19.0402)
+
+        // Notice the 15f zoom! This also fixes the cold-start bounding box performance
+        // we talked about earlier by loading fewer markers on frame 1.
+        position = CameraPosition.fromLatLngZoom(startingLatLng, 15f)
     }
 
     // 👇 2. Catch the map bounds whenever the user stops dragging/zooming
@@ -171,6 +197,9 @@ actual fun NativeMap(
         ]
     """.trimIndent()
 
+    val normalBitmap = remember(context) { createClubBitmap(context, isSelected = false) }
+    val selectedBitmap = remember(context) { createClubBitmap(context, isSelected = true) }
+
     // --- THE MAP ---
     GoogleMap(
         modifier = modifier,
@@ -188,6 +217,13 @@ actual fun NativeMap(
             mapToolbarEnabled = false
         )
     ) {
+
+        val normalMarker = remember(normalBitmap) {
+            com.google.android.gms.maps.model.BitmapDescriptorFactory.fromBitmap(normalBitmap)
+        }
+        val selectedMarker = remember(selectedBitmap) {
+            com.google.android.gms.maps.model.BitmapDescriptorFactory.fromBitmap(selectedBitmap)
+        }
 
         // 1. DRAW CUSTOM USER LOCATION MARKER
         userLocation?.let { loc ->
@@ -216,41 +252,49 @@ actual fun NativeMap(
             }
         }
 
-        // 2. DRAW CLUB MARKERS
+        // 2. DRAW CLUB MARKERS FAST
         locations.forEach { club ->
             val isSelected = club.id == selectedClub?.id
 
-            val animatedPinSize by animateDpAsState(
-                targetValue = if (isSelected) 48.dp else 36.dp,
-                animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow),
-                label = "PinSize"
-            )
-
-            val animatedEmojiSize by animateFloatAsState(
-                targetValue = if (isSelected) 22f else 16f,
-                animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow),
-                label = "EmojiSize"
-            )
-
-            MarkerComposable(
-                keys = arrayOf(isSelected, animatedPinSize),
+            // 👇 3. Use the standard 'Marker' instead of 'MarkerComposable'
+            Marker(
                 state = MarkerState(position = LatLng(club.lat, club.lng)),
                 title = club.id,
                 zIndex = if (isSelected) 3f else 1f,
+                // 👇 4. Pass our pre-drawn, hyper-fast Bitmaps!
+                icon = if (isSelected) selectedMarker else normalMarker,
                 onClick = {
                     onMarkerClick(club)
                     true
                 }
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(animatedPinSize)
-                        .background(color = Color(0xFFFF7B42), shape = CircleShape),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text("🏓", fontSize = animatedEmojiSize.sp)
-                }
-            }
+            )
         }
     }
+}
+
+private fun createClubBitmap(context: android.content.Context, isSelected: Boolean): android.graphics.Bitmap {
+    val density = context.resources.displayMetrics.density
+    val sizeDp = if (isSelected) 48f else 36f
+    val sizePx = (sizeDp * density).toInt()
+
+    val bitmap = android.graphics.Bitmap.createBitmap(sizePx, sizePx, android.graphics.Bitmap.Config.ARGB_8888)
+    val canvas = android.graphics.Canvas(bitmap)
+
+    val paint = android.graphics.Paint().apply {
+        isAntiAlias = true
+        color = if (isSelected) android.graphics.Color.parseColor("#FF5722") else android.graphics.Color.parseColor("#FFFF7B42")
+    }
+    canvas.drawCircle(sizePx / 2f, sizePx / 2f, sizePx / 2f, paint)
+
+    val textPaint = android.graphics.Paint().apply {
+        isAntiAlias = true
+        textSize = (if (isSelected) 22f else 16f) * density
+        textAlign = android.graphics.Paint.Align.CENTER
+    }
+
+    val yPos = (sizePx / 2f) - ((textPaint.descent() + textPaint.ascent()) / 2)
+    canvas.drawText("🏓", sizePx / 2f, yPos, textPaint)
+
+    // 👇 RETURN RAW BITMAP NOW
+    return bitmap
 }

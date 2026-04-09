@@ -11,6 +11,8 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
@@ -28,18 +30,33 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
+import org.koin.compose.viewmodel.koinViewModel
 import org.ttproject.AppColors
 import org.ttproject.AppIcon
 import org.ttproject.MainNavItems
 import org.ttproject.NavRoute
 import org.ttproject.NavigationItem
+import org.ttproject.viewmodel.MessagesViewModel
 
 @Composable
 fun MobileBottomNav(
     currentRoute: NavRoute,
-    onNavigate: (NavRoute) -> Unit
+    onNavigate: (NavRoute) -> Unit,
+    // 👇 1. Inject the ViewModel exactly once at the top level
+    messagesViewModel: MessagesViewModel = koinViewModel()
 ) {
     val glowColor = AppColors.AccentOrange
+
+    // 👇 2. Collect the state exactly once at the top level
+    val chatThreads by messagesViewModel.threads.collectAsState()
+    val unreadChatsCount = chatThreads.count { it.unreadCount > 0 }
+
+    // 👇 3. THE MAGIC FIX: Refresh the unread count every time the user navigates!
+    // When you return from the ChatDetailScreen back to the main tabs,
+    // this triggers and perfectly syncs your badge.
+    LaunchedEffect(currentRoute) {
+        messagesViewModel.loadConnections()
+    }
 
     Column(
         modifier = Modifier
@@ -139,7 +156,8 @@ fun MobileBottomNav(
                                 item = item,
                                 isSelected = isSelected,
                                 label = label,
-                                activeColor = glowColor
+                                activeColor = glowColor,
+                                badgeCount = if (item.route == NavRoute.Messages) unreadChatsCount else 0
                             )
                         }
                     }
@@ -154,7 +172,8 @@ fun StandardTabItem(
     item: org.ttproject.NavigationItem,
     isSelected: Boolean,
     label: String,
-    activeColor: Color
+    activeColor: Color,
+    badgeCount: Int = 0
 ) {
     // Animate the vertical position (Move UP when selected)
     val animatedOffsetY by animateDpAsState(
@@ -170,20 +189,35 @@ fun StandardTabItem(
         val tint = if (isSelected) activeColor else AppColors.TextSecondary
         val iconSize = 26.dp
 
-        // Render Icon Wrapper
-        when (val icon = item.icon) {
-            is AppIcon.Vector -> Icon(
-                imageVector = icon.value,
-                contentDescription = label,
-                tint = tint,
-                modifier = Modifier.size(iconSize).offset(y = animatedOffsetY)
-            )
-            is AppIcon.Drawable -> Icon(
-                painter = painterResource(icon.value),
-                contentDescription = label,
-                tint = tint,
-                modifier = Modifier.size(iconSize).offset(y = animatedOffsetY)
-            )
+        BadgedBox(
+            badge = {
+                if (badgeCount > 0) {
+                    Badge(
+                        containerColor = AppColors.AccentOrange,
+                        contentColor = Color.White,
+                        modifier = Modifier.offset(x = 4.dp, y = (-4).dp)
+                    ) {
+                        Text(text = badgeCount.toString())
+                    }
+                }
+            },
+            modifier = Modifier.offset(y = animatedOffsetY) // 👈 Icon and Badge move together!
+        ) {
+            // Render Icon Wrapper WITHOUT the individual offset
+            when (val icon = item.icon) {
+                is AppIcon.Vector -> Icon(
+                    imageVector = icon.value,
+                    contentDescription = label,
+                    tint = tint,
+                    modifier = Modifier.size(iconSize)
+                )
+                is AppIcon.Drawable -> Icon(
+                    painter = painterResource(icon.value),
+                    contentDescription = label,
+                    tint = tint,
+                    modifier = Modifier.size(iconSize)
+                )
+            }
         }
         Text(
             text = label,

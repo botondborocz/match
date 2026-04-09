@@ -37,6 +37,10 @@
     <string name="blade">Fa</string>
     <string name="forehand">Tenyeres</string>
     <string name="backhand">Fonák</string>
+    <string name="username">Felhasználónév</string>
+    <string name="edit_profile">Profil szerkesztése</string>
+    <string name="cancel">Mégsem</string>
+    <string name="save">Mentés</string>
     <string name="indoor">Beltéri</string>
     <string name="outdoor">Szabadtéri</string>
     <string name="free">Ingyenes</string>

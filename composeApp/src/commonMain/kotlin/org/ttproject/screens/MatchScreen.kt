@@ -1,14 +1,7 @@
 package org.ttproject.screens
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -20,6 +13,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -27,33 +21,39 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import coil3.compose.AsyncImage
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
 import org.ttproject.AppColors
 import org.ttproject.data.Player
+import org.ttproject.shared.resources.find
 import org.ttproject.shared.resources.Res as SharedRes
 import org.ttproject.shared.resources.find_your_match
-import org.ttproject.shared.resources.new_matches_today
-import org.ttproject.viewmodel.LoginViewModel
+import org.ttproject.shared.resources.find_your_match_unauth_title
+import org.ttproject.shared.resources.login
+import org.ttproject.shared.resources.register
 import org.ttproject.viewmodel.MatchUiState
 import org.ttproject.viewmodel.MatchViewModel
 import kotlin.math.abs
 
 @Composable
 fun MatchScreen(
-    // Instantiate the ViewModel here (KMP lifecycle library handles this perfectly)
-    viewModel: MatchViewModel = koinInject()
+    viewModel: MatchViewModel = koinInject(),
+    onNavigateToLogin: () -> Unit,
+    onNavigateToMessages: () -> Unit
 ) {
     var isVisible by remember { mutableStateOf(false) }
 
@@ -61,87 +61,86 @@ fun MatchScreen(
         isVisible = true
     }
 
-    // 👇 Collect the state from the ViewModel
     val uiState by viewModel.uiState.collectAsState()
-
     val matchedPlayer by viewModel.matchedPlayer.collectAsState()
 
     val cardGradient = Brush.verticalGradient(
         colors = listOf(Color(0xFF3B4CCA), Color(0xFF151C2C))
     )
 
-    Column(
-        modifier = Modifier.fillMaxSize().background(Color.Transparent),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Spacer(modifier = Modifier.height(24.dp))
+    // 1. Check if we are in an error state
+    val isErrorState = uiState is MatchUiState.Error
+    val errorMessage = (uiState as? MatchUiState.Error)?.message ?: ""
 
-        // --- ANIMATED HEADER & BADGE ---
-        AnimatedVisibility(
-            visible = isVisible,
-            enter = fadeIn(tween(400)) + slideInVertically(
-                initialOffsetY = { -40 },
-                animationSpec = tween(400)
+    // 2. Make this bulletproof! If the message contains "token" or "401", it's an Unauth error.
+    val isUnauth = isErrorState && (
+            errorMessage.contains("token", ignoreCase = true) ||
+                    errorMessage.contains("401") ||
+                    errorMessage.contains("unauthorized", ignoreCase = true)
             )
+
+    // 3. General error is anything else
+    val isGeneralError = isErrorState && !isUnauth
+
+    Box(modifier = Modifier.fillMaxSize().background(Color.Transparent)) {
+
+        // --- MAIN CONTENT ---
+        Column(
+            // Blur the background if ANY error occurs!
+            modifier = Modifier
+                .fillMaxSize()
+                .then(if (isErrorState) Modifier.blur(16.dp) else Modifier),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Default.Star,
-                        contentDescription = null,
-                        tint = AppColors.AccentOrange,
-                        modifier = Modifier.size(24.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = stringResource(SharedRes.string.find_your_match),
-                        color = AppColors.TextPrimary,
-                        fontSize = 22.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
+            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
-                Spacer(modifier = Modifier.height(16.dp))
-                // Today new matches
-//                Box(
-//                    modifier = Modifier
-//                        .clip(RoundedCornerShape(16.dp))
-//                        .background(Color(0xFF00D2FF).copy(alpha = 0.15f))
-//                        .border(1.dp, Color(0xFF00D2FF).copy(alpha = 0.3f), RoundedCornerShape(16.dp))
-//                        .padding(horizontal = 16.dp, vertical = 6.dp)
-//                ) {
-//                    Text(
-//                        text = stringResource(SharedRes.string.new_matches_today),
-//                        color = Color(0xFF00D2FF),
-//                        fontSize = 12.sp,
-//                        fontWeight = FontWeight.SemiBold
-//                    )
-//                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // --- SWIPEABLE CARD STACK ---
-        BoxWithConstraints(
-            modifier = Modifier.weight(1f).fillMaxWidth()
-        ) {
-            val componentWidthPx = with(LocalDensity.current) { maxWidth.toPx() }
-
-            // 👇 1. We use a Box here so we can pin the buttons to the bottom!
-            Box(
-                modifier = Modifier.fillMaxSize(),
+            // --- DYNAMIC CARD STACK AREA ---
+            BoxWithConstraints(
+                modifier = Modifier
+                    .weight(1f) // 👈 Takes ALL available space between top and buttons
+                    .fillMaxWidth(),
                 contentAlignment = Alignment.Center
             ) {
-                // React to the ViewModel's state
-                when (uiState) {
-                    is MatchUiState.Loading -> {
+                val componentWidthPx = with(LocalDensity.current) { maxWidth.toPx() }
+
+                // 👇 DYNAMIC SIZING MATH
+                val maxAvailableWidth = maxWidth - 32.dp
+                val maxAvailableHeight = maxHeight - 32.dp
+                val targetRatio = 3f / 4f
+
+                val availableRatio = maxAvailableWidth / maxAvailableHeight
+
+                val (cardWidth, cardHeight) = if (availableRatio > targetRatio) {
+                    // Screen is wide/short. Constrain by height.
+                    val height = maxAvailableHeight
+                    val width = height * targetRatio
+                    width to height
+                } else {
+                    // Screen is tall/narrow. Constrain by width.
+                    val width = minOf(maxAvailableWidth, 400.dp)
+                    val height = width / targetRatio
+                    width to height
+                }
+
+                // The perfectly calculated size modifier
+                val dynamicCardModifier = Modifier.size(width = cardWidth, height = cardHeight)
+
+                when {
+                    isErrorState -> {
+                        // Dummy card for blurred background
+                        MatchCard(
+                            player = Player("dummy", "Table Tennis Fan", "Advanced", age = 28, elo = 1500, distanceKm = 5),
+                            backgroundBrush = cardGradient,
+                            modifier = dynamicCardModifier
+                        )
+                    }
+
+                    uiState is MatchUiState.Loading -> {
                         CircularProgressIndicator(color = AppColors.AccentOrange)
                     }
-                    is MatchUiState.Error -> {
-                        Text((uiState as MatchUiState.Error).message, color = Color.Red)
-                    }
-                    is MatchUiState.Success -> {
+
+                    uiState is MatchUiState.Success -> {
                         val players = (uiState as MatchUiState.Success).players
                         val topPlayer = players.firstOrNull()
                         val offsetX = remember(topPlayer?.id) { Animatable(0f) }
@@ -166,80 +165,219 @@ fun MatchScreen(
                             }
                         }
 
-                        // 👇 2. Wrap the CARDS in a local Column to fix the AnimatedVisibility scope
-                        Column(modifier = Modifier.align(Alignment.Center)) {
-                            AnimatedVisibility(
-                                visible = showContent,
-                                enter = fadeIn(tween(500, delayMillis = 150)) + scaleIn(initialScale = 0.8f, animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow)) + slideInVertically(initialOffsetY = { 100 }, animationSpec = tween(500, delayMillis = 150))
-                            ) {
-                                Box(contentAlignment = Alignment.Center) {
-                                    if (players.isEmpty()) {
-                                        Text("No more matches nearby!", color = AppColors.TextPrimary)
-                                    } else {
-                                        // Background Card
-                                        if (players.size > 1) {
-                                            MatchCard(
-                                                player = players[1],
-                                                backgroundBrush = cardGradient,
-                                                modifier = Modifier.graphicsLayer {
-                                                    scaleX = 0.95f
-                                                    scaleY = 0.95f
-                                                }
-                                            )
-                                        }
-
-                                        // Top Card
-                                        SwipeableMatchCard(
-                                            player = topPlayer!!,
+                        androidx.compose.animation.AnimatedVisibility(
+                            visible = showContent,
+                            enter = fadeIn(tween(500, delayMillis = 150)) + scaleIn(initialScale = 0.8f, animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow)) + slideInVertically(initialOffsetY = { 100 }, animationSpec = tween(500, delayMillis = 150))
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                if (players.isEmpty()) {
+                                    Text("No more matches nearby!", color = AppColors.TextPrimary)
+                                } else {
+                                    // Background Card
+                                    if (players.size > 1) {
+                                        MatchCard(
+                                            player = players[1],
                                             backgroundBrush = cardGradient,
-                                            offsetX = offsetX,
-                                            offsetY = offsetY,
-                                            componentWidthPx = componentWidthPx,
-                                            onSwipeComplete = { directionRight ->
-                                                triggerSwipe(directionRight, componentWidthPx)
+                                            modifier = dynamicCardModifier.graphicsLayer {
+                                                scaleX = 0.95f
+                                                scaleY = 0.95f
                                             }
                                         )
                                     }
-                                }
-                            }
-                        }
 
-                        // 👇 3. Wrap the BUTTONS in a local Column, and align them to the BottomCenter!
-                        Column(
-                            modifier = Modifier
-                                .align(Alignment.BottomCenter)
-                                .padding(bottom = 32.dp)
-                        ) {
-                            AnimatedVisibility(
-                                visible = showContent,
-                                enter = fadeIn(tween(300, delayMillis = 350)) + scaleIn(initialScale = 0.5f, animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow))
-                            ) {
-                                ActionButtonsRow(
-                                    onLike = { triggerSwipe(true, componentWidthPx) },
-                                    onPass = { triggerSwipe(false, componentWidthPx) }
-                                )
+                                    // Foreground Swipeable Card
+                                    SwipeableMatchCard(
+                                        player = topPlayer!!,
+                                        backgroundBrush = cardGradient,
+                                        offsetX = offsetX,
+                                        offsetY = offsetY,
+                                        componentWidthPx = componentWidthPx,
+                                        onSwipeComplete = { directionRight ->
+                                            triggerSwipe(directionRight, componentWidthPx)
+                                        },
+                                        modifier = dynamicCardModifier
+                                    )
+                                }
                             }
                         }
                     }
                 }
             }
-        }
-    }
-    // --- "IT'S A MATCH" OVERLAY ---
-    AnimatedVisibility(
-        visible = matchedPlayer != null,
-        enter = fadeIn(tween(400)) + scaleIn(initialScale = 0.8f, animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy)),
-        exit = fadeOut(tween(300))
-    ) {
-        matchedPlayer?.let { player ->
-            MatchCelebrationOverlay(
-                player = player,
-                onKeepSwiping = { viewModel.dismissMatchPopup() },
-                onSendMessage = {
-                    viewModel.dismissMatchPopup()
-                    // TODO: Navigate to the chat screen with this player's ID!
+
+            // --- ACTION BUTTONS (Sits below the card area natively) ---
+            if (uiState is MatchUiState.Success) {
+                val players = (uiState as MatchUiState.Success).players
+                val topPlayer = players.firstOrNull()
+                val coroutineScope = rememberCoroutineScope()
+
+                // Define triggerSwipe again for the buttons (or hoist it if preferred)
+                val triggerSwipe = { directionRight: Boolean ->
+                    coroutineScope.launch {
+                        if (topPlayer != null) {
+                            viewModel.onPlayerSwiped(topPlayer, isLiked = directionRight)
+                        }
+                    }
                 }
-            )
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 24.dp), // Natural padding from the bottom
+                    contentAlignment = Alignment.Center
+                ) {
+                    ActionButtonsRow(
+                        onLike = { triggerSwipe(true) },
+                        onPass = { triggerSwipe(false) }
+                    )
+                }
+            }
+        }
+
+        // --- UNAUTH OVERLAY ---
+        AnimatedVisibility(
+            visible = isUnauth,
+            enter = fadeIn(tween(300)) + scaleIn(initialScale = 0.95f),
+            exit = fadeOut(tween(300)),
+            modifier = Modifier.align(Alignment.Center)
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.5f)) // Dim the blurred background
+                    .clickable(enabled = false) {}, // Intercept clicks
+                contentAlignment = Alignment.Center
+            ) {
+                // The elevated dark card
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier
+                        .widthIn(max = 360.dp)
+                        .fillMaxWidth(0.85f)
+                        .clip(RoundedCornerShape(24.dp))
+                        .background(Color(0xFF1E2532)) // Dark card background
+                        .padding(horizontal = 24.dp, vertical = 32.dp)
+                ) {
+                    Text(
+                        text = stringResource(SharedRes.string.find_your_match_unauth_title),
+                        color = AppColors.AccentOrange,
+                        fontSize = 22.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        textAlign = TextAlign.Center,
+                        lineHeight = 30.sp
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Text(
+                        text = stringResource(SharedRes.string.find),
+                        color = Color.White.copy(alpha = 0.9f),
+                        fontSize = 15.sp,
+                        textAlign = TextAlign.Center,
+                        lineHeight = 22.sp
+                    )
+
+                    Spacer(modifier = Modifier.height(32.dp))
+
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(52.dp)
+                            .clip(CircleShape)
+                            .background(AppColors.AccentOrange)
+                            .clickable { onNavigateToLogin() },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = stringResource(SharedRes.string.login) + " / " + stringResource(SharedRes.string.register),
+                            color = Color(0xFF11151E),
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            }
+        }
+
+        // --- GENERAL ERROR OVERLAY ---
+        AnimatedVisibility(
+            visible = isGeneralError,
+            enter = fadeIn(tween(300)) + scaleIn(initialScale = 0.9f),
+            exit = fadeOut(tween(300)),
+            modifier = Modifier.align(Alignment.Center)
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.4f))
+                    .clickable(enabled = false) {},
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier
+                        .padding(32.dp)
+                        .clip(RoundedCornerShape(24.dp))
+                        .background(Color(0xFF151C2C))
+                        .border(1.dp, Color.White.copy(alpha = 0.1f), RoundedCornerShape(24.dp))
+                        .padding(32.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "Error",
+                        tint = AppColors.ErrorText,
+                        modifier = Modifier.size(48.dp)
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = "Oops!",
+                        color = Color.White,
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = errorMessage,
+                        color = Color.LightGray,
+                        fontSize = 16.sp,
+                        textAlign = TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    Row(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(24.dp))
+                            .background(AppColors.AccentOrange)
+                            .clickable {
+                                // viewModel.loadMatches()
+                            }
+                            .padding(horizontal = 32.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(Icons.Default.Refresh, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("TRY AGAIN", color = Color.White, fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+        }
+
+        // --- "IT'S A MATCH" OVERLAY ---
+        AnimatedVisibility(
+            visible = matchedPlayer != null,
+            enter = fadeIn(tween(400)) + scaleIn(initialScale = 0.8f, animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy)),
+            exit = fadeOut(tween(300)),
+            modifier = Modifier.align(Alignment.Center)
+        ) {
+            matchedPlayer?.let { player ->
+                MatchCelebrationOverlay(
+                    player = player,
+                    onKeepSwiping = { viewModel.dismissMatchPopup() },
+                    onSendMessage = {
+                        onNavigateToMessages()
+                        viewModel.dismissMatchPopup()
+                    }
+                )
+            }
         }
     }
 }
@@ -251,7 +389,7 @@ fun SwipeableMatchCard(
     offsetX: Animatable<Float, *>,
     offsetY: Animatable<Float, *>,
     componentWidthPx: Float,
-    onSwipeComplete: (Boolean) -> Unit, // True if right, false if left
+    onSwipeComplete: (Boolean) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val coroutineScope = rememberCoroutineScope()
@@ -261,26 +399,20 @@ fun SwipeableMatchCard(
     val alpha = 1f - (abs(offsetX.value) / componentWidthPx)
 
     Box(
+        // 👇 Removed the hardcoded heights, widths, and padding. It strictly respects the passed modifier!
         modifier = modifier
-            .heightIn(max = 800.dp)
-            .fillMaxHeight(0.9f)
-            .padding(bottom = 120.dp) // Make room for the buttons floating over it
-            .widthIn(max = 400.dp)
-            .padding(horizontal = 24.dp)
             .graphicsLayer {
                 translationX = offsetX.value
                 translationY = offsetY.value
                 rotationZ = rotation
                 this.alpha = alpha.coerceIn(0f, 1f)
             }
-            .pointerInput(player.id) { // Reset pointer tracking per player
+            .pointerInput(player.id) {
                 detectDragGestures(
                     onDragEnd = {
                         if (abs(offsetX.value) > swipeThresholdPx) {
-                            // Tell the parent to finish the swipe animation
                             onSwipeComplete(offsetX.value > 0)
                         } else {
-                            // Snap back to center
                             coroutineScope.launch { offsetX.animateTo(0f, spring(dampingRatio = Spring.DampingRatioMediumBouncy)) }
                             coroutineScope.launch { offsetY.animateTo(0f, spring(dampingRatio = Spring.DampingRatioMediumBouncy)) }
                         }
@@ -305,14 +437,8 @@ fun MatchCard(
     backgroundBrush: Brush,
     modifier: Modifier = Modifier
 ) {
-    Box(
-        modifier = modifier
-            .heightIn(max = 800.dp)
-            .fillMaxHeight(0.9f)
-            .padding(bottom = 120.dp)
-            .widthIn(max = 400.dp)
-            .padding(horizontal = 24.dp)
-    ) {
+    // 👇 Removed hardcoded sizes here too!
+    Box(modifier = modifier) {
         MatchCardContent(player, backgroundBrush)
     }
 }
@@ -322,22 +448,48 @@ fun MatchCardContent(
     player: Player,
     backgroundBrush: Brush
 ) {
+    val hasImage = !player.imageUrl.isNullOrBlank()
+
     Box(
         modifier = Modifier
-            .fillMaxSize()
+            .fillMaxSize() // Takes up exactly the space granted by the parent Box
             .clip(RoundedCornerShape(24.dp))
-            .background(backgroundBrush)
+            .then(if (hasImage) Modifier else Modifier.background(backgroundBrush))
     ) {
+        if (hasImage) {
+            AsyncImage(
+                model = player.imageUrl,
+                contentDescription = "Profile picture of ${player.username}",
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
+            )
+
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(
+                                Color.Transparent,
+                                Color.Black.copy(alpha = 0.1f),
+                                Color.Black.copy(alpha = 0.8f)
+                            )
+                        )
+                    )
+            )
+        }
+
         Column(
             modifier = Modifier.fillMaxSize(),
             verticalArrangement = Arrangement.Bottom
         ) {
-
             Box(
                 modifier = Modifier.weight(1f).fillMaxWidth(),
                 contentAlignment = Alignment.Center
             ) {
-                Box(modifier = Modifier.size(120.dp).clip(CircleShape).background(Color.White.copy(alpha = 0.2f)))
+                if (!hasImage) {
+                    Box(modifier = Modifier.size(120.dp).clip(CircleShape).background(Color.White.copy(alpha = 0.2f)))
+                }
             }
 
             Column(
@@ -392,7 +544,6 @@ fun MatchCardContent(
 
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     TagChip(player.skillLevel)
-                    // You could add more tags to the Player model if desired
                 }
             }
         }
@@ -411,7 +562,6 @@ fun TagChip(text: String) {
     }
 }
 
-// ActionButtonsRow modified slightly to accept callbacks
 @Composable
 fun ActionButtonsRow(onLike: () -> Unit, onPass: () -> Unit) {
     Row(
@@ -432,20 +582,6 @@ fun ActionButtonsRow(onLike: () -> Unit, onPass: () -> Unit) {
         }
 
         Spacer(modifier = Modifier.width(24.dp))
-
-//        Box(
-//            modifier = Modifier
-//                .size(48.dp)
-//                .clip(CircleShape)
-//                .background(Color(0xFF151C2C))
-//                .border(2.dp, Color(0xFF00D2FF).copy(alpha = 0.5f), CircleShape)
-//                .clickable { /* Super Like */ },
-//            contentAlignment = Alignment.Center
-//        ) {
-//            Icon(Icons.Default.Star, contentDescription = "Star", tint = Color(0xFF00D2FF), modifier = Modifier.size(24.dp))
-//        }
-//
-//        Spacer(modifier = Modifier.width(24.dp))
 
         Box(
             modifier = Modifier
@@ -470,8 +606,8 @@ fun MatchCelebrationOverlay(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xE6151C2C)) // Dark semi-transparent background
-            .clickable(enabled = false) {}, // Intercepts clicks so you can't swipe cards underneath
+            .background(Color(0xE6151C2C))
+            .clickable(enabled = false) {},
         contentAlignment = Alignment.Center
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -498,7 +634,6 @@ fun MatchCelebrationOverlay(
 
             Spacer(modifier = Modifier.height(48.dp))
 
-            // Two overlapping profile pictures (You and Them) would go here!
             Row(horizontalArrangement = Arrangement.Center) {
                 Box(modifier = Modifier.size(100.dp).clip(CircleShape).background(Color.Gray).border(3.dp, AppColors.AccentOrange, CircleShape))
                 Spacer(modifier = Modifier.width(16.dp))
@@ -507,7 +642,6 @@ fun MatchCelebrationOverlay(
 
             Spacer(modifier = Modifier.height(48.dp))
 
-            // Send Message Button
             Box(
                 modifier = Modifier
                     .clip(RoundedCornerShape(24.dp))
@@ -520,7 +654,6 @@ fun MatchCelebrationOverlay(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Keep Swiping Button
             Box(
                 modifier = Modifier
                     .clip(RoundedCornerShape(24.dp))

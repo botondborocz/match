@@ -1,9 +1,32 @@
 package org.ttproject.util
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import platform.UIKit.UIApplication
+import platform.UIKit.UIUserInterfaceStyle
+import platform.UIKit.UIWindowScene
+import platform.UIKit.UIWindow // 👈 1. Add this import!
 
 @Composable
 actual fun SetStatusBarColors(isDark: Boolean) {
-    // No-op: iOS generally handles this automatically via the system theme,
-    // or it's configured in your MainViewController bindings.
+    val style = if (isDark) {
+        UIUserInterfaceStyle.UIUserInterfaceStyleDark
+    } else {
+        UIUserInterfaceStyle.UIUserInterfaceStyleLight
+    }
+
+    val window =
+        UIApplication.sharedApplication.connectedScenes.firstNotNullOfOrNull { it as? UIWindowScene }
+            ?.windows
+        ?.firstOrNull() as? UIWindow // 👈 2. Add 'as? UIWindow' right here
+
+    window?.overrideUserInterfaceStyle = style
+}
+
+@Composable
+actual fun ClearChatNotificationEffect(chatId: String) {
+    LaunchedEffect(chatId) {
+        // iOS notification clearing logic goes here later!
+        // (Uses UNUserNotificationCenter)
+    }
 }

@@ -1,0 +1,278 @@
+package org.ttproject.routes
+
+import com.google.firebase.messaging.AndroidConfig
+import com.google.firebase.messaging.AndroidNotification
+import com.google.firebase.messaging.FirebaseMessaging
+import com.google.firebase.messaging.Message
+import com.google.firebase.messaging.Notification
+import io.ktor.server.routing.*
+import io.ktor.server.application.*
+import io.ktor.server.response.*
+import io.ktor.server.websocket.*
+import io.ktor.websocket.*
+import io.ktor.http.HttpStatusCode
+import io.ktor.server.auth.authenticate
+import io.ktor.server.auth.jwt.JWTPrincipal
+import io.ktor.server.auth.principal
+import kotlinx.coroutines.channels.consumeEach
+import org.jetbrains.exposed.sql.Op
+import org.jetbrains.exposed.sql.insertAndGetId
+import org.jetbrains.exposed.sql.select
+import org.jetbrains.exposed.sql.transactions.transaction
+import org.jetbrains.exposed.sql.SortOrder
+import org.jetbrains.exposed.sql.SqlExpressionBuilder
+import org.jetbrains.exposed.sql.and
+import org.jetbrains.exposed.sql.insert
+import org.jetbrains.exposed.sql.or
+import org.jetbrains.exposed.sql.selectAll
+import org.jetbrains.exposed.sql.update
+import org.ttproject.data.ChatThreadDto
+import org.ttproject.data.MessageDto
+import org.ttproject.database.tables.Connections
+import org.ttproject.database.tables.Messages
+import org.ttproject.database.tables.Users
+import org.ttproject.services.ConnectionManager
+import java.lang.reflect.Array.set
+import java.time.Instant
+import java.util.UUID
+
+// You will need a simple class to manage your active WebSocket connections
+val connectionManager = ConnectionManager()
+
+fun Route.messageRoutes() {
+
+    authenticate("auth-jwt") {
+        get("/api/connections") {
+            val principal = call.principal<JWTPrincipal>()
+            val currentUserIdStr = principal?.payload?.getClaim("userId")?.asString()
+                ?: return@get call.respond(HttpStatusCode.Unauthorized)
+
+            val currentUserId = UUID.fromString(currentUserIdStr)
+
+            val connections = transaction {
+                // Find all connections where the current user is involved
+                val userConnections = Connections.selectAll().where {
+                    (Connections.user1Id eq currentUserId) or (Connections.user2Id eq currentUserId)
+                }.toList()
+
+                userConnections.map { row ->
+                    val connectionId = row[Connections.id]
+                    val user1 = row[Connections.user1Id]
+                    val user2 = row[Connections.user2Id]
+
+                    // Determine who the *other* person is
+                    val otherUserId = if (user1 == currentUserId) user2 else user1
+
+                    // Fetch the other user's details
+                    val otherUser = Users.selectAll().where { Users.id eq otherUserId }.singleOrNull()
+                    val otherUserName = otherUser?.get(Users.username) ?: "Unknown Player"
+                    val otherUserImageUrl = otherUser?.get(Users.profileImageUrl) // Optional: If you have profile images
+
+                    // Optional: Fetch the actual last message (Keep it simple for MVP)
+                    val lastMessageRow = Messages.selectAll()
+                        .where { Messages.connectionId eq connectionId }
+                        .orderBy(Messages.createdAt to SortOrder.DESC)
+                        .limit(1)
+                        .singleOrNull()
+
+                    val lastMessageText = lastMessageRow?.get(Messages.content) ?: "No messages yet"
+                    val timestamp = lastMessageRow?.get(Messages.createdAt)?.toString() ?: ""
+
+                    val unreadMessagesCount = Messages.selectAll()
+                        .where {
+                            (Messages.connectionId eq connectionId) and
+                                    (Messages.senderId eq otherUserId) and // Only count messages THEY sent
+                                    (Messages.isRead eq false)             // That haven't been read yet
+                        }.count().toInt()
+
+                    ChatThreadDto(
+                        id = connectionId.toString(),
+                        otherUserName = otherUserName,
+                        otherUserImageUrl = otherUserImageUrl,
+                        lastMessage = lastMessageText,
+                        timestamp = timestamp,
+                        unreadCount = unreadMessagesCount, // Implement unread logic later
+                        isOnline = false // Implement presence logic later
+                    )
+                }
+            }
+            val sortedConnections = connections.sortedByDescending { it.timestamp }
+
+            call.respond(HttpStatusCode.OK, sortedConnections)
+        }
+
+        route("/api/connections/{connectionId}") {
+
+            // --------------------------------------------------------
+            // 1. GET HISTORY: Fetch old messages via standard HTTP
+            // --------------------------------------------------------
+            get("/messages") {
+                val connectionIdStr = call.parameters["connectionId"] ?: return@get call.respond(
+                    HttpStatusCode.BadRequest,
+                    "Missing connection ID"
+                )
+                val connectionId = UUID.fromString(connectionIdStr)
+
+                // Query the database using Exposed
+                val messages = transaction {
+                    Messages.selectAll().where { Messages.connectionId eq connectionId }
+                        .orderBy(Messages.createdAt to SortOrder.ASC) // Oldest first, so UI scrolls down
+                        .map {
+                            // Map your DB row to a simple Data Transfer Object (DTO)
+                            MessageDto(
+                                id = it[Messages.id].toString(),
+                                senderId = it[Messages.senderId].toString(),
+                                content = it[Messages.content],
+                                createdAt = it[Messages.createdAt].toString()
+                            )
+                        }
+                }
+                call.respond(HttpStatusCode.OK, messages)
+            }
+
+            post("/messages/read") {
+                val connectionIdStr = call.parameters["connectionId"] ?: return@post call.respond(
+                    HttpStatusCode.BadRequest,
+                    "Missing connection ID"
+                )
+                val connectionId = UUID.fromString(connectionIdStr)
+
+                // Grab the user who is currently reading the chat
+                val principal = call.principal<JWTPrincipal>()
+                val currentUserIdStr = principal?.payload?.getClaim("userId")?.asString()
+                    ?: return@post call.respond(HttpStatusCode.Unauthorized)
+                val currentUserId = UUID.fromString(currentUserIdStr)
+
+                transaction {
+                    // 👇 Only mark messages as read IF they belong to this chat AND were sent by the other person
+                    Messages.update({
+                        (Messages.connectionId eq connectionId) and (Messages.senderId neq currentUserId)
+                    }) {
+                        it[isRead] = true
+                    }
+                }
+                call.respond(HttpStatusCode.OK, "Messages marked as read")
+            }
+
+            // --------------------------------------------------------
+            // 2. LIVE CHAT: Connect via WebSockets
+            // --------------------------------------------------------
+            webSocket("/chat") {
+                val connectionIdStr = call.parameters["connectionId"] ?: return@webSocket close(
+                    CloseReason(CloseReason.Codes.VIOLATED_POLICY, "No connection ID")
+                )
+                val connectionId = UUID.fromString(connectionIdStr)
+
+                val principal = call.principal<JWTPrincipal>()
+                val senderIdStr = principal?.payload?.getClaim("userId")?.asString()
+                    ?: return@webSocket close(CloseReason(CloseReason.Codes.VIOLATED_POLICY, "Unauthorized"))
+                val senderId = UUID.fromString(senderIdStr)
+
+                // 👇 FETCH RECEIVER ID AND SENDER NAME ONCE WHEN THEY CONNECT
+                val (receiverId, senderName) = transaction {
+                    val connRow = Connections.select { Connections.id eq connectionId }.singleOrNull()
+                        ?: throw Exception("Connection not found")
+
+                    val u1 = connRow[Connections.user1Id]
+                    val u2 = connRow[Connections.user2Id]
+                    val rId = if (u1 == senderId) u2 else u1
+
+                    val sName = Users.slice(Users.username).select { Users.id eq senderId }.singleOrNull()?.get(Users.username) ?: "Someone"
+
+                    Pair(rId, sName)
+                }
+
+                // 👇 Pass the senderId to the manager
+                connectionManager.addSession(connectionId, senderId, this)
+
+                try {
+                    incoming.consumeEach { frame ->
+                        if (frame is Frame.Text) {
+                            val textContent = frame.readText()
+                            val created_at = Instant.now()
+
+                            // Move the try/catch INSIDE the loop so one bad message doesn't drop the connection!
+                            try {
+                                val newMessageId = transaction {
+                                    Messages.insert {
+                                        it[Messages.connectionId] = connectionId
+                                        it[Messages.senderId] = senderId
+                                        it[content] = textContent
+                                        it[createdAt] = created_at
+                                    } get Messages.id
+                                }
+
+                                // 👇 Use the new ConnectionManager function!
+                                if (!connectionManager.isUserConnected(connectionId, receiverId)) {
+                                    val targetToken = transaction {
+                                        Users.slice(Users.fcmToken).select { Users.id eq receiverId }.singleOrNull()?.get(Users.fcmToken)
+                                    }
+
+                                    println("🔍 Checking push notification for Receiver: $receiverId")
+                                    println("🔍 Token found in DB: $targetToken")
+
+                                    // Check for isNullOrBlank instead of just null!
+                                    if (!targetToken.isNullOrBlank()) {
+                                        try {
+//                                            val message = Message.builder()
+//                                                .setToken(targetToken)
+//                                                .setNotification(
+//                                                    Notification.builder()
+//                                                        .setTitle("New message from $senderName")
+//                                                        .setBody(textContent)
+//                                                        .build()
+//                                                )
+//                                                .setAndroidConfig(
+//                                                    AndroidConfig.builder()
+//                                                        .setPriority(AndroidConfig.Priority.HIGH) // 🚨 Forces the heads-up banner!
+//                                                        .setNotification(
+//                                                            AndroidNotification.builder()
+//                                                                .setChannelId("chat_messages") // We will create this channel next
+//                                                                .build()
+//                                                        )
+//                                                        .build()
+//                                                )
+//                                                .putData("chatId", connectionId.toString())
+//                                                .build()
+                                            val message = Message.builder()
+                                                .setToken(targetToken)
+                                                // 🚨 NO .setNotification() HERE! 🚨
+                                                // We send raw data, forcing the Android app to wake up and handle it.
+                                                .putData("chatId", connectionId.toString())
+                                                .putData("senderName", senderName)
+                                                .putData("text", textContent)
+                                                .build()
+
+                                            // 👇 Use synchronous .send() so we can actually catch the Google API errors
+                                            val response = FirebaseMessaging.getInstance().send(message)
+                                            println("✅ FCM Success Response: $response")
+
+                                        } catch (e: Exception) {
+                                            println("❌ FCM Sending Failed!")
+                                            e.printStackTrace() // This will tell us exactly why Google rejected it
+                                        }
+                                    } else {
+                                        println("⚠️ Warning: targetToken is empty or null for user $receiverId. Cannot send push.")
+                                    }
+                                } else {
+                                    println("ℹ️ User $receiverId is currently connected to the WebSocket, skipping push notification.")
+                                }
+
+                                val payload = """{"id": "$newMessageId", "senderId": "$senderId", "content": "$textContent", "createdAt": "$created_at"}"""
+                                connectionManager.broadcast(connectionId, payload)
+
+                            } catch (e: Exception) {
+                                call.application.environment.log.error("Failed to process individual message", e)
+                            }
+                        }
+                    }
+                } catch (e: Exception) {
+                    call.application.environment.log.info("WebSocket disconnected")
+                } finally {
+                    // 👇 Pass the senderId during cleanup
+                    connectionManager.removeSession(connectionId, senderId)
+                }
+            }
+        }
+    }
+}

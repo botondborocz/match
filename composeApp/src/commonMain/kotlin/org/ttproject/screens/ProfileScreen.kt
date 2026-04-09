@@ -27,8 +27,10 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.BiasAlignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
@@ -36,15 +38,17 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import com.preat.peekaboo.image.picker.SelectionMode
+import com.preat.peekaboo.image.picker.rememberImagePickerLauncher
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 import org.ttproject.AppColors
 import org.ttproject.AppColors.TextGray
-import org.ttproject.data.UserProfile
 import org.ttproject.shared.resources.backhand
 import org.ttproject.shared.resources.blade
 import org.ttproject.shared.resources.dark
@@ -59,9 +63,15 @@ import org.ttproject.viewmodel.ProfileState
 import org.ttproject.viewmodel.ProfileViewModel
 import org.ttproject.util.ThemeMode
 import org.ttproject.shared.resources.Res as SharedRes
+import coil3.compose.AsyncImage
+import org.ttproject.shared.resources.cancel
+import org.ttproject.shared.resources.edit_profile
+import org.ttproject.shared.resources.save
+import org.ttproject.shared.resources.username
 
 @Composable
 fun ProfileScreen(
+    bottomNavPadding: Dp, // 👈 1. ADD THIS PARAMETER
     currentLanguage: String = "en",
     currentThemeMode: ThemeMode = ThemeMode.System,
     onLogoutClick: () -> Unit = {},
@@ -70,7 +80,35 @@ fun ProfileScreen(
     viewModel: ProfileViewModel = koinViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
-//    var currentLanguage: String by remember { mutableStateOf(currentLanguage) }
+    var isAvatarExpanded by remember { mutableStateOf(false) }
+
+    // 👇 NEW: State for the Edit Profile Modal
+    var isEditProfileModalOpen by remember { mutableStateOf(false) }
+
+    val scope = rememberCoroutineScope()
+    var imageToUpload by remember { mutableStateOf<ByteArray?>(null) }
+
+    val singleImagePicker = rememberImagePickerLauncher(
+        selectionMode = SelectionMode.Single,
+        scope = scope,
+        onResult = { byteArrays ->
+            byteArrays.firstOrNull()?.let { imageBytes ->
+                println("✅ Image picked! Size: ${imageBytes.size} bytes")
+                imageToUpload = imageBytes
+            }
+        }
+    )
+
+    if (imageToUpload != null) {
+        AvatarFramerDialog(
+            imageBytes = imageToUpload!!,
+            onDismiss = { imageToUpload = null },
+            onConfirm = { selectedBias ->
+                viewModel.uploadProfileImage(imageToUpload!!)
+                imageToUpload = null
+            }
+        )
+    }
 
     LaunchedEffect(Unit) {
         if (viewModel.uiState.value !is ProfileState.Success) {
@@ -88,19 +126,17 @@ fun ProfileScreen(
         is ProfileState.Error -> {
             val error = (uiState as ProfileState.Error).message
             Text(text = error, color = Color.Red)
-            // Add a retry button here
         }
 
         is ProfileState.Success -> {
             val userData = uiState as ProfileState.Success
-            var animateTrigger by remember { mutableStateOf(false) }
-            LaunchedEffect(Unit) {
-                animateTrigger = true
-            }
-            println("asd")
-            println(userData)
+            var animateTrigger by remember { mutableStateOf(true) }
+
+//            LaunchedEffect(Unit) {
+//                animateTrigger = true
+//            }
+
             LaunchedEffect(userData.language) {
-                // Only trigger the change if the database language is different from the current UI language
                 if (userData.language != null && userData.language != currentLanguage) {
                     onChangeLanguage(userData.language!!)
                 }
@@ -108,11 +144,44 @@ fun ProfileScreen(
 
             val scrollState = rememberScrollState()
 
+            // AVATAR PREVIEW DIALOG
+            if (isAvatarExpanded) {
+                AvatarPreviewDialog(
+                    username = userData.name ?: "Player",
+                    imageUrl = userData.imageUrl,
+                    onDismissRequest = { isAvatarExpanded = false },
+                    onEditClick = {
+                        singleImagePicker.launch()
+                        isAvatarExpanded = false
+                    }
+                )
+            }
+
+            // 👇 NEW: EDIT PROFILE DIALOG
+            if (isEditProfileModalOpen) {
+                EditProfileDialog(
+                    initialName = userData.name ?: "",
+                    initialBlade = userData.blade ?: "Butterfly Viscaria",
+                    initialForehand = userData.rubberFh ?: "Tenergy 05",
+                    initialBackhand = userData.rubberBh ?: "DHS Hurricane 3 Neo",
+                    onDismiss = { isEditProfileModalOpen = false },
+                    onSave = { newName, newBlade, newFh, newBh ->
+                        // 👇 Call ViewModel to update data!
+                        viewModel.updateProfile(newName, newBlade, newFh, newBh)
+                        isEditProfileModalOpen = false
+                    }
+                )
+            }
+
+            // 👇 2. UPDATE YOUR MAIN COLUMN MODIFIER
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(AppColors.Background) // Use AppColors.Background if available
+                    // 1st: Shave off the bottom so it never touches the Nav Bar
+                    .padding(bottom = bottomNavPadding)
+                    // 2nd: Make the remaining safe area scrollable
                     .verticalScroll(scrollState)
+                    // 3rd: Add your inner aesthetic padding
                     .padding(horizontal = 24.dp, vertical = 32.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
@@ -121,21 +190,27 @@ fun ProfileScreen(
                     enter = fadeIn(tween(400)) + slideInVertically(tween(400)) { 50 }
                 ) {
                     Column {
-                        ProfileHeader(userData.name ?: "Player")
+                        ProfileHeader(
+                            profileData = userData,
+                            onAvatarClick = { isAvatarExpanded = true  },
+                            onPhotoEditClick = { singleImagePicker.launch() },
+                            // 👇 Pass callback to open text edit modal
+                            onProfileEditClick = { isEditProfileModalOpen = true }
+                        )
                         Spacer(modifier = Modifier.height(32.dp))
                     }
                 }
-
-//                StatsGrid()
-//
-//                Spacer(modifier = Modifier.height(32.dp))
 
                 AnimatedVisibility(
                     visible = animateTrigger,
                     enter = fadeIn(tween(400, delayMillis = 150)) + slideInVertically(tween(400, delayMillis = 150)) { 50 }
                 ) {
                     Column {
-                        GearSection()
+                        GearSection(
+                            profileData = userData,
+                            // 👇 Pass callback to open text edit modal
+                            onGearEditClick = { isEditProfileModalOpen = true }
+                        )
                         Spacer(modifier = Modifier.height(16.dp))
                     }
                 }
@@ -156,56 +231,184 @@ fun ProfileScreen(
                             onChangeTheme = onChangeTheme,
                             viewModel = viewModel
                         )
-                        Spacer(modifier = Modifier.height(80.dp))
+//                        Spacer(modifier = Modifier.height(80.dp))
                     }
                 }
             }
         }
     }
+}
 
+// 👇 NEW: Edit Profile Dialog Composable
+@Composable
+fun EditProfileDialog(
+    initialName: String,
+    initialBlade: String,
+    initialForehand: String,
+    initialBackhand: String,
+    onDismiss: () -> Unit,
+    onSave: (String, String, String, String) -> Unit
+) {
+    var name by remember { mutableStateOf(initialName) }
+    var blade by remember { mutableStateOf(initialBlade) }
+    var forehand by remember { mutableStateOf(initialForehand) }
+    var backhand by remember { mutableStateOf(initialBackhand) }
+
+    androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(24.dp))
+                .background(AppColors.SurfaceDark)
+                .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(stringResource(SharedRes.string.edit_profile), color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Custom styled text fields
+            EditTextField(stringResource(SharedRes.string.username), name) { name = it }
+            Spacer(modifier = Modifier.height(12.dp))
+            EditTextField(stringResource(SharedRes.string.blade), blade) { blade = it }
+            Spacer(modifier = Modifier.height(12.dp))
+            EditTextField(stringResource(SharedRes.string.forehand), forehand) { forehand = it }
+            Spacer(modifier = Modifier.height(12.dp))
+            EditTextField(stringResource(SharedRes.string.backhand), backhand) { backhand = it }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                TextButton(onClick = onDismiss) {
+                    Text(stringResource(SharedRes.string.cancel), color = Color.Gray)
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+                Button(
+                    onClick = { onSave(name, blade, forehand, backhand) },
+                    colors = ButtonDefaults.buttonColors(containerColor = AppColors.AccentOrange)
+                ) {
+                    Text(stringResource(SharedRes.string.save), color = Color.White)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun EditTextField(label: String, value: String, onValueChange: (String) -> Unit) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Text(text = label.uppercase(), color = AppColors.TextGray, fontSize = 12.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.5.sp)
+        Spacer(modifier = Modifier.height(6.dp))
+        OutlinedTextField(
+            value = value,
+            onValueChange = onValueChange,
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedTextColor = Color.White,
+                unfocusedTextColor = Color.White,
+                focusedBorderColor = AppColors.AccentOrange,
+                unfocusedBorderColor = Color.White.copy(alpha = 0.3f),
+                cursorColor = AppColors.AccentOrange
+            ),
+            shape = RoundedCornerShape(12.dp)
+        )
+    }
 }
 
 @Composable
 private fun ProfileHeader(
-    username: String
+    profileData: ProfileState.Success,
+    onPhotoEditClick: () -> Unit,
+    onProfileEditClick: () -> Unit, // 👇 Added to trigger edit
+    onAvatarClick: () -> Unit
 ) {
+    val username = profileData.name ?: "Player"
+    val imageUrl = profileData.imageUrl
     val avatarGradient = Brush.linearGradient(
         colors = listOf(Color(0xFFFF4B4B), Color(0xFF9C27B0))
     )
 
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        // Avatar
         Box(
             modifier = Modifier
                 .size(100.dp)
-                .clip(CircleShape)
-                .background(AppColors.SurfaceDark)
-                .border(4.dp, avatarGradient, CircleShape),
-            contentAlignment = Alignment.Center
+                .clickable { onAvatarClick() }
         ) {
-            Text(
-                text = "JD",
-                color = AppColors.TextPrimary,
-                fontSize = 28.sp,
-                fontWeight = FontWeight.Bold
-            )
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clip(CircleShape)
+                    .background(AppColors.SurfaceDark)
+                    .border(4.dp, avatarGradient, CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                if (!imageUrl.isNullOrBlank()) {
+                    AsyncImage(
+                        model = imageUrl,
+                        contentDescription = "Profile Picture",
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop,
+                        alignment = BiasAlignment(0f, 0f)
+                    )
+                } else {
+                    Text(
+                        text = getInitials(username),
+                        color = AppColors.TextPrimary,
+                        fontSize = 32.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .offset(x = (-2).dp, y = (-2).dp)
+                    .clip(CircleShape)
+                    .background(AppColors.Background)
+                    .padding(3.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(26.dp)
+                        .clip(CircleShape)
+                        .clickable { onPhotoEditClick() }
+                        .background(AppColors.AccentOrange),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.CameraAlt,
+                        contentDescription = "Edit Profile Picture",
+                        tint = Color.White,
+                        modifier = Modifier.size(14.dp)
+                    )
+                }
+            }
         }
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Name
-        Text(
-            text = username,
-            color = AppColors.TextPrimary,
-            fontSize = 28.sp,
-            fontWeight = FontWeight.ExtraBold
-        )
+        // 👇 Make the username row clickable to open the edit modal
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .clip(RoundedCornerShape(8.dp))
+                .clickable { onProfileEditClick() }
+                .padding(horizontal = 8.dp, vertical = 4.dp)
+        ) {
+            Text(
+                text = username,
+                color = AppColors.TextPrimary,
+                fontSize = 28.sp,
+                fontWeight = FontWeight.ExtraBold
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Icon(Icons.Default.Edit, contentDescription = "Edit Profile", tint = AppColors.TextGray, modifier = Modifier.size(18.dp))
+        }
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // Badges
         Row(verticalAlignment = Alignment.CenterVertically) {
-            // ELO Badge
             Box(
                 modifier = Modifier
                     .clip(RoundedCornerShape(16.dp))
@@ -214,20 +417,180 @@ private fun ProfileHeader(
                     .padding(horizontal = 12.dp, vertical = 6.dp)
             ) {
                 Text(
-                    text = "ELO 1380",
+                    text = "ELO ${profileData.elo}",
                     color = Color(0xFFFF4B4B),
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold
                 )
             }
-
             Spacer(modifier = Modifier.width(12.dp))
-
             Text(
-                text = "Member since 2023",
+                text = "Win Rate: ${profileData.winRate}",
                 color = AppColors.TextGray,
                 fontSize = 14.sp
             )
+        }
+    }
+}
+
+@Composable
+private fun AvatarPreviewDialog(
+    username: String,
+    imageUrl: String?,
+    onEditClick: () -> Unit,
+    onDismissRequest: () -> Unit
+) {
+    androidx.compose.ui.window.Dialog(
+        onDismissRequest = onDismissRequest,
+        properties = androidx.compose.ui.window.DialogProperties(
+            usePlatformDefaultWidth = false
+        )
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.8f))
+                .clickable(
+                    interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                    indication = null,
+                    onClick = onDismissRequest
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            // --- 2. THE ALMOST FULL-SCREEN PHOTO CARD ---
+            // 👇 Changed to Box so the image can fill the entire container
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(0.9f)
+                    .aspectRatio(1f) // Perfect square
+                    .clip(RoundedCornerShape(32.dp))
+                    .background(AppColors.SurfaceDark)
+                    .clickable(enabled = false) {}
+                    .border(2.dp, Brush.linearGradient(colors = listOf(Color(0xFFFF4B4B).copy(alpha = 0.1f), Color(0xFF9C27B0).copy(alpha = 0.1f))), RoundedCornerShape(32.dp)),
+                contentAlignment = Alignment.Center
+            ) {
+                // 👇 NEW: Check if imageUrl exists
+                if (!imageUrl.isNullOrBlank()) {
+                    AsyncImage(
+                        model = imageUrl,
+                        contentDescription = "Full Screen Profile Picture",
+                        modifier = Modifier.fillMaxSize(), // Fills the rounded corner card perfectly
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    // FALLBACK INITIALS
+                    Text(
+                        text = getInitials(username),
+                        color = AppColors.TextPrimary,
+                        fontSize = 80.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        modifier = Modifier.padding(32.dp) // Kept padding here for the text
+                    )
+                }
+            }
+
+            // --- 3. FLOATING CLOSE BUTTON (Top Right) ---
+            IconButton(
+                onClick = onDismissRequest,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(top = 40.dp, end = 24.dp)
+                    .background(Color.Black.copy(alpha = 0.4f), CircleShape)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Close,
+                    contentDescription = "Close Preview",
+                    tint = Color.White
+                )
+            }
+
+            // --- 4. THE EDIT PHOTO BUTTON (Bottom Center) ---
+            Button(
+                onClick = {
+                    onEditClick()
+                    onDismissRequest()
+                },
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 60.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = AppColors.AccentOrange),
+                shape = RoundedCornerShape(24.dp)
+            ) {
+                Icon(Icons.Filled.CameraAlt, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Edit Photo", color = Color.White, fontWeight = FontWeight.Bold)
+            }
+        }
+    }
+}
+
+@Composable
+fun AvatarFramerDialog(
+    imageBytes: ByteArray, // The image they just picked
+    onDismiss: () -> Unit,
+    onConfirm: (Float) -> Unit // Returns the Y-Bias they chose
+) {
+    // State to hold the slider value (-1f to 1f)
+    var verticalBias by remember { mutableStateOf(0f) }
+
+    androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(24.dp))
+                .background(AppColors.SurfaceDark)
+                .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text("Frame Your Avatar", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // --- THE 1:1 PREVIEW BOX ---
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(0.8f)
+                    .aspectRatio(1f) // Strict 1:1 Square
+                    .clip(CircleShape) // Show it exactly how the profile will look
+                    .border(2.dp, AppColors.AccentOrange, CircleShape)
+            ) {
+                AsyncImage(
+                    model = imageBytes,
+                    contentDescription = "Avatar Preview",
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop,
+                    alignment = BiasAlignment(0f, verticalBias)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // --- THE SLIDER ---
+            Text("Adjust Position", color = Color.Gray, fontSize = 14.sp)
+            Slider(
+                value = verticalBias,
+                onValueChange = { verticalBias = it },
+                valueRange = -1f..1f, // -1 is Top, 1 is Bottom
+                colors = SliderDefaults.colors(
+                    thumbColor = AppColors.AccentOrange,
+                    activeTrackColor = AppColors.AccentOrange
+                )
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // --- BUTTONS ---
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                TextButton(onClick = onDismiss) {
+                    Text("Cancel", color = Color.Gray)
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+                Button(
+                    onClick = { onConfirm(verticalBias) },
+                    colors = ButtonDefaults.buttonColors(containerColor = AppColors.AccentOrange)
+                ) {
+                    Text("Save & Upload", color = Color.White)
+                }
+            }
         }
     }
 }
@@ -300,31 +663,44 @@ private fun StatCard(
 }
 
 @Composable
-private fun GearSection() {
+private fun GearSection(
+    profileData: ProfileState.Success,
+    onGearEditClick: () -> Unit // 👇 Callback for gear edit
+) {
     Column(modifier = Modifier.fillMaxWidth()) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth()
+        ) {
             Icon(Icons.Default.Build, contentDescription = null, tint = AppColors.TextGray, modifier = Modifier.size(20.dp))
             Spacer(modifier = Modifier.width(8.dp))
             Text(stringResource(SharedRes.string.my_gear), color = AppColors.TextPrimary, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+
+            Spacer(modifier = Modifier.weight(1f))
+
+            // 👇 Edit Button for gear
+            IconButton(onClick = onGearEditClick, modifier = Modifier.size(24.dp)) {
+                Icon(Icons.Default.Edit, contentDescription = "Edit Gear", tint = AppColors.TextGray, modifier = Modifier.size(20.dp))
+            }
         }
 
         Spacer(modifier = Modifier.height(16.dp))
 
         GearItem(
             label = stringResource(SharedRes.string.blade).uppercase(),
-            value = "Butterfly Viscaria",
-            iconContent = { Text("🏓", fontSize = 16.sp) } // Using an emoji/text block as a placeholder for paddle
+            value = profileData.blade ?: "Butterfly Viscaria",
+            iconContent = { Text("🏓", fontSize = 16.sp) }
         )
         Spacer(modifier = Modifier.height(12.dp))
         GearItem(
             label = stringResource(SharedRes.string.forehand).uppercase(),
-            value = "Tenergy 05",
+            value = profileData.rubberFh ?: "Tenergy 05",
             iconContent = { Box(modifier = Modifier.size(12.dp).clip(CircleShape).background(Color(0xFFFF4B4B))) }
         )
         Spacer(modifier = Modifier.height(12.dp))
         GearItem(
             label = stringResource(SharedRes.string.backhand).uppercase(),
-            value = "Dignics 09C",
+            value = profileData.rubberBh ?: "DHS Hurricane 3 Neo",
             iconContent = { Box(modifier = Modifier.size(12.dp).clip(CircleShape).background(Color.Black)) }
         )
     }

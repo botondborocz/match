@@ -1,0 +1,966 @@
+{
+  "type": "FeatureCollection",
+  "generator": "overpass-turbo",
+  "copyright": "The data included in this document is from www.openstreetmap.org. The data is made available under ODbL.",
+  "timestamp": "2026-04-07T10:05:11Z",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "relation/16750918",
+        "capacity": "2",
+        "leisure": "pitch",
+        "sport": "table_tennis",
+        "type": "multipolygon",
+        "@geometry": "center"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          14.5434845,
+          46.0491105
+        ]
+      },
+      "id": "relation/16750918"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "relation/17969936",
+        "capacity": "2",
+        "leisure": "pitch",
+        "sport": "table_tennis",
+        "type": "multipolygon",
+        "@geometry": "center"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          14.5613257,
+          46.0520341
+        ]
+      },
+      "id": "relation/17969936"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/441573084",
+        "leisure": "pitch",
+        "sport": "table_tennis",
+        "surface": "sand",
+        "@geometry": "center"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          13.9071918,
+          46.4726254
+        ]
+      },
+      "id": "way/441573084"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/582347972",
+        "leisure": "pitch",
+        "sport": "table_tennis",
+        "@geometry": "center"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          13.5963149,
+          45.5078054
+        ]
+      },
+      "id": "way/582347972"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/1106498218",
+        "access": "yes",
+        "covered": "no",
+        "fee": "no",
+        "indoor": "no",
+        "leisure": "pitch",
+        "source": "survey",
+        "sport": "table_tennis",
+        "@geometry": "center"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          14.5081024,
+          46.0885216
+        ]
+      },
+      "id": "way/1106498218"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/1164250612",
+        "leisure": "pitch",
+        "sport": "table_tennis",
+        "start_date": "2021",
+        "website": "https://www.ljubljana.si/sl/aktualno/namizni-tenis-na-prostem/",
+        "@geometry": "center"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          14.4972008,
+          46.0707084
+        ]
+      },
+      "id": "way/1164250612"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/1164250613",
+        "leisure": "pitch",
+        "sport": "table_tennis",
+        "start_date": "2021",
+        "website": "https://www.ljubljana.si/sl/aktualno/namizni-tenis-na-prostem/",
+        "@geometry": "center"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          14.4972148,
+          46.0707485
+        ]
+      },
+      "id": "way/1164250613"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/1164251985",
+        "leisure": "pitch",
+        "lit": "no",
+        "pitch:net": "yes",
+        "pitch:net:material": "metal",
+        "pitch:net:overhang": "0",
+        "sport": "table_tennis",
+        "start_date": "2021",
+        "website": "https://www.ljubljana.si/sl/aktualno/namizni-tenis-na-prostem/",
+        "@geometry": "center"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          14.4852204,
+          46.0726358
+        ]
+      },
+      "id": "way/1164251985"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/1164252967",
+        "leisure": "pitch",
+        "pitch:net": "yes",
+        "pitch:net:material": "metal",
+        "pitch:net:overhang": "0",
+        "sport": "table_tennis",
+        "start_date": "2021",
+        "website": "https://www.ljubljana.si/sl/aktualno/namizni-tenis-na-prostem/",
+        "@geometry": "center"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          14.5067935,
+          46.0778702
+        ]
+      },
+      "id": "way/1164252967"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/1164253588",
+        "leisure": "pitch",
+        "pitch:net": "yes",
+        "pitch:net:material": "metal",
+        "pitch:net:overhang": "0",
+        "sport": "table_tennis",
+        "start_date": "2021",
+        "website": "https://www.ljubljana.si/sl/aktualno/namizni-tenis-na-prostem/",
+        "@geometry": "center"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          14.5242041,
+          46.0647055
+        ]
+      },
+      "id": "way/1164253588"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/1164253785",
+        "leisure": "pitch",
+        "pitch:net": "yes",
+        "pitch:net:material": "metal",
+        "pitch:net:overhang": "0",
+        "sport": "table_tennis",
+        "start_date": "2021",
+        "website": "https://www.ljubljana.si/sl/aktualno/namizni-tenis-na-prostem/",
+        "@geometry": "center"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          14.5327423,
+          46.0560728
+        ]
+      },
+      "id": "way/1164253785"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/1164254154",
+        "leisure": "pitch",
+        "pitch:net": "yes",
+        "pitch:net:material": "metal",
+        "pitch:net:overhang": "0",
+        "sport": "table_tennis",
+        "start_date": "2021",
+        "website": "https://www.ljubljana.si/sl/aktualno/namizni-tenis-na-prostem/",
+        "@geometry": "center"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          14.5318557,
+          46.0495099
+        ]
+      },
+      "id": "way/1164254154"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/1164254155",
+        "leisure": "pitch",
+        "pitch:net": "yes",
+        "pitch:net:material": "metal",
+        "pitch:net:overhang": "0",
+        "sport": "table_tennis",
+        "start_date": "2021",
+        "website": "https://www.ljubljana.si/sl/aktualno/namizni-tenis-na-prostem/",
+        "@geometry": "center"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          14.5318542,
+          46.0495504
+        ]
+      },
+      "id": "way/1164254155"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/1164254283",
+        "leisure": "pitch",
+        "pitch:net": "yes",
+        "pitch:net:material": "metal",
+        "pitch:net:overhang": "0",
+        "sport": "table_tennis",
+        "start_date": "2021",
+        "website": "https://www.ljubljana.si/sl/aktualno/namizni-tenis-na-prostem/",
+        "@geometry": "center"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          14.5178757,
+          46.0477205
+        ]
+      },
+      "id": "way/1164254283"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/1164254284",
+        "leisure": "pitch",
+        "pitch:net": "yes",
+        "pitch:net:material": "metal",
+        "pitch:net:overhang": "0",
+        "sport": "table_tennis",
+        "start_date": "2021",
+        "website": "https://www.ljubljana.si/sl/aktualno/namizni-tenis-na-prostem/",
+        "@geometry": "center"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          14.5178919,
+          46.0477567
+        ]
+      },
+      "id": "way/1164254284"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/1164255829",
+        "access": "yes",
+        "indoor": "no",
+        "leisure": "pitch",
+        "pitch:net": "yes",
+        "pitch:net:material": "metal",
+        "pitch:net:overhang": "0",
+        "sport": "table_tennis",
+        "start_date": "2021",
+        "website": "https://www.ljubljana.si/sl/aktualno/namizni-tenis-na-prostem/",
+        "@geometry": "center"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          14.5220507,
+          46.032853
+        ]
+      },
+      "id": "way/1164255829"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/1164255830",
+        "access": "yes",
+        "indoor": "no",
+        "leisure": "pitch",
+        "pitch:net": "yes",
+        "pitch:net:material": "metal",
+        "pitch:net:overhang": "0",
+        "sport": "table_tennis",
+        "start_date": "2021",
+        "website": "https://www.ljubljana.si/sl/aktualno/namizni-tenis-na-prostem/",
+        "@geometry": "center"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          14.5222202,
+          46.0329243
+        ]
+      },
+      "id": "way/1164255830"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/1177605962",
+        "capacity": "3",
+        "leisure": "pitch",
+        "pitch:net": "yes",
+        "sport": "table_tennis",
+        "start_date": "2021",
+        "@geometry": "center"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          14.5482626,
+          46.054264
+        ]
+      },
+      "id": "way/1177605962"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/1179699421",
+        "leisure": "pitch",
+        "sport": "table_tennis",
+        "@geometry": "center"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          14.4535073,
+          46.0449824
+        ]
+      },
+      "id": "way/1179699421"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/1195227536",
+        "leisure": "pitch",
+        "sport": "table_tennis",
+        "@geometry": "center"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          13.732382,
+          45.5782961
+        ]
+      },
+      "id": "way/1195227536"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/1299319626",
+        "access": "permissive",
+        "leisure": "pitch",
+        "lit": "yes",
+        "sport": "table_tennis",
+        "@geometry": "center"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          13.645747,
+          45.9593087
+        ]
+      },
+      "id": "way/1299319626"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/1299319627",
+        "access": "permissive",
+        "leisure": "pitch",
+        "lit": "yes",
+        "sport": "table_tennis",
+        "@geometry": "center"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          13.645718,
+          45.959346
+        ]
+      },
+      "id": "way/1299319627"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/1299319628",
+        "access": "permissive",
+        "leisure": "pitch",
+        "lit": "yes",
+        "sport": "table_tennis",
+        "@geometry": "center"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          13.6457989,
+          45.9593282
+        ]
+      },
+      "id": "way/1299319628"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/1299319629",
+        "access": "permissive",
+        "leisure": "pitch",
+        "lit": "yes",
+        "sport": "table_tennis",
+        "@geometry": "center"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          13.6457688,
+          45.9593666
+        ]
+      },
+      "id": "way/1299319629"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/1299320751",
+        "access": "permissive",
+        "leisure": "pitch",
+        "lit": "yes",
+        "sport": "table_tennis",
+        "@geometry": "center"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          13.646177,
+          45.9605103
+        ]
+      },
+      "id": "way/1299320751"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/5653703343",
+        "check_date": "2025-07-10",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          14.48827,
+          46.0675262
+        ]
+      },
+      "id": "node/5653703343"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/5653703344",
+        "check_date": "2025-07-10",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          14.4883634,
+          46.0675088
+        ]
+      },
+      "id": "node/5653703344"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/9288547751",
+        "access": "customers",
+        "addr:housenumber": "18",
+        "addr:street": "Dantejeva ulica",
+        "building": "apartments",
+        "building:levels": "3",
+        "facebook": "https://www.facebook.com/p/NTK-Arrigoni-100063577062596/?locale=sl_SI",
+        "leisure": "pitch",
+        "name": "NTK Arrigoni Izola",
+        "name:it": "STT Arrigoni",
+        "sport": "table_tennis",
+        "website": "https://ntkarrigoni.si/"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          13.6546528,
+          45.5326174
+        ]
+      },
+      "id": "node/9288547751"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/9354092244",
+        "access": "private",
+        "capacity": "1",
+        "covered": "no",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          14.4767834,
+          46.0741922
+        ]
+      },
+      "id": "node/9354092244"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/9354092245",
+        "access": "private",
+        "capacity": "1",
+        "covered": "no",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          14.4767397,
+          46.0741789
+        ]
+      },
+      "id": "node/9354092245"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/9949817670",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          13.9293207,
+          45.660646
+        ]
+      },
+      "id": "node/9949817670"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/10106999487",
+        "access": "yes",
+        "fee": "no",
+        "indoor": "no",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          14.5088557,
+          46.0434021
+        ]
+      },
+      "id": "node/10106999487"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/10106999488",
+        "access": "yes",
+        "fee": "no",
+        "indoor": "no",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          14.508822,
+          46.0433862
+        ]
+      },
+      "id": "node/10106999488"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/10106999794",
+        "access": "yes",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          14.5093013,
+          46.0791975
+        ]
+      },
+      "id": "node/10106999794"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/10106999795",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          14.5067725,
+          46.077897
+        ]
+      },
+      "id": "node/10106999795"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/10106999796",
+        "access": "yes",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          14.5157616,
+          46.074246
+        ]
+      },
+      "id": "node/10106999796"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/10119046283",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          14.4658417,
+          46.0786759
+        ]
+      },
+      "id": "node/10119046283"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/10242341958",
+        "access": "customers",
+        "leisure": "pitch",
+        "operator": "Kmetija Tratnik Kamp",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          15.1704588,
+          46.1975663
+        ]
+      },
+      "id": "node/10242341958"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/11417850775",
+        "access": "yes",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          15.6194102,
+          46.5434837
+        ]
+      },
+      "id": "node/11417850775"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/11417850776",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          15.6199358,
+          46.5437721
+        ]
+      },
+      "id": "node/11417850776"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/12064334159",
+        "access": "customers",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          13.5871696,
+          46.2495849
+        ]
+      },
+      "id": "node/12064334159"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/12078310199",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          14.9290718,
+          46.153907
+        ]
+      },
+      "id": "node/12078310199"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/12078310200",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          14.9291224,
+          46.1539052
+        ]
+      },
+      "id": "node/12078310200"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/12140881582",
+        "capacity": "1",
+        "leisure": "pitch",
+        "sport": "table_tennis",
+        "start_date": "2020..2022"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          14.5623755,
+          46.0516096
+        ]
+      },
+      "id": "node/12140881582"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/12140881583",
+        "capacity": "1",
+        "leisure": "pitch",
+        "sport": "table_tennis",
+        "start_date": "2022..2023"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          14.5623208,
+          46.0516096
+        ]
+      },
+      "id": "node/12140881583"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/13095470262",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          14.1354006,
+          46.3665172
+        ]
+      },
+      "id": "node/13095470262"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/13105188556",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          14.1348114,
+          46.366495
+        ]
+      },
+      "id": "node/13105188556"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/13144095665",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          14.9087712,
+          46.3117238
+        ]
+      },
+      "id": "node/13144095665"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/13366531490",
+        "access": "yes",
+        "leisure": "pitch",
+        "lit": "no",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          15.082591,
+          46.1443172
+        ]
+      },
+      "id": "node/13366531490"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/13366544227",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          15.0836125,
+          46.143541
+        ]
+      },
+      "id": "node/13366544227"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/13366734006",
+        "leisure": "pitch",
+        "sport": "table_tennis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          14.0234859,
+          46.0012261
+        ]
+      },
+      "id": "node/13366734006"
+    }
+  ]
+}

@@ -41,7 +41,7 @@ fun initDatabase() {
 
     // 3. Automatically create the table if it doesn't exist yet
     transaction {
-        SchemaUtils.create(Users, Swipes, Locations, Matches, Connections, Messages, AiAnalyses)
+        SchemaUtils.createMissingTablesAndColumns(Users, Swipes, Locations, Matches, Connections, Messages, AiAnalyses)
     }
 
     insertDummyData()

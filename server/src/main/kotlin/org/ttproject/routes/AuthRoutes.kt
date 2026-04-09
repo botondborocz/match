@@ -57,7 +57,8 @@ fun Route.authRoutes() {
                     it[passwordHash] = hashedPw
 
                     // If they didn't send a username, generate a random one just like we did for Google!
-                    it[username] = req.username ?: "user_${java.util.UUID.randomUUID().toString().take(8)}"
+                    it[username] =
+                        req.username ?: (req.email.substringBefore("@") + "_" + UUID.randomUUID().toString().take(4))
                     it[fullName] = req.fullName ?: "test" // This will safely insert null if they didn't send it
                     it[skillLevel] = SkillLevel.Beginner
                     it[createdAt] = java.time.Instant.now()
