@@ -32,6 +32,9 @@ class LocationViewModel(
             _uiState.value = LocationsUiState.Loading
             try {
                 val locations = repository.getNearbyLocations()
+                for (location in locations) {
+                    println("Location: ${location.name}, Type: ${location.type}, Free: ${location.isFree}")
+                }
                 if (locations.isEmpty()) {
                     // You might want to distinguish between "empty" and "error"
                     _uiState.value = LocationsUiState.Success(emptyList())

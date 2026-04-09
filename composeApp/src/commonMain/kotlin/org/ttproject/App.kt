@@ -114,7 +114,7 @@ fun App(
         tabNavController.navigate(targetRoute) {
             popUpTo<NavRoute.Map> { saveState = true }
             launchSingleTop = true
-            restoreState = targetRoute != NavRoute.Messages
+            restoreState = true
         }
     }
 
@@ -222,7 +222,7 @@ fun App(
                             // Scaffold is now INSIDE the route, so it slides beautifully!
                             Scaffold(
                                 topBar = {
-                                    if (isMobile && currentRoute != NavRoute.Map && currentRoute != NavRoute.Messages && currentRoute != NavRoute.Match) {
+                                    if (isMobile && currentRoute != NavRoute.Map && currentRoute != NavRoute.Messages && currentRoute != NavRoute.Match && currentRoute != NavRoute.Profile) {
                                         MobileTopBar()
                                     }
                                 },
@@ -238,7 +238,7 @@ fun App(
 
                                     // LAYER 1: MAP
                                     Box(modifier = Modifier.fillMaxSize().padding(bottom = frozenBottomPadding)) {
-                                        MapScreen(isActive = isMapActive)
+                                        MapScreen()
                                     }
 
                                     // LAYER 2: GLOBAL BACKGROUND

@@ -37,6 +37,7 @@ import coil3.compose.AsyncImage
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
+import org.koin.compose.viewmodel.koinViewModel
 import org.ttproject.AppColors
 import org.ttproject.data.Player
 import org.ttproject.shared.resources.find
@@ -51,7 +52,7 @@ import kotlin.math.abs
 
 @Composable
 fun MatchScreen(
-    viewModel: MatchViewModel = koinInject(),
+    viewModel: MatchViewModel = koinViewModel(),
     onNavigateToLogin: () -> Unit,
     onNavigateToMessages: () -> Unit
 ) {
@@ -146,7 +147,7 @@ fun MatchScreen(
                         val offsetX = remember(topPlayer?.id) { Animatable(0f) }
                         val offsetY = remember(topPlayer?.id) { Animatable(0f) }
                         val coroutineScope = rememberCoroutineScope()
-                        var showContent by remember { mutableStateOf(false) }
+                        var showContent by remember { mutableStateOf(true) }
 
                         LaunchedEffect(Unit) {
                             showContent = true

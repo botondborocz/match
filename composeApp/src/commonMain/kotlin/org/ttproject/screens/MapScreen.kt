@@ -51,20 +51,27 @@
     import kotlin.math.roundToInt
     import org.ttproject.shared.resources.Res as SharedRes
     import androidx.compose.animation.core.exponentialDecay
+    import androidx.compose.foundation.Image
     import androidx.compose.ui.geometry.Offset
     import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
     import androidx.compose.ui.input.nestedscroll.NestedScrollSource
     import androidx.compose.ui.input.nestedscroll.nestedScroll
     import androidx.compose.ui.platform.LocalUriHandler
     import androidx.compose.ui.unit.Velocity
+    import org.jetbrains.compose.resources.painterResource
     import org.koin.compose.viewmodel.koinViewModel
+    import org.ttproject.data.LocationType
     import org.ttproject.isIosPlatform
     import org.ttproject.viewmodel.LocationViewModel
     import org.ttproject.viewmodel.LocationsUiState
-    
+    import ttproject.composeapp.generated.resources.Res
+    import ttproject.composeapp.generated.resources.apple_logo_white
+    import ttproject.composeapp.generated.resources.google_log
+    import ttproject.composeapp.generated.resources.google_logo_white
+
     data class TTClub(
         val id: String, val name: String, val distance: String, val tables: Int,
-        val rating: Double, val lat: Double, val lng: Double, val tags: List<String>
+        val rating: Double, val lat: Double, val lng: Double, val tags: List<String>, val type: LocationType
     )
     
     // 1. Define the states for our custom Bottom Sheet
@@ -118,7 +125,8 @@
                         rating = 0.0, // Add rating to DB schema later if needed
                         lat = loc.latitude,
                         lng = loc.longitude,
-                        tags = listOf(loc.type.name, if (loc.isFree) "Free" else "Paid")
+                        tags = listOf(loc.type.name, if (loc.isFree) "Free" else "Paid"),
+                        type = loc.type
                     )
                 }
                 else -> emptyList()
@@ -136,39 +144,57 @@
             ThemeMode.System -> isSystemInDarkTheme()
         }
     
-        val sampleClubs = listOf(
-            TTClub("1", "Corvin Club", "200m away", 8, 4.8, 47.485, 19.071, listOf("AC", "Showers", "+1")),
-            TTClub("2", "Budapest TT Center", "1.2km away", 12, 4.5, 47.497, 19.040, listOf("Coaching", "Shop")),
-            TTClub("3", "Margit Island Courts", "3.1km away", 4, 4.0, 47.528, 19.046, listOf("Free", "Public Outdoor"))
-        )
-    
         var selectedClub by remember { mutableStateOf<TTClub?>(null) }
         val coroutineScope = rememberCoroutineScope()
         var userLocationTrigger by remember { mutableStateOf(0) }
     
         // 👇 1. Add state to hold the current screen edges
         var mapBounds by remember { mutableStateOf<MapBounds?>(null) }
-    
-        // 👇 2. Automatically filter the list when mapBounds OR clubs change
-        val visibleClubs = remember(clubs, mapBounds) {
-            val bounds = mapBounds ?: return@remember clubs // If bounds unknown, show all
-    
+
+        var isIndoorSelected by remember { mutableStateOf(false) }
+        var isOutdoorSelected by remember { mutableStateOf(false) }
+        var isFreeSelected by remember { mutableStateOf(false) }
+
+        // 👇 1. Add the filter states to the remember keys!
+        val visibleClubs = remember(clubs, mapBounds, isIndoorSelected, isOutdoorSelected, isFreeSelected) {
             clubs.filter { club ->
-                val isInsideLat = club.lat in bounds.south..bounds.north
-                // Handle standard longitude check (with fallback for crossing the antimeridian)
-                val isInsideLng = if (bounds.west <= bounds.east) {
-                    club.lng in bounds.west..bounds.east
-                } else {
-                    club.lng >= bounds.west || club.lng <= bounds.east
+
+                // --- 1. BOUNDS FILTER ---
+                val boundsMatch = mapBounds?.let { bounds ->
+                    val isInsideLat = club.lat in bounds.south..bounds.north
+                    val isInsideLng = if (bounds.west <= bounds.east) {
+                        club.lng in bounds.west..bounds.east
+                    } else {
+                        club.lng >= bounds.west || club.lng <= bounds.east
+                    }
+                    isInsideLat && isInsideLng
+                } ?: true // If mapBounds is null, don't hide the clubs, just show them all
+
+                // --- 2. INDOOR / OUTDOOR FILTER ---
+                // Assuming your LocationType enum uses names like "INDOOR" and "OUTDOOR"
+                val isIndoor = club.type.name.equals("INDOOR", ignoreCase = true)
+                val isOutdoor = club.type.name.equals("OUTDOOR", ignoreCase = true)
+
+                val typeMatch = when {
+                    isIndoorSelected && isOutdoorSelected -> true // Both selected = show all
+                    !isIndoorSelected && !isOutdoorSelected -> true // Neither selected = show all (prevents empty map)
+                    isIndoorSelected -> isIndoor // Only indoor selected
+                    isOutdoorSelected -> isOutdoor // Only outdoor selected
+                    else -> true
                 }
-    
-                isInsideLat && isInsideLng
+
+                // --- 3. FREE FILTER ---
+                // Since you populated the tags list with "Free" or "Paid", we can check that easily
+                val freeMatch = if (isFreeSelected) {
+                    club.tags.contains("Free")
+                } else {
+                    true // If "Free" isn't toggled, show both free and paid
+                }
+
+                // 👇 Combine all rules. A club must pass ALL checks to be visible!
+                boundsMatch && typeMatch && freeMatch
             }
         }
-    
-        var isIndoorSelected by remember { mutableStateOf(false) }
-        var isOutdoorSelected by remember { mutableStateOf(true) }
-        var isFreeSelected by remember { mutableStateOf(false) }
     
         // 2. Initialize the AnchoredDraggable state (Compose 1.7+ style)
         val sheetState = remember {
@@ -257,6 +283,21 @@
                 }
                 sheetState.updateAnchors(anchors)
             }
+
+            // 👇 THE FIX: Listen to the user's finger.
+            // If they drag the sheet UP by even 15 pixels, drop the selected club!
+            LaunchedEffect(sheetState) {
+                androidx.compose.runtime.snapshotFlow { sheetState.offset }.collect { offset ->
+                    if (!offset.isNaN()) {
+                        val collapsedOffset = layoutHeightPx - peekHeightPx
+
+                        // If pulled up from the bottom AND a club is currently selected...
+                        if (offset < collapsedOffset - 15f && selectedClub != null) {
+                            selectedClub = null // Dismiss the card immediately!
+                        }
+                    }
+                }
+            }
     
             // Calculate dynamic map padding based on target state
             val targetBottomPadding = when (sheetState.targetValue) {
@@ -318,13 +359,13 @@
                         onClick = { isOutdoorSelected = !isOutdoorSelected }
                     )
 
-                    FilterChip(
-                        text = stringResource(SharedRes.string.free),
-                        isSelected = isFreeSelected,
-                        activeColor = brandOrange,
-                        inactiveColor = cardBg,
-                        onClick = { isFreeSelected = !isFreeSelected }
-                    )
+//                    FilterChip(
+//                        text = stringResource(SharedRes.string.free),
+//                        isSelected = isFreeSelected,
+//                        activeColor = brandOrange,
+//                        inactiveColor = cardBg,
+//                        onClick = { isFreeSelected = !isFreeSelected }
+//                    )
                 }
             }
     
@@ -478,12 +519,15 @@
             }
         }
     }
-    
+
     @Composable
     fun FloatingClubCard(club: TTClub, cardBg: Color, brandOrange: Color, onClose: () -> Unit) {
         val uriHandler = LocalUriHandler.current
         var showMapChoice by remember { mutableStateOf(false) }
-    
+
+        // 👇 1. Lock in a standard height for all buttons and chips in this row
+        val buttonHeight = 32.dp
+
         Surface(
             shape = RoundedCornerShape(16.dp),
             color = cardBg,
@@ -503,80 +547,97 @@
                         Icon(Icons.Default.Close, "Close", tint = Color.Gray)
                     }
                 }
-    
+
                 Spacer(modifier = Modifier.height(16.dp))
+
                 // --- BOTTOM ROW (Conditional UI) ---
                 if (showMapChoice) {
                     // THE iOS CHOICE MENU
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
+                        modifier = Modifier.fillMaxWidth()
                     ) {
                         // Cancel Button
                         TextButton(
                             onClick = { showMapChoice = false },
-                            contentPadding = PaddingValues(horizontal = 8.dp)
+                            contentPadding = PaddingValues(horizontal = 8.dp),
+                            modifier = Modifier.height(buttonHeight)
                         ) {
                             Text("Cancel", color = Color.Gray, fontSize = 14.sp, fontWeight = FontWeight.Bold)
                         }
-    
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            // Apple Maps Button (Dark Gray)
-                            Button(
-                                onClick = {
-                                    // TODO: Save preference to DataStore/Settings here
-                                    uriHandler.openUri("https://maps.apple.com/?q=${club.lat},${club.lng}")
-                                    showMapChoice = false
-                                },
-                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2A2D34)),
-                                shape = RoundedCornerShape(10.dp),
-                                modifier = Modifier.height(36.dp),
-                                contentPadding = PaddingValues(horizontal = 16.dp)
-                            ) {
-                                Text("Apple", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold)
-                            }
-    
-                            // Google Maps Button (Brand Orange)
-                            Button(
-                                onClick = {
-                                    // TODO: Save preference to DataStore/Settings here
-                                    uriHandler.openUri("https://maps.google.com/?q=${club.lat},${club.lng}")
-                                    showMapChoice = false
-                                },
-                                colors = ButtonDefaults.buttonColors(containerColor = brandOrange),
-                                shape = RoundedCornerShape(10.dp),
-                                modifier = Modifier.height(36.dp),
-                                contentPadding = PaddingValues(horizontal = 16.dp)
-                            ) {
-                                Text("Google", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold)
-                            }
+
+                        Spacer(modifier = Modifier.weight(1f))
+
+                        // Apple Maps Button (Dark Gray)
+                        Button(
+                            onClick = {
+                                uriHandler.openUri("https://maps.apple.com/?q=${club.lat},${club.lng}")
+                                showMapChoice = false
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2A2D34)),
+                            shape = RoundedCornerShape(10.dp),
+                            modifier = Modifier.height(buttonHeight),
+                            contentPadding = PaddingValues(horizontal = 12.dp)
+                        ) {
+                            // 👇 3. Add the Apple Logo!
+                            Image(
+                                painter = painterResource(Res.drawable.apple_logo_white),
+                                contentDescription = "Google Logo",
+                                modifier = Modifier.size(24.dp).padding(end = 8.dp)
+                            )
+                            Spacer(modifier = Modifier.width(2.dp))
+                            Text("Apple", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                        }
+
+                        Spacer(modifier = Modifier.width(8.dp))
+
+                        // Google Maps Button (Brand Orange)
+                        Button(
+                            onClick = {
+                                uriHandler.openUri("https://maps.google.com/?q=${club.lat},${club.lng}")
+                                showMapChoice = false
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = brandOrange),
+                            shape = RoundedCornerShape(10.dp),
+                            modifier = Modifier.height(buttonHeight),
+                            contentPadding = PaddingValues(horizontal = 12.dp)
+                        ) {
+                            // 👇 3. Add the Google Logo!
+                            Image(
+                                painter = painterResource(Res.drawable.google_logo_white),
+                                contentDescription = "Google Logo",
+                                modifier = Modifier.size(24.dp).padding(end = 8.dp)
+                            )
+                            Spacer(modifier = Modifier.width(2.dp))
+                            Text("Google", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold)
                         }
                     }
                 } else {
                     // THE STANDARD MENU (Rating + Navigate)
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Surface(color = Color(0xFF1E3A4C), shape = RoundedCornerShape(6.dp)) {
-                            Text(
-                                text = "★ ${club.rating}",
-                                color = Color(0xFF4AC4F3),
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.Bold
-                            )
+                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                        // Adjusted the rating block to match the button height perfectly
+                        Surface(color = Color(0xFF1E3A4C), shape = RoundedCornerShape(6.dp), modifier = Modifier.height(buttonHeight)) {
+                            Box(modifier = Modifier.fillMaxHeight(), contentAlignment = Alignment.Center) {
+                                Text(
+                                    text = "★ ${club.rating}",
+                                    color = Color(0xFF4AC4F3),
+                                    modifier = Modifier.padding(horizontal = 12.dp),
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
                         }
                         Spacer(modifier = Modifier.width(12.dp))
                         Button(
                             onClick = {
-                                // 👇 2. iOS checks for preference, Android forces Google!
                                 if (isIosPlatform()) {
-                                    // In the future, check your local storage here first!
                                     showMapChoice = true
                                 } else {
                                     uriHandler.openUri("https://maps.google.com/?q=${club.lat},${club.lng}")
                                 }
                             },
-                            modifier = Modifier.weight(1f).height(36.dp),
+                            // 👇 Uses the exact same height and weight rule
+                            modifier = Modifier.weight(1f).height(buttonHeight),
                             colors = ButtonDefaults.buttonColors(containerColor = brandOrange),
                             shape = RoundedCornerShape(10.dp),
                             contentPadding = PaddingValues(0.dp)

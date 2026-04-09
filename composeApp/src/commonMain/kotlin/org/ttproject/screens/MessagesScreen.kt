@@ -23,6 +23,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.ArrowBackIosNew
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
@@ -60,6 +62,9 @@ import kotlin.time.Instant
 import kotlinx.datetime.toInstant
 import org.ttproject.components.AdaptivePullToRefresh
 import kotlin.time.Duration.Companion.minutes
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 
 data class ChatThread(
     val id: String,
@@ -78,16 +83,22 @@ fun MessagesScreen(
     bottomNavPadding: Dp,
     onNavigateToChat: (String, String, String?) -> Unit
 ) {
-    val chatThreads by viewModel.threads.collectAsState()
+    val chatThreads by viewModel.filteredThreads.collectAsState()
+    val searchQuery by viewModel.searchQuery.collectAsState()
+    var isSearchExpanded by remember { mutableStateOf(false) }
+    val focusRequester = remember { FocusRequester() }
+    val keyboardController = LocalSoftwareKeyboardController.current
     val isLoading by viewModel.isLoading.collectAsState()
 
     // 👇 1. Just remember the state, no need to manually check isRefreshing anymore!
     val pullToRefreshState = rememberPullToRefreshState()
 
     // Refresh when returning from ChatDetailScreen (or opening for the first time)
-    LaunchedEffect(Unit) {
-        viewModel.loadConnections()
-    }
+//    LaunchedEffect(Unit) {
+//        if (chatThreads.isEmpty()) {
+//            viewModel.loadConnections()
+//        }
+//    }
 
     PushNotificationManager { fcmToken ->
         viewModel.savePushToken(fcmToken)
@@ -103,7 +114,10 @@ fun MessagesScreen(
 //            .background(AppColors.Background)
             .padding(bottom = bottomNavPadding + 0.dp)
     ) {
-        MobileTopBar()
+        MobileTopBar(
+            showSearch = true,
+            onSearchClick = { isSearchExpanded = true }
+        )
 
         // ONLY show the center spinner if we have absolutely no data yet.
         if (isLoading && chatThreads.isEmpty()) {
@@ -111,47 +125,102 @@ fun MessagesScreen(
                 CircularProgressIndicator(color = AppColors.AccentOrange)
             }
         } else {
-            AdaptivePullToRefresh(
-                isRefreshing = isLoading,
-                onRefresh = { viewModel.loadConnections() },
+//            AdaptivePullToRefresh(
+//                isRefreshing = isLoading,
+//                onRefresh = { viewModel.loadConnections() },
+//                modifier = Modifier.fillMaxSize()
+//            ) {
+            // 👇 ONE single LazyColumn for everything!
+            LazyColumn(
+                contentPadding = PaddingValues(top = 0.dp, bottom = 10.dp),
                 modifier = Modifier.fillMaxSize()
             ) {
-                if (chatThreads.isEmpty()) {
-                    // We wrap the Empty State in a LazyColumn so it can still be pulled down to refresh!
-                    LazyColumn(modifier = Modifier.fillMaxSize()) {
-                        item { EmptyMessagesState() }
-                    }
-                } else {
-                    LazyColumn(
-                        contentPadding = PaddingValues(top = 0.dp, bottom = 10.dp),
-                        modifier = Modifier.fillMaxSize()
+
+                // --- ALWAYS RENDER THE SEARCH BAR ---
+                item {
+                    AnimatedVisibility(
+                        visible = isSearchExpanded,
+                        enter = expandVertically() + fadeIn(),
+                        exit = shrinkVertically() + fadeOut()
                     ) {
-                        item {
-                            Text(
-                                text = "Messages",
-                                color = AppColors.TextPrimary,
-                                fontSize = 28.sp,
-                                fontWeight = FontWeight.Bold,
-                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-                            )
+                        Column {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                LaunchedEffect(Unit) {
+                                    focusRequester.requestFocus()
+                                    keyboardController?.show()
+                                }
+
+                                OutlinedTextField(
+                                    value = searchQuery,
+                                    onValueChange = { viewModel.updateSearchQuery(it) },
+                                    placeholder = {
+                                        Text(
+                                            "Search username...",
+                                            color = AppColors.TextGray
+                                        )
+                                    },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .focusRequester(focusRequester),
+                                    singleLine = true,
+                                    shape = RoundedCornerShape(24.dp),
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        focusedBorderColor = AppColors.AccentOrange,
+                                        unfocusedBorderColor = AppColors.TextGray.copy(alpha = 0.5f),
+                                        focusedTextColor = AppColors.TextPrimary,
+                                        unfocusedTextColor = AppColors.TextPrimary
+                                    ),
+                                    trailingIcon = {
+                                        IconButton(onClick = {
+                                            isSearchExpanded = false
+                                            viewModel.updateSearchQuery("") // Clear the list when closing
+                                        }) {
+                                            Icon(
+                                                imageVector = Icons.Default.Close,
+                                                contentDescription = "Close Search",
+                                                tint = AppColors.TextPrimary
+                                            )
+                                        }
+                                    }
+                                )
+                            }
                             Spacer(modifier = Modifier.height(8.dp))
                         }
+                    }
+                }
 
-                        itemsIndexed(chatThreads, key = { _, thread -> thread.id }) { index, thread ->
-                            Column {
-//                                AnimatedVisibility(
-//                                    visibleState = listVisibleState,
-//                                    enter = slideInVertically(
-//                                        initialOffsetY = { 50 },
-//                                        animationSpec = tween(durationMillis = 300, delayMillis = index * 40)
-//                                    ) + fadeIn(animationSpec = tween(durationMillis = 300, delayMillis = index * 40))
-//                                ) {
-                                    ChatListItem(
-                                        thread = thread,
-                                        onClick = { onNavigateToChat(thread.id, thread.otherUserName, thread.otherUserImageUrl) }
+                // --- CONDITIONALLY RENDER THE LIST OR EMPTY STATES ---
+                if (chatThreads.isEmpty()) {
+                    item {
+                        // 👇 Differentiate between an empty search vs a totally empty inbox!
+                        if (searchQuery.isNotBlank()) {
+                            EmptySearchState(searchQuery)
+                        } else {
+                            EmptyMessagesState()
+                        }
+                    }
+                } else {
+                    itemsIndexed(chatThreads, key = { _, thread -> thread.id }) { index, thread ->
+                        Column {
+                            ChatListItem(
+                                thread = thread,
+                                onClick = {
+                                    keyboardController?.hide()
+                                    isSearchExpanded = false
+                                    viewModel.updateSearchQuery("")
+                                    onNavigateToChat(
+                                        thread.id,
+                                        thread.otherUserName,
+                                        thread.otherUserImageUrl
                                     )
-//                                }
-                            }
+                                }
+                            )
                         }
                     }
                 }
@@ -591,6 +660,29 @@ fun ChatListItem(thread: ChatThreadDto, onClick: () -> Unit) {
                 }
             }
         }
+    }
+}
+
+@Composable
+fun EmptySearchState(query: String) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(32.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Spacer(modifier = Modifier.height(48.dp)) // Push it down a bit from the search bar
+        Text("🔍", fontSize = 64.sp)
+        Spacer(modifier = Modifier.height(16.dp))
+        Text("No results found", color = AppColors.TextPrimary, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = "We couldn't find any chats matching \"$query\".",
+            color = Color.Gray,
+            fontSize = 14.sp,
+            textAlign = TextAlign.Center
+        )
     }
 }
 

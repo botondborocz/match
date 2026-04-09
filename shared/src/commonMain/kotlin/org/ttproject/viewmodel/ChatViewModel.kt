@@ -9,6 +9,7 @@ import kotlinx.coroutines.launch
 import org.ttproject.data.Location
 import org.ttproject.data.MessageDto
 import org.ttproject.repository.ChatRepository
+import org.ttproject.util.NotificationEventBus
 
 class ChatViewModel(
     private val repository: ChatRepository,
@@ -47,12 +48,14 @@ class ChatViewModel(
             // The server will broadcast it back, which will be caught by `observeLiveMessages`
             // and automatically added to the UI!
             repository.sendMessage(text)
+            NotificationEventBus.triggerRefresh()
         }
     }
 
     fun markMessagesAsRead() {
         viewModelScope.launch {
             repository.markMessagesAsRead(connectionId)
+            NotificationEventBus.triggerRefresh()
         }
     }
 }

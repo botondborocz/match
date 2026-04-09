@@ -7,7 +7,12 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.SegmentedButtonDefaults.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -31,7 +36,10 @@ import ttproject.composeapp.generated.resources.match_logo_long_dark
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MobileTopBar() { // We don't need the 'title' parameter anymore
+fun MobileTopBar(
+    showSearch: Boolean = false,
+    onSearchClick: () -> Unit = {}
+) {
     TopAppBar(
         title = {
             if (isDark) {
@@ -51,16 +59,26 @@ fun MobileTopBar() { // We don't need the 'title' parameter anymore
         },
         // 👇 Removed the navigationIcon entirely!
         actions = {
-            // User Avatar keeps the UI balanced
-            Box(
-                modifier = Modifier
-                    .padding(end = 16.dp)
-                    .size(32.dp)
-                    .clip(CircleShape)
-                    .background(AppColors.Background),
-                contentAlignment = Alignment.Center
-            ) {
-                Text("JD", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+            if (showSearch) {
+                IconButton(onClick = onSearchClick) {
+                    Icon(
+                        imageVector = Icons.Default.Search,
+                        contentDescription = "Search",
+                        tint = AppColors.TextPrimary // Or Color.White depending on your theme
+                    )
+                }
+            } else {
+                // User Avatar keeps the UI balanced
+                Box(
+                    modifier = Modifier
+                        .padding(end = 16.dp)
+                        .size(32.dp)
+                        .clip(CircleShape)
+                        .background(AppColors.Background),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("JD", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                }
             }
         },
         colors = TopAppBarDefaults.topAppBarColors(

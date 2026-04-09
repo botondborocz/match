@@ -48,7 +48,7 @@ fun MobileBottomNav(
     val glowColor = AppColors.AccentOrange
 
     // 👇 2. Collect the state exactly once at the top level
-    val chatThreads by messagesViewModel.threads.collectAsState()
+    val chatThreads by messagesViewModel.filteredThreads.collectAsState()
     val unreadChatsCount = chatThreads.count { it.unreadCount > 0 }
 
     // 👇 3. THE MAGIC FIX: Refresh the unread count every time the user navigates!
