@@ -32,6 +32,7 @@ import org.jetbrains.exposed.sql.update
 import org.ttproject.data.ChatThreadDto
 import org.ttproject.data.MessageDto
 import org.ttproject.data.IncomingMessageDto
+import org.ttproject.data.ReactionDto
 import org.ttproject.database.tables.Connections
 import org.ttproject.database.tables.MessageReactions
 import org.ttproject.database.tables.Messages
@@ -133,7 +134,15 @@ fun Route.messageRoutes() {
                     // .associate() maps them so we can easily look them up by Message ID later
                     val reactionsMap = MessageReactions.selectAll()
                         .where { MessageReactions.messageId inList messageIds }
-                        .associate { it[MessageReactions.messageId] to it[MessageReactions.emoji] }
+                        .groupBy(
+                            keySelector = { it[MessageReactions.messageId] },
+                            valueTransform = {
+                                ReactionDto(
+                                    userId = it[MessageReactions.userId].toString(),
+                                    emoji = it[MessageReactions.emoji]
+                                )
+                            }
+                        )
 
                     // 👇 4. Combine them! Map the DB rows to your DTO, and attach the emoji if it exists.
                     messageRows.map {
@@ -143,8 +152,7 @@ fun Route.messageRoutes() {
                             content = it[Messages.content],
                             createdAt = it[Messages.createdAt].toString(),
                             replyToMessageId = it[Messages.replyToMessageId]?.toString(),
-                            reactionEmoji = reactionsMap[it[Messages.id]] // 👈 This was missing!
-                        )
+                            reactions = reactionsMap[it[Messages.id]] ?: emptyList()                        )
                     }
                 }
 
@@ -353,13 +361,32 @@ fun Route.messageRoutes() {
 
                                     // Broadcast the reaction to the clients
                                     val payload = """
-                                                {
-                                                    "type": "reaction",
-                                                    "messageId": "$targetId",
-                                                    "senderId": "$senderId",
-                                                    "emoji": "${incomingEvent.content}"
-                                                }
-                                            """.trimIndent()
+                                        {
+                                            "type": "reaction",
+                                            "messageId": "$targetId",
+                                            "userId": "$senderId", 
+                                            "emoji": "${incomingEvent.content}"
+                                        }
+                                    """.trimIndent()
+                                    connectionManager.broadcast(connectionId, payload)
+                                } else if (incomingEvent.type == "remove_reaction") {
+                                    val targetId = UUID.fromString(incomingEvent.targetMessageId!!)
+
+                                    transaction {
+                                        // Delete the specific reaction for this user and message
+                                        MessageReactions.deleteWhere {
+                                            (MessageReactions.messageId eq targetId) and (MessageReactions.userId eq senderId)
+                                        }
+                                    }
+
+                                    // Broadcast the removal to both clients so their UIs update instantly
+                                    val payload = """
+                                            {
+                                                "type": "remove_reaction",
+                                                "messageId": "$targetId",
+                                                "userId": "$senderId"
+                                            }
+                                        """.trimIndent()
                                     connectionManager.broadcast(connectionId, payload)
                                 }
                             } catch (e: Exception) {

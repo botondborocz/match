@@ -3,13 +3,19 @@ package org.ttproject.data
 import kotlinx.serialization.Serializable
 
 @Serializable
+data class ReactionDto(
+    val userId: String,
+    val emoji: String
+)
+
+@Serializable
 data class MessageDto(
     val id: String,
     val senderId: String,
     val content: String,
     val createdAt: String,
     val replyToMessageId: String? = null,
-    var reactionEmoji: String? = null
+    val reactions: List<ReactionDto> = emptyList()
 )
 
 @Serializable

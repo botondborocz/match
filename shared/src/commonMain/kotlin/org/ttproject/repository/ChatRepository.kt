@@ -25,7 +25,8 @@ import org.ttproject.data.TokenStorage
 
 sealed class ChatEvent {
     data class Message(val message: MessageDto) : ChatEvent()
-    data class Reaction(val messageId: String, val emoji: String) : ChatEvent()
+    data class Reaction(val messageId: String, val userId: String, val emoji: String) : ChatEvent()
+    data class RemoveReaction(val messageId: String, val userId: String) : ChatEvent()
 }
 
 interface ChatRepository {
@@ -33,6 +34,7 @@ interface ChatRepository {
     fun observeLiveMessages(connectionId: String): Flow<ChatEvent>
     suspend fun sendMessage(text: String, replyToMessageId: String? = null)
     suspend fun sendReaction(messageId: String, emoji: String)
+    suspend fun removeReaction(messageId: String)
     fun disconnect()
     suspend fun getConnections(): List<ChatThreadDto>
     suspend fun savePushToken(fcmToken: String)
@@ -60,6 +62,7 @@ class ChatRepositoryImpl (
     }
 
     // 2. Open WebSocket and return a stream (Flow) of incoming messages
+    // 2. Open WebSocket and return a stream (Flow) of incoming messages
     override fun observeLiveMessages(connectionId: String): Flow<ChatEvent> = flow {
         val token = tokenStorage.getToken() ?: throw Exception("No auth token found")
         // 👇 A lenient parser prevents crashes if the server adds new fields later
@@ -84,10 +87,20 @@ class ChatRepositoryImpl (
                         val type = jsonElement["type"]?.jsonPrimitive?.content
 
                         if (type == "reaction") {
-                            // It's a reaction update! Extract the info and emit it.
+                            // 👇 Extract the userId alongside msgId and emoji!
                             val msgId = jsonElement["messageId"]!!.jsonPrimitive.content
+                            val userId = jsonElement["userId"]!!.jsonPrimitive.content
                             val emoji = jsonElement["emoji"]!!.jsonPrimitive.content
-                            emit(ChatEvent.Reaction(msgId, emoji))
+
+                            emit(ChatEvent.Reaction(msgId, userId, emoji))
+
+                        } else if (type == "remove_reaction") {
+                            // 👇 Extract the userId here too!
+                            val msgId = jsonElement["messageId"]!!.jsonPrimitive.content
+                            val userId = jsonElement["userId"]!!.jsonPrimitive.content
+
+                            emit(ChatEvent.RemoveReaction(msgId, userId))
+
                         } else {
                             // It's a standard message! Decode it safely.
                             val message = jsonParser.decodeFromString<MessageDto>(text)
@@ -123,6 +136,15 @@ class ChatRepositoryImpl (
         val payload = IncomingMessageDto(
             type = "reaction",
             content = emoji,
+            targetMessageId = messageId
+        )
+        webSocketSession?.send(Frame.Text(Json.encodeToString(payload)))
+    }
+
+    override suspend fun removeReaction(messageId: String) {
+        val payload = IncomingMessageDto(
+            type = "remove_reaction",
+            content = "", // Content doesn't matter for removal
             targetMessageId = messageId
         )
         webSocketSession?.send(Frame.Text(Json.encodeToString(payload)))

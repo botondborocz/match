@@ -12,6 +12,7 @@ import org.ttproject.repository.ChatEvent
 import org.ttproject.repository.ChatRepository
 import org.ttproject.util.NotificationEventBus
 import kotlinx.coroutines.flow.update
+import org.ttproject.data.ReactionDto
 
 class ChatViewModel(
     private val repository: ChatRepository,
@@ -44,12 +45,28 @@ class ChatViewModel(
                             currentList + event.message
                         }                    }
                     is ChatEvent.Reaction -> {
-                        // Reaction update: Find the existing message and update its emoji!
-                        _messages.value = _messages.value.map { msg ->
-                            if (msg.id == event.messageId) {
-                                msg.copy(reactionEmoji = event.emoji)
-                            } else {
-                                msg
+                        _messages.update { currentList ->
+                            currentList.map { msg ->
+                                if (msg.id == event.messageId) {
+                                    // Remove their old reaction (if any) and add the new one
+                                    val updatedReactions = msg.reactions
+                                        .filter { it.userId != event.userId }
+                                        .toMutableList()
+                                        .apply { add(ReactionDto(event.userId, event.emoji)) }
+
+                                    msg.copy(reactions = updatedReactions)
+                                } else msg
+                            }
+                        }
+                    }
+                    is ChatEvent.RemoveReaction -> {
+                        _messages.update { currentList ->
+                            currentList.map { msg ->
+                                if (msg.id == event.messageId) {
+                                    // Filter out the user's reaction
+                                    val updatedReactions = msg.reactions.filter { it.userId != event.userId }
+                                    msg.copy(reactions = updatedReactions)
+                                } else msg
                             }
                         }
                     }
@@ -76,6 +93,13 @@ class ChatViewModel(
             // The server will broadcast it back, which will be caught by `observeLiveMessages`
             // and automatically added to the UI!
             repository.sendReaction(messageId, emoji)
+            NotificationEventBus.triggerRefresh()
+        }
+    }
+
+    fun removeReaction(messageId: String) {
+        viewModelScope.launch {
+            repository.removeReaction(messageId)
             NotificationEventBus.triggerRefresh()
         }
     }

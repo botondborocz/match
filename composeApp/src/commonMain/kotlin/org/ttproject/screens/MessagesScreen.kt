@@ -91,6 +91,8 @@ import androidx.compose.material.icons.automirrored.filled.Reply
 import androidx.compose.material.icons.filled.Reply
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.layout.layout
+import org.ttproject.data.ReactionDto
 import kotlin.math.abs
 
 data class ChatThread(
@@ -333,6 +335,10 @@ fun ChatDetailScreen(
     val emojis = remember { listOf("❤️", "😂", "😮", "😢", "🏓", "👍") }
     var reactionMenuData by remember { mutableStateOf<ReactionMenuData?>(null) }
 
+    var reactionSheetMessageId by remember { mutableStateOf<String?>(null) }
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val coroutineScope = rememberCoroutineScope()
+
     // 👇 1. Add these two states to track continuous dragging
     var activeReactionDragPosition by remember { mutableStateOf<Offset?>(null) }
     var hoveredReactionIndex by remember { mutableStateOf(-1) }
@@ -472,8 +478,9 @@ fun ChatDetailScreen(
                             isSelected = isSelected,
                             repliedText = repliedText,
                             repliedSender = repliedSender,
-                            reactionEmoji = msg.reactionEmoji,
+                            reactions = msg.reactions,
                             onClick = { selectedMessageId = if (isSelected) null else msg.id },
+                            onReactionClick = { reactionSheetMessageId = msg.id },
                             onLongPress = { bounds, topStart, topEnd, bottomStart, bottomEnd, initialTouch ->
                                 reactionMenuData = ReactionMenuData(msg.id, isMe, bounds, topStart, topEnd, bottomStart, bottomEnd, initialTouch)
                             },
@@ -543,6 +550,51 @@ fun ChatDetailScreen(
                     ) {
                         Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Send", tint = if (messageText.isNotBlank()) Color.White else AppColors.TextGray, modifier = Modifier.size(20.dp).offset(x = 2.dp))
                     }
+                }
+            }
+        }
+
+        // 👇 3. THE REACTION BOTTOM SHEET
+        if (reactionSheetMessageId != null) {
+            ModalBottomSheet(
+                onDismissRequest = { reactionSheetMessageId = null },
+                sheetState = sheetState,
+                containerColor = AppColors.Background
+            ) {
+                // Find the specific message so we know what reactions to show
+                val targetMessage = messages.find { it.id == reactionSheetMessageId }
+
+                // 👇 Check if the list is not empty!
+                if (targetMessage != null && targetMessage.reactions.isNotEmpty()) {
+
+                    val currentUserId = tokenStorage.getUserId() ?: ""
+
+                    // 👇 Map the real server data to your UI data class!
+                    val realReactionsList = targetMessage.reactions.map { dto ->
+                        val isMyReaction = dto.userId == currentUserId
+
+                        ReactionDetail(
+                            userId = dto.userId,
+                            username = if (isMyReaction) "You" else otherUsername,
+                            profileImageUrl = if (isMyReaction) null else otherUserImageUrl,
+                            emoji = dto.emoji,
+                            isMe = isMyReaction
+                        )
+                    }
+
+                    ReactionsBottomSheet(
+                        reactions = realReactionsList, // 👈 Pass the real list!
+                        onRemoveReaction = { reaction ->
+                            // 1. Tell ViewModel to delete it
+                            viewModel.removeReaction(targetMessage.id)
+
+                            // 2. Smoothly hide the sheet
+                            coroutineScope.launch {
+                                sheetState.hide()
+                                reactionSheetMessageId = null
+                            }
+                        }
+                    )
                 }
             }
         }
@@ -757,8 +809,9 @@ fun AnimatedMessageBubble(
     isSelected: Boolean,
     repliedText: String?,
     repliedSender: String?,
-    reactionEmoji: String?,
+    reactions: List<ReactionDto>,
     onClick: () -> Unit,
+    onReactionClick: () -> Unit,
     onLongPress: (Rect, Dp, Dp, Dp, Dp, Offset) -> Unit,
     onLongPressDrag: (Offset) -> Unit,
     onLongPressEnd: (Boolean) -> Unit,
@@ -878,8 +931,9 @@ fun AnimatedMessageBubble(
                 isSelected = isSelected,
                 repliedText = repliedText,
                 repliedSender = repliedSender,
-                reactionEmoji = reactionEmoji,
+                reactions = reactions,
                 onClick = onClick,
+                onReactionClick = onReactionClick,
                 onLongPress = onLongPress,
                 onLongPressDrag = onLongPressDrag,
                 onLongPressEnd = onLongPressEnd,
@@ -942,19 +996,30 @@ fun ChatBubble(
     // 👇 Accept the new parameters
     repliedText: String?,
     repliedSender: String?,
-    reactionEmoji: String?,
+    reactions: List<ReactionDto>,
     modifier: Modifier = Modifier,
     onClick: () -> Unit,
+    onReactionClick: () -> Unit,
     onLongPress: (Rect, Dp, Dp, Dp, Dp, Offset) -> Unit,
     onLongPressDrag: (Offset) -> Unit,
     onLongPressEnd: (Boolean) -> Unit
 ) {
+    val currentOnClick by rememberUpdatedState(onClick)
+    val currentOnLongPress by rememberUpdatedState(onLongPress)
+    val currentOnLongPressDrag by rememberUpdatedState(onLongPressDrag)
+    val currentOnLongPressEnd by rememberUpdatedState(onLongPressEnd)
+
     val haptic = LocalHapticFeedback.current
 
     val topStart = if (!isMe && isOlderSame) 4.dp else 16.dp
     val bottomStart = if (!isMe && isNewerSame) 4.dp else 16.dp
     val topEnd = if (isMe && isOlderSame) 4.dp else 16.dp
     val bottomEnd = if (isMe && isNewerSame) 4.dp else 16.dp
+
+    val currentTopStart by rememberUpdatedState(topStart)
+    val currentTopEnd by rememberUpdatedState(topEnd)
+    val currentBottomStart by rememberUpdatedState(bottomStart)
+    val currentBottomEnd by rememberUpdatedState(bottomEnd)
 
     val baseColor = if (isMe) AppColors.AccentOrange else AppColors.SurfaceDark
     val targetColor = if (isSelected) {
@@ -981,15 +1046,16 @@ fun ChatBubble(
     ) {
         val maxBubbleWidth = maxWidth * 0.80f
 
+        // 👇 1. A Column to hold the Bubble AND a physical Spacer below it
         Column(horizontalAlignment = if (isMe) Alignment.End else Alignment.Start) {
 
-            Box {
-                val innerBoxScope = this
+            // 👇 2. The Box that perfectly wraps ONLY the chat bubble's size
+            Box(contentAlignment = Alignment.BottomEnd) {
 
+                // --- THE ACTUAL CHAT BUBBLE ---
                 Column(
                     modifier = Modifier
                         .widthIn(max = maxBubbleWidth)
-                        // 👇 2. Grab the bounds right here, before the clip!
                         .onGloballyPositioned { coordinates ->
                             bubbleBounds = coordinates.boundsInRoot()
                         }
@@ -1006,39 +1072,29 @@ fun ChatBubble(
                                 var isTap = false
                                 var isLongPress = false
 
-                                // Step 1: Wait to see what kind of gesture this is
                                 try {
-                                    withTimeout(400L) { // 400ms is standard long-press
+                                    withTimeout(400L) {
                                         var current = down
                                         while (current.pressed) {
                                             val event = awaitPointerEvent()
                                             current = event.changes.first()
-                                            val distance =
-                                                (current.position - down.position).getDistance()
+                                            val distance = (current.position - down.position).getDistance()
 
-                                            if (distance > slop) {
-                                                // They moved too much! Cancel long-press, let the parent handle the swipe-to-reply
-                                                return@withTimeout
-                                            }
+                                            if (distance > slop) return@withTimeout
                                         }
-                                        isTap = true // They lifted before timeout
+                                        current.consume()
+                                        isTap = true
                                     }
                                 } catch (e: androidx.compose.ui.input.pointer.PointerEventTimeoutCancellationException) {
-                                    isLongPress = true // Timeout hit without moving -> Long Press!
+                                    isLongPress = true
                                 }
 
-                                // Step 2: Execute the action
                                 if (isTap) {
-                                    onClick()
+                                    currentOnClick()
                                 } else if (isLongPress) {
                                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                    // 👇 Calculate the global position of the finger
                                     val globalTouch = bubbleBounds.topLeft + down.position
-
-                                    // 👇 Pass it up to the parent!
-                                    onLongPress(bubbleBounds, topStart, topEnd, bottomStart, bottomEnd, globalTouch)
-
-                                    // Step 3: Start tracking the continuous drag
+                                    currentOnLongPress(bubbleBounds, currentTopStart, currentTopEnd, currentBottomStart, currentBottomEnd, globalTouch)
                                     var tracking = true
                                     var hasDragged = false
 
@@ -1047,17 +1103,15 @@ fun ChatBubble(
                                         val change = event.changes.first()
 
                                         if (change.pressed) {
-                                            val distance =
-                                                (change.position - down.position).getDistance()
+                                            val distance = (change.position - down.position).getDistance()
                                             if (distance > slop) hasDragged = true
 
-                                            // Convert local touch to global screen coordinates
                                             val globalPos = bubbleBounds.topLeft + change.position
-                                            onLongPressDrag(globalPos)
+                                            currentOnLongPressDrag(globalPos)
                                             change.consume()
                                         } else {
                                             tracking = false
-                                            onLongPressEnd(hasDragged)
+                                            currentOnLongPressEnd(hasDragged)
                                         }
                                     }
                                 }
@@ -1071,25 +1125,16 @@ fun ChatBubble(
                             modifier = Modifier
                                 .padding(bottom = 6.dp)
                                 .clip(RoundedCornerShape(6.dp))
-                                // Darken the background slightly for the quote box
                                 .background(Color.Black.copy(alpha = 0.15f))
-                                .height(IntrinsicSize.Min) // Forces the Row to wrap the text height tightly
+                                .height(IntrinsicSize.Min)
                         ) {
-                            // The left accent line
                             Box(
                                 modifier = Modifier
                                     .width(4.dp)
                                     .fillMaxHeight()
                                     .background(if (isMe) Color.White else AppColors.AccentOrange)
                             )
-
-                            // The quoted sender and text
-                            Column(
-                                modifier = Modifier.padding(
-                                    horizontal = 8.dp,
-                                    vertical = 4.dp
-                                )
-                            ) {
+                            Column(modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)) {
                                 Text(
                                     text = repliedSender,
                                     color = if (isMe) Color.White else AppColors.AccentOrange,
@@ -1098,9 +1143,7 @@ fun ChatBubble(
                                 )
                                 Text(
                                     text = repliedText,
-                                    color = if (isMe) Color.White.copy(alpha = 0.85f) else AppColors.TextPrimary.copy(
-                                        alpha = 0.85f
-                                    ),
+                                    color = if (isMe) Color.White.copy(alpha = 0.85f) else AppColors.TextPrimary.copy(alpha = 0.85f),
                                     fontSize = 13.sp,
                                     maxLines = 3,
                                     overflow = TextOverflow.Ellipsis
@@ -1116,40 +1159,70 @@ fun ChatBubble(
                         fontSize = 15.sp,
                         modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
                     )
+                }
 
-                    // 👇 THE REACTION BADGE
-                    if (reactionEmoji != null) {
-                        Box(
-                            // 👇 2. Explicitly tell the compiler to use the inner scope!
-                            modifier = innerBoxScope.run { Modifier.matchParentSize() },
-                            contentAlignment = if (isMe) Alignment.BottomStart else Alignment.BottomEnd
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .offset(
-                                        x = if (isMe) (-8).dp else 8.dp,
-                                        y = 12.dp
+                // --- THE FLOATING REACTION BADGE ---
+                if (reactions.isNotEmpty()) {
+                    // 👇 1. Group the reactions by emoji!
+                    // This creates a Map where the Key is the Emoji (String) and the Value is a List of ReactionDtos.
+                    val groupedReactions = reactions.groupBy { it.emoji }
+
+                    Box(
+                        modifier = Modifier
+                            .layout { measurable, constraints ->
+                                val placeable = measurable.measure(constraints)
+                                layout(0, 0) {
+                                    placeable.placeRelative(
+                                        x = -placeable.width + 6.dp.roundToPx(),
+                                        y = -placeable.height / 2 + 4.dp.roundToPx()
                                     )
-                                    .clip(CircleShape)
-                                    .background(AppColors.Background)
-                                    .padding(2.dp)
+                                }
+                            }
+                            .zIndex(1f)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(16.dp))
+                                .background(AppColors.Background) // The cutout border
+                                .padding(2.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(14.dp))
+                                    .background(AppColors.SurfaceDark)
+                                    .clickable { onReactionClick() }
+                                    .padding(horizontal = 6.dp, vertical = 4.dp),
+                                horizontalArrangement = Arrangement.spacedBy(6.dp), // Space between different emojis
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Box(
-                                    modifier = Modifier
-                                        .clip(CircleShape)
-                                        .background(AppColors.SurfaceDark)
-                                        .padding(horizontal = 6.dp, vertical = 4.dp)
-                                ) {
-                                    Text(text = reactionEmoji, fontSize = 12.sp)
+                                // 👇 2. Loop through the grouped map instead of the raw list
+                                groupedReactions.forEach { (emoji, reactionList) ->
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(3.dp) // Space between emoji and number
+                                    ) {
+                                        Text(text = emoji, fontSize = 12.sp)
+
+                                        // 👇 3. Only show the number if more than 1 person used this emoji!
+                                        if (reactionList.size > 1) {
+                                            Text(
+                                                text = reactionList.size.toString(),
+                                                color = Color.White, // Adjust to AppColors.TextPrimary if needed
+                                                fontSize = 11.sp,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                        }
+                                    }
                                 }
                             }
                         }
                     }
                 }
-            }
-            // Add extra spacing at the bottom so the badge doesn't overlap the next message
-            if (reactionEmoji != null) {
-                Spacer(modifier = Modifier.height(12.dp))
+            } // End of Bubble & Reaction Box
+
+            // 👇 4. We add physical spacing HERE so the hanging reaction doesn't clip into the next message
+            if (reactions.isNotEmpty()) { // ✅ NEW: Check the list size!
+                Spacer(modifier = Modifier.height(14.dp))
             }
         }
     }
@@ -1331,5 +1404,87 @@ fun isTimeGapGreater(olderTime: String, newerTime: String, minutes: Int): Boolea
 
     } catch (e: Exception) {
         true
+    }
+}
+
+// 👇 1. The Data Class
+data class ReactionDetail(
+    val userId: String,
+    val username: String,
+    val profileImageUrl: String?,
+    val emoji: String,
+    val isMe: Boolean
+)
+
+// 👇 2. The Bottom Sheet Content
+@Composable
+fun ReactionsBottomSheet(
+    reactions: List<ReactionDetail>,
+    onRemoveReaction: (ReactionDetail) -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 32.dp)
+    ) {
+        Text(
+            text = "Reactions",
+            color = AppColors.TextPrimary,
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)
+        )
+
+        HorizontalDivider(color = AppColors.TextGray.copy(alpha = 0.1f))
+
+        LazyColumn(modifier = Modifier.fillMaxWidth()) {
+            items(reactions, key = { it.userId }) { reaction ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        // 👇 If it's the current user, make the row clickable to delete!
+                        .clickable(enabled = reaction.isMe) {
+                            onRemoveReaction(reaction)
+                        }
+                        .padding(horizontal = 24.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Avatar
+                    Box(
+                        modifier = Modifier.size(40.dp).clip(CircleShape).background(AppColors.SurfaceDark),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (!reaction.profileImageUrl.isNullOrBlank()) {
+                            AsyncImage(
+                                model = reaction.profileImageUrl,
+                                contentDescription = null,
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop
+                            )
+                        } else {
+                            Text(getInitials(reaction.username), color = AppColors.AccentOrange, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.width(16.dp))
+
+                    // Name & "Tap to remove" hint
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = if (reaction.isMe) "You" else reaction.username,
+                            color = AppColors.TextPrimary,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                        if (reaction.isMe) {
+                            Text("Tap to remove", color = AppColors.TextGray, fontSize = 12.sp)
+                        }
+                    }
+
+                    // The Emoji
+                    Text(text = reaction.emoji, fontSize = 24.sp)
+                }
+            }
+        }
     }
 }
