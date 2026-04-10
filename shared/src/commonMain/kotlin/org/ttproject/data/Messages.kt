@@ -8,13 +8,16 @@ data class MessageDto(
     val senderId: String,
     val content: String,
     val createdAt: String,
-    val replyToMessageId: String? = null
+    val replyToMessageId: String? = null,
+    var reactionEmoji: String? = null
 )
 
 @Serializable
 data class IncomingMessageDto(
+    val type: String,
     val content: String,
-    val replyToMessageId: String? = null // Null if it's a normal message
+    val replyToMessageId: String? = null,
+    val targetMessageId: String? = null
 )
 
 @Serializable

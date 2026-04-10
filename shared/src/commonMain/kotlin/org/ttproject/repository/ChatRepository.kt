@@ -11,6 +11,8 @@ import io.ktor.websocket.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import org.ttproject.ORACLE_IP
 import org.ttproject.SERVER_DNS
 import org.ttproject.SERVER_IP
@@ -21,10 +23,16 @@ import org.ttproject.data.MessageDto
 import org.ttproject.data.TokenResponse
 import org.ttproject.data.TokenStorage
 
+sealed class ChatEvent {
+    data class Message(val message: MessageDto) : ChatEvent()
+    data class Reaction(val messageId: String, val emoji: String) : ChatEvent()
+}
+
 interface ChatRepository {
     suspend fun getMessageHistory(connectionId: String): List<MessageDto>
-    fun observeLiveMessages(connectionId: String): Flow<MessageDto>
+    fun observeLiveMessages(connectionId: String): Flow<ChatEvent>
     suspend fun sendMessage(text: String, replyToMessageId: String? = null)
+    suspend fun sendReaction(messageId: String, emoji: String)
     fun disconnect()
     suspend fun getConnections(): List<ChatThreadDto>
     suspend fun savePushToken(fcmToken: String)
@@ -52,8 +60,11 @@ class ChatRepositoryImpl (
     }
 
     // 2. Open WebSocket and return a stream (Flow) of incoming messages
-    override fun observeLiveMessages(connectionId: String): Flow<MessageDto> = flow {
+    override fun observeLiveMessages(connectionId: String): Flow<ChatEvent> = flow {
         val token = tokenStorage.getToken() ?: throw Exception("No auth token found")
+        // 👇 A lenient parser prevents crashes if the server adds new fields later
+        val jsonParser = Json { ignoreUnknownKeys = true }
+
         try {
             client.webSocket(
                 urlString = "wss://${SERVER_DNS}/api/connections/$connectionId/chat",
@@ -61,23 +72,33 @@ class ChatRepositoryImpl (
                     header(HttpHeaders.Authorization, "Bearer $token")
                 }
             ) {
-                webSocketSession = this // Save the session
+                webSocketSession = this
 
-                // Keep reading incoming frames as long as the connection is open
                 while (true) {
                     val frame = incoming.receive()
                     if (frame is Frame.Text) {
                         val text = frame.readText()
-                        // Parse the JSON string into our Kotlin object
-                        val message = Json.decodeFromString<MessageDto>(text)
-                        emit(message) // Push to the UI
+
+                        // 👇 Peek at the JSON to see what type of event it is!
+                        val jsonElement = Json.parseToJsonElement(text).jsonObject
+                        val type = jsonElement["type"]?.jsonPrimitive?.content
+
+                        if (type == "reaction") {
+                            // It's a reaction update! Extract the info and emit it.
+                            val msgId = jsonElement["messageId"]!!.jsonPrimitive.content
+                            val emoji = jsonElement["emoji"]!!.jsonPrimitive.content
+                            emit(ChatEvent.Reaction(msgId, emoji))
+                        } else {
+                            // It's a standard message! Decode it safely.
+                            val message = jsonParser.decodeFromString<MessageDto>(text)
+                            emit(ChatEvent.Message(message))
+                        }
                     }
                 }
             }
         } catch (e: Exception) {
             e.printStackTrace()
         } finally {
-            // Clean up when the connection drops or the user leaves the screen
             webSocketSession = null
         }
     }
@@ -87,7 +108,8 @@ class ChatRepositoryImpl (
         // Create the object
         val payload = IncomingMessageDto(
             content = text,
-            replyToMessageId = replyToMessageId
+            replyToMessageId = replyToMessageId,
+            type = "message"
         )
 
         // Convert it to a JSON string
@@ -95,6 +117,15 @@ class ChatRepositoryImpl (
 
         // Send the JSON string to the server!
         webSocketSession?.send(Frame.Text(jsonString))
+    }
+
+    override suspend fun sendReaction(messageId: String, emoji: String) {
+        val payload = IncomingMessageDto(
+            type = "reaction",
+            content = emoji,
+            targetMessageId = messageId
+        )
+        webSocketSession?.send(Frame.Text(Json.encodeToString(payload)))
     }
 
     override fun disconnect() {

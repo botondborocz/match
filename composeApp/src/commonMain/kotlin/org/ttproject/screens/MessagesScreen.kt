@@ -67,10 +67,27 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.zIndex
 import kotlinx.coroutines.launch
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.RoundRect
+import androidx.compose.ui.graphics.ClipOp
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.drawscope.clipPath
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.ui.draw.alpha
 
 data class ChatThread(
     val id: String,
@@ -79,6 +96,16 @@ data class ChatThread(
     val timestamp: String,
     val unreadCount: Int,
     val isOnline: Boolean = false
+)
+
+data class ReactionMenuData(
+    val messageId: String,
+    val isMe: Boolean,
+    val bounds: Rect,
+    val topStart: Dp,
+    val topEnd: Dp,
+    val bottomStart: Dp,
+    val bottomEnd: Dp
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -256,6 +283,8 @@ fun ChatDetailScreen(
         messages.find { it.id == replyingToMessageId }
     }
 
+    var selectedReactionMessageId by remember { mutableStateOf<String?>(null) }
+
     val imeInsets = if (isIosPlatform()) WindowInsets.ime else WindowInsets.ime
     val bottomNavInset = remember(bottomNavPadding) { WindowInsets(bottom = bottomNavPadding + 10.dp) }
     val focusManager = LocalFocusManager.current
@@ -284,169 +313,333 @@ fun ChatDetailScreen(
         previousMessageCount = messages.size
     }
 
-    Column(
+    // 👇 1. Use our new data class instead of just a String ID
+    var reactionMenuData by remember { mutableStateOf<ReactionMenuData?>(null) }
+
+    // 👇 2. Wrap the whole screen in a Box so the overlay can sit on top of the TopBar!
+    Box(
         modifier = Modifier
             .fillMaxSize()
             .background(AppColors.Background)
             .windowInsetsPadding(bottomNavInset.union(imeInsets))
-            .pointerInput(Unit) {
-                detectTapGestures(onTap = { focusManager.clearFocus() })
-            }
     ) {
-        // --- ANCHORED TOP BAR ---
-        TopAppBar(
-            title = {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .pointerInput(Unit) {
+                    detectTapGestures(onTap = { focusManager.clearFocus() })
+                }
+        ) {
+            // --- ANCHORED TOP BAR ---
+            TopAppBar(
+                title = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            modifier = Modifier.size(36.dp).clip(CircleShape).background(AppColors.SurfaceDark),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            if (!otherUserImageUrl.isNullOrBlank()) {
+                                AsyncImage(
+                                    model = otherUserImageUrl,
+                                    contentDescription = "Profile picture",
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentScale = ContentScale.Crop
+                                )
+                            } else {
+                                Text(
+                                    text = getInitials(otherUsername),
+                                    color = AppColors.AccentOrange,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 18.sp
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(otherUsername, color = AppColors.TextPrimary, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                    }
+                },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            imageVector = if (isIosPlatform()) Icons.Filled.ArrowBackIosNew else Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back",
+                            tint = AppColors.TextPrimary
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = AppColors.Background)
+            )
+
+            HorizontalDivider(color = AppColors.TextGray.copy(alpha = 0.2f))
+
+            LazyColumn(
+                state = listState,
+                modifier = Modifier.weight(1f).fillMaxWidth(),
+                contentPadding = PaddingValues(16.dp),
+                reverseLayout = true
+            ) {
+                val currentUserId = tokenStorage.getUserId() ?: ""
+                val displayMessages = messages.reversed()
+
+                // ... inside ChatDetailScreen's LazyColumn ...
+
+                itemsIndexed(displayMessages, key = { _, msg -> msg.id }) { index, msg ->
+                    val isMe = msg.senderId == currentUserId
+                    val isSelected = selectedMessageId == msg.id
+                    val olderMessage = displayMessages.getOrNull(index + 1)
+                    val newerMessage = displayMessages.getOrNull(index - 1)
+
+                    val showTimeHeader = olderMessage == null || isTimeGapGreater(olderMessage.createdAt, msg.createdAt, 30)
+                    val newerShowsHeader = newerMessage != null && isTimeGapGreater(msg.createdAt, newerMessage.createdAt, 30)
+
+                    val visuallyConnectToOlder = olderMessage?.senderId == msg.senderId && !showTimeHeader
+                    val visuallyConnectToNewer = newerMessage?.senderId == msg.senderId && !newerShowsHeader
+
+                    val shouldAnimate = !presentedMessageIds.contains(msg.id)
+
+                    LaunchedEffect(msg.id) { presentedMessageIds.add(msg.id) }
+
+                    val repliedMessage = msg.replyToMessageId?.let { replyId -> messages.find { it.id == replyId } }
+                    val repliedText = repliedMessage?.content
+                    val repliedSender = if (repliedMessage?.senderId == currentUserId) "You" else otherUsername
+
+                    // 👇 THE FIX: Wrap the bubble in a Box and reverse the Z-Index!
+                    // This forces index 0 (newest message) to have the highest Z-Index,
+                    // guaranteeing it draws ON TOP of the older messages.
                     Box(
-                        modifier = Modifier.size(36.dp).clip(CircleShape).background(AppColors.SurfaceDark),
+                        modifier = Modifier.zIndex(displayMessages.size - index.toFloat())
+                    ) {
+                        AnimatedMessageBubble(
+                            text = msg.content,
+                            isMe = isMe,
+                            time = msg.createdAt,
+                            playAnimation = shouldAnimate,
+                            showTimeHeader = showTimeHeader,
+                            isOlderSame = visuallyConnectToOlder,
+                            isNewerSame = visuallyConnectToNewer,
+                            isSelected = isSelected,
+                            repliedText = repliedText,
+                            repliedSender = repliedSender,
+                            reactionEmoji = msg.reactionEmoji,
+                            onClick = { selectedMessageId = if (isSelected) null else msg.id },
+                            onLongPress = { bounds, topStart, topEnd, bottomStart, bottomEnd ->
+                                reactionMenuData = ReactionMenuData(
+                                    messageId = msg.id,
+                                    isMe = isMe,
+                                    bounds = bounds,
+                                    topStart = topStart,
+                                    topEnd = topEnd,
+                                    bottomStart = bottomStart,
+                                    bottomEnd = bottomEnd
+                                )
+                            },
+                            onSwipeToReply = { replyingToMessageId = msg.id }
+                        )
+                    }
+                }
+            }
+
+            // --- THE KEYBOARD-AWARE INPUT AREA ---
+            Column(modifier = Modifier.fillMaxWidth().background(AppColors.Background)) {
+                AnimatedVisibility(
+                    visible = replyingToMessage != null,
+                    enter = expandVertically() + fadeIn(),
+                    exit = shrinkVertically() + fadeOut()
+                ) {
+                    if (replyingToMessage != null) {
+                        ReplyPreview(
+                            messageContent = replyingToMessage.content,
+                            onCancel = { replyingToMessageId = null }
+                        )
+                    }
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    OutlinedTextField(
+                        value = messageText,
+                        onValueChange = { messageText = it },
+                        placeholder = { Text("Type a message...", color = AppColors.TextGray) },
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(24.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = AppColors.AccentOrange, unfocusedBorderColor = AppColors.TextGray.copy(alpha = 0.5f),
+                            focusedTextColor = AppColors.TextPrimary, unfocusedTextColor = AppColors.TextPrimary
+                        ),
+                        maxLines = 3
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Box(
+                        modifier = Modifier.size(48.dp).clip(CircleShape).background(if (messageText.isNotBlank()) AppColors.AccentOrange else AppColors.SurfaceDark)
+                            .clickable(enabled = messageText.isNotBlank()) {
+                                viewModel.sendMessage(messageText, replyingToMessageId)
+                                messageText = ""
+                                replyingToMessageId = null
+                            },
                         contentAlignment = Alignment.Center
                     ) {
-                        if (!otherUserImageUrl.isNullOrBlank()) {
-                            AsyncImage(
-                                model = otherUserImageUrl,
-                                contentDescription = "Profile picture",
-                                modifier = Modifier.fillMaxSize(),
-                                contentScale = ContentScale.Crop
-                            )
-                        } else {
-                            Text(
-                                text = getInitials(otherUsername),
-                                color = AppColors.AccentOrange,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 18.sp
-                            )
-                        }
+                        Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Send", tint = if (messageText.isNotBlank()) Color.White else AppColors.TextGray, modifier = Modifier.size(20.dp).offset(x = 2.dp))
                     }
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Text(otherUsername, color = AppColors.TextPrimary, fontSize = 18.sp, fontWeight = FontWeight.Bold)
                 }
-            },
-            navigationIcon = {
-                IconButton(onClick = onBack) {
-                    Icon(
-                        imageVector = if (isIosPlatform()) Icons.Filled.ArrowBackIosNew else Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back",
-                        tint = AppColors.TextPrimary
-                    )
-                }
-            },
-            colors = TopAppBarDefaults.topAppBarColors(containerColor = AppColors.Background)
-        )
-
-        HorizontalDivider(color = AppColors.TextGray.copy(alpha = 0.2f))
-
-        LazyColumn(
-            state = listState,
-            modifier = Modifier.weight(1f).fillMaxWidth(),
-            contentPadding = PaddingValues(16.dp),
-            reverseLayout = true
-        ) {
-            val currentUserId = tokenStorage.getUserId() ?: ""
-            val displayMessages = messages.reversed()
-
-            itemsIndexed(displayMessages, key = { _, msg -> msg.id }) { index, msg ->
-                val isMe = msg.senderId == currentUserId
-                val isSelected = selectedMessageId == msg.id
-
-                val olderMessage = displayMessages.getOrNull(index + 1)
-                val newerMessage = displayMessages.getOrNull(index - 1)
-
-                val showTimeHeader = olderMessage == null || isTimeGapGreater(olderMessage.createdAt, msg.createdAt, 30)
-                val newerShowsHeader = newerMessage != null && isTimeGapGreater(msg.createdAt, newerMessage.createdAt, 30)
-
-                val visuallyConnectToOlder = olderMessage?.senderId == msg.senderId && !showTimeHeader
-                val visuallyConnectToNewer = newerMessage?.senderId == msg.senderId && !newerShowsHeader
-
-                val shouldAnimate = !presentedMessageIds.contains(msg.id)
-
-                LaunchedEffect(msg.id) { presentedMessageIds.add(msg.id) }
-
-                // 👇 1. FIND THE REPLIED MESSAGE!
-                val repliedMessage = msg.replyToMessageId?.let { replyId ->
-                    messages.find { it.id == replyId }
-                }
-                val repliedText = repliedMessage?.content
-                val repliedSender = if (repliedMessage?.senderId == currentUserId) "You" else otherUsername
-
-                AnimatedMessageBubble(
-                    text = msg.content,
-                    isMe = isMe,
-                    time = msg.createdAt,
-                    playAnimation = shouldAnimate,
-                    showTimeHeader = showTimeHeader,
-                    isOlderSame = visuallyConnectToOlder,
-                    isNewerSame = visuallyConnectToNewer,
-                    isSelected = isSelected,
-                    // 👇 2. Pass the preview data down!
-                    repliedText = repliedText,
-                    repliedSender = repliedSender,
-                    onClick = { selectedMessageId = if (isSelected) null else msg.id },
-                    onSwipeToReply = { replyingToMessageId = msg.id }
-                )
             }
         }
 
-        // --- THE KEYBOARD-AWARE INPUT AREA ---
-        Column(modifier = Modifier.fillMaxWidth().background(AppColors.Background)) {
+        // 👇 4. THE MAGIC HIGHLIGHT OVERLAY
+        AnimatedVisibility(
+            visible = reactionMenuData != null,
+            enter = fadeIn(tween(200)),
+            exit = fadeOut(tween(200)),
+            modifier = Modifier.zIndex(100f)
+        ) {
+            reactionMenuData?.let { state ->
+                val density = LocalDensity.current
 
-            // 👇 3. THE REPLY PREVIEW BANNER
-            AnimatedVisibility(
-                visible = replyingToMessage != null,
-                enter = expandVertically() + fadeIn(),
-                exit = shrinkVertically() + fadeOut()
-            ) {
-                if (replyingToMessage != null) {
-                    ReplyPreview(
-                        messageContent = replyingToMessage.content,
-                        onCancel = { replyingToMessageId = null }
-                    )
-                }
-            }
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                OutlinedTextField(
-                    value = messageText,
-                    onValueChange = { messageText = it },
-                    placeholder = { Text("Type a message...", color = AppColors.TextGray) },
-                    modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(24.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = AppColors.AccentOrange,
-                        unfocusedBorderColor = AppColors.TextGray.copy(alpha = 0.5f),
-                        focusedTextColor = AppColors.TextPrimary,
-                        unfocusedTextColor = AppColors.TextPrimary
-                    ),
-                    maxLines = 3
-                )
-
-                Spacer(modifier = Modifier.width(8.dp))
+                var overlayBounds by remember { mutableStateOf(Offset.Zero) }
+                var overlaySize by remember { mutableStateOf(androidx.compose.ui.unit.IntSize.Zero) }
 
                 Box(
                     modifier = Modifier
-                        .size(48.dp)
-                        .clip(CircleShape)
-                        .background(if (messageText.isNotBlank()) AppColors.AccentOrange else AppColors.SurfaceDark)
-                        .clickable(enabled = messageText.isNotBlank()) {
-                            // 👇 4. Pass BOTH the text and the reply ID to the ViewModel
-                            viewModel.sendMessage(messageText, replyingToMessageId)
-
-                            // Reset everything
-                            messageText = ""
-                            replyingToMessageId = null
-                        },
-                    contentAlignment = Alignment.Center
+                        .fillMaxSize()
+                        .onGloballyPositioned { coordinates ->
+                            overlayBounds = coordinates.boundsInRoot().topLeft
+                            overlaySize = coordinates.size
+                        }
                 ) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.Send,
-                        contentDescription = "Send",
-                        tint = if (messageText.isNotBlank()) Color.White else AppColors.TextGray,
-                        modifier = Modifier.size(20.dp).offset(x = 2.dp)
-                    )
+                    // --- THE SCRIM (WITH A HOLE CUT OUT) ---
+                    androidx.compose.foundation.Canvas(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .pointerInput(Unit) {
+                                detectTapGestures(onTap = { reactionMenuData = null })
+                            }
+                    ) {
+                        val localBounds = state.bounds.translate(-overlayBounds)
+
+                        val cornerRadiusPath = Path().apply {
+                            addRoundRect(
+                                RoundRect(
+                                    rect = localBounds,
+                                    topLeft = CornerRadius(state.topStart.toPx()),
+                                    topRight = CornerRadius(state.topEnd.toPx()),
+                                    bottomRight = CornerRadius(state.bottomEnd.toPx()),
+                                    bottomLeft = CornerRadius(state.bottomStart.toPx())
+                                )
+                            )
+                        }
+
+                        clipPath(cornerRadiusPath, clipOp = ClipOp.Difference) {
+                            drawRect(Color.Black.copy(alpha = 0.65f))
+                        }
+                    }
+
+                    // --- THE REACTION PILL ---
+                    // 1. Lock in the dimensions to calculate boundaries perfectly
+                    val menuWidthDp = 270.dp
+                    val menuHeightDp = 56.dp
+                    val menuWidthPx = with(density) { menuWidthDp.toPx() }
+                    val menuHeightPx = with(density) { menuHeightDp.toPx() }
+
+                    val screenWidthPx = overlaySize.width.toFloat()
+                    val localBounds = state.bounds.translate(-overlayBounds)
+
+                    // 2. The Clipping Fix! Hard clamp the X value between safe screen margins
+                    val safeMarginPx = with(density) { 16.dp.toPx() }
+
+                    // 👇 THE FIX: Use maxOf() to guarantee maxMenuX never drops below safeMarginPx
+                    val minMenuX = safeMarginPx
+                    val maxMenuX = maxOf(minMenuX, screenWidthPx - menuWidthPx - safeMarginPx)
+
+                    val idealX = if (state.isMe) localBounds.right - menuWidthPx else localBounds.left
+                    val menuX = idealX.coerceIn(minMenuX, maxMenuX)
+
+                    val isSpaceAbove = localBounds.top > menuHeightPx + 50f
+                    val menuY = if (isSpaceAbove) localBounds.top - menuHeightPx - 20f else localBounds.bottom + 20f
+
+                    val transformOrigin = if (state.isMe) {
+                        TransformOrigin(1f, if (isSpaceAbove) 1f else 0f)
+                    } else {
+                        TransformOrigin(0f, if (isSpaceAbove) 1f else 0f)
+                    }
+
+                    // 3. The WhatsApp Drag States
+                    val emojis = listOf("❤️", "😂", "😮", "😢", "🙏", "👍")
+                    var hoveredIndex by remember { mutableStateOf(-1) }
+
+                    Box(
+                        modifier = Modifier
+                            .offset { androidx.compose.ui.unit.IntOffset(menuX.toInt(), menuY.toInt()) }
+                            .animateEnterExit(
+                                enter = androidx.compose.animation.scaleIn(
+                                    transformOrigin = transformOrigin,
+                                    animationSpec = androidx.compose.animation.core.spring(dampingRatio = androidx.compose.animation.core.Spring.DampingRatioMediumBouncy)
+                                ),
+                                exit = androidx.compose.animation.scaleOut(transformOrigin = transformOrigin)
+                            )
+                            .width(menuWidthDp)
+                            .height(menuHeightDp)
+                            .clip(RoundedCornerShape(32.dp))
+                            .background(AppColors.SurfaceDark)
+                            // 4. The Magic Gesture Tracker!
+                            .pointerInput(Unit) {
+                                awaitEachGesture {
+                                    val down = awaitFirstDown()
+                                    val itemWidth = menuWidthPx / emojis.size
+
+                                    // Calculate which emoji we touched initially
+                                    hoveredIndex = (down.position.x / itemWidth).toInt().coerceIn(0, emojis.size - 1)
+
+                                    var isTracking = true
+                                    while (isTracking) {
+                                        val event = awaitPointerEvent()
+                                        val change = event.changes.first()
+
+                                        if (change.pressed) {
+                                            // Finger is dragging: update the hovered index!
+                                            hoveredIndex = (change.position.x / itemWidth).toInt().coerceIn(0, emojis.size - 1)
+                                        } else {
+                                            // Finger lifted: Trigger the reaction!
+                                            isTracking = false
+                                            if (hoveredIndex in emojis.indices) {
+                                                viewModel.sendReaction(state.messageId, emojis[hoveredIndex])
+                                            }
+                                            reactionMenuData = null
+                                            hoveredIndex = -1
+                                        }
+                                    }
+                                }
+                            }
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxSize(),
+                            horizontalArrangement = Arrangement.SpaceEvenly,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            emojis.forEachIndexed { index, emoji ->
+                                // 5. Smoothly animate the scale of the emoji under the finger!
+                                val scale by animateFloatAsState(
+                                    targetValue = if (hoveredIndex == index) 1.6f else 1f,
+                                    animationSpec = androidx.compose.animation.core.spring(
+                                        dampingRatio = androidx.compose.animation.core.Spring.DampingRatioMediumBouncy,
+                                        stiffness = androidx.compose.animation.core.Spring.StiffnessLow
+                                    ),
+                                    label = "emojiScale"
+                                )
+
+                                Text(
+                                    text = emoji,
+                                    fontSize = 26.sp,
+                                    modifier = Modifier.graphicsLayer {
+                                        scaleX = scale
+                                        scaleY = scale
+                                        // Slight lift effect when hovered
+                                        translationY = if (hoveredIndex == index) -15f else 0f
+                                    }
+                                )
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -465,104 +658,128 @@ fun AnimatedMessageBubble(
     isSelected: Boolean,
     repliedText: String?,
     repliedSender: String?,
+    reactionEmoji: String?,
     onClick: () -> Unit,
-    onSwipeToReply: () -> Unit // 👈 New Parameter
+    onLongPress: (Rect, Dp, Dp, Dp, Dp) -> Unit,
+    onSwipeToReply: () -> Unit
 ) {
-    val visibleState = remember {
-        MutableTransitionState(initialState = !playAnimation).apply { targetState = true }
+    // 1. Simple, predictable state
+    var targetAlpha by remember { mutableFloatStateOf(if (playAnimation) 0f else 1f) }
+    var targetOffset by remember { mutableFloatStateOf(if (playAnimation) 100f else 0f) }
+
+    // 2. Trigger animation immediately if it's a new message
+    LaunchedEffect(Unit) {
+        if (playAnimation) {
+            targetAlpha = 1f
+            targetOffset = 0f
+        }
     }
 
-    // 👇 Physics and Haptics for the swipe
-    val offsetX = remember { androidx.compose.animation.core.Animatable(0f) }
+    // 3. Fallback: If it gets pushed down the list, instantly snap to visible
+    LaunchedEffect(playAnimation) {
+        if (!playAnimation) {
+            targetAlpha = 1f
+            targetOffset = 0f
+        }
+    }
+
+    val alpha by animateFloatAsState(
+        targetValue = targetAlpha,
+        animationSpec = tween(250),
+        label = "alpha"
+    )
+    val offset by animateFloatAsState(
+        targetValue = targetOffset,
+        animationSpec = androidx.compose.animation.core.spring(dampingRatio = androidx.compose.animation.core.Spring.DampingRatioMediumBouncy),
+        label = "offset"
+    )
+
+    val swipeOffset = remember { androidx.compose.animation.core.Animatable(0f) }
     val coroutineScope = rememberCoroutineScope()
     val haptic = LocalHapticFeedback.current
 
-    AnimatedVisibility(
-        visibleState = visibleState,
-        enter = slideInHorizontally(
-            initialOffsetX = { fullWidth -> if (isMe) fullWidth / 2 else -fullWidth / 2 }
-        ) + slideInVertically(
-            initialOffsetY = { fullHeight -> fullHeight / 2 }
-        ) + fadeIn(),
+    Column(
+        // 👇 THE FIX: Bypass the graphicsLayer cache bug by using physical layout modifiers!
+        modifier = Modifier
+            .offset {
+                androidx.compose.ui.unit.IntOffset(
+                    x = if (isMe) (offset / 2).toInt() else (-offset / 2).toInt(),
+                    y = offset.toInt()
+                )
+            }
+            .alpha(alpha)
     ) {
-        Column {
-            if (showTimeHeader) {
+        // --- THE CENTERED TIMESTAMP ---
+        if (showTimeHeader) {
+            Text(
+                text = formatMessageTime(time),
+                color = AppColors.TextGray,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Medium,
+                modifier = Modifier
+                    .align(Alignment.CenterHorizontally)
+                    .padding(top = 16.dp, bottom = 8.dp)
+            )
+        } else {
+            AnimatedVisibility(
+                visible = isSelected,
+                enter = fadeIn() + expandVertically(expandFrom = Alignment.Top),
+                exit = fadeOut() + shrinkVertically(shrinkTowards = Alignment.Top)
+            ) {
                 Text(
                     text = formatMessageTime(time),
                     color = AppColors.TextGray,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Medium,
                     modifier = Modifier
-                        .align(Alignment.CenterHorizontally)
-                        .padding(top = 16.dp, bottom = 8.dp)
+                        .fillMaxWidth()
+                        .padding(top = 8.dp, bottom = 8.dp),
+                    textAlign = TextAlign.Center
                 )
-            } else {
-                AnimatedVisibility(
-                    visible = isSelected,
-                    enter = fadeIn() + expandVertically(expandFrom = Alignment.Top),
-                    exit = fadeOut() + shrinkVertically(shrinkTowards = Alignment.Top)
-                ) {
-                    Text(
-                        text = formatMessageTime(time),
-                        color = AppColors.TextGray,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Medium,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 8.dp, bottom = 8.dp),
-                        textAlign = TextAlign.Center
+            }
+        }
+
+        ChatBubble(
+            text = text,
+            isMe = isMe,
+            isOlderSame = isOlderSame,
+            isNewerSame = isNewerSame,
+            isSelected = isSelected,
+            repliedText = repliedText,
+            repliedSender = repliedSender,
+            reactionEmoji = reactionEmoji,
+            onClick = onClick,
+            onLongPress = onLongPress,
+            modifier = Modifier
+                .graphicsLayer { translationX = swipeOffset.value }
+                .pointerInput(Unit) {
+                    var hasTriggeredHaptic = false
+                    detectHorizontalDragGestures(
+                        onDragEnd = {
+                            if (swipeOffset.value > 120f) onSwipeToReply()
+                            coroutineScope.launch { swipeOffset.animateTo(0f, androidx.compose.animation.core.spring(dampingRatio = androidx.compose.animation.core.Spring.DampingRatioMediumBouncy)) }
+                            hasTriggeredHaptic = false
+                        },
+                        onDragCancel = {
+                            coroutineScope.launch { swipeOffset.animateTo(0f, androidx.compose.animation.core.spring(dampingRatio = androidx.compose.animation.core.Spring.DampingRatioMediumBouncy)) }
+                            hasTriggeredHaptic = false
+                        },
+                        onHorizontalDrag = { change, dragAmount ->
+                            change.consume()
+                            val newOffset = (swipeOffset.value + dragAmount).coerceIn(0f, 200f)
+                            coroutineScope.launch { swipeOffset.snapTo(newOffset) }
+
+                            if (newOffset > 120f && !hasTriggeredHaptic) {
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                hasTriggeredHaptic = true
+                            } else if (newOffset < 120f) {
+                                hasTriggeredHaptic = false
+                            }
+                        }
                     )
                 }
-            }
-
-            ChatBubble(
-                text = text,
-                isMe = isMe,
-                isOlderSame = isOlderSame,
-                isNewerSame = isNewerSame,
-                isSelected = isSelected,
-                onClick = onClick,
-                repliedText = repliedText,
-                repliedSender = repliedSender,
-                // 👇 Apply the gesture mechanics
-                modifier = Modifier
-                    .graphicsLayer { translationX = offsetX.value }
-                    .pointerInput(Unit) {
-                        var hasTriggeredHaptic = false
-                        detectHorizontalDragGestures(
-                            onDragEnd = {
-                                if (offsetX.value > 120f) {
-                                    onSwipeToReply() // Trigger the reply state!
-                                }
-                                // Spring back to original position
-                                coroutineScope.launch {
-                                    offsetX.animateTo(0f, androidx.compose.animation.core.spring(dampingRatio = androidx.compose.animation.core.Spring.DampingRatioMediumBouncy))
-                                }
-                                hasTriggeredHaptic = false
-                            },
-                            onDragCancel = {
-                                coroutineScope.launch { offsetX.animateTo(0f, androidx.compose.animation.core.spring(dampingRatio = androidx.compose.animation.core.Spring.DampingRatioMediumBouncy)) }
-                                hasTriggeredHaptic = false
-                            },
-                            onHorizontalDrag = { change, dragAmount ->
-                                change.consume()
-                                // Only allow swiping to the right (coerceIn prevents left swipes)
-                                val newOffset = (offsetX.value + dragAmount).coerceIn(0f, 200f)
-                                coroutineScope.launch { offsetX.snapTo(newOffset) }
-
-                                // Buzz the phone slightly when they pull far enough to trigger the reply
-                                if (newOffset > 120f && !hasTriggeredHaptic) {
-                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                    hasTriggeredHaptic = true
-                                } else if (newOffset < 120f) {
-                                    hasTriggeredHaptic = false
-                                }
-                            }
-                        )
-                    }
-            )
-            Spacer(modifier = Modifier.height(if (isNewerSame) 4.dp else 16.dp))
-        }
+        )
+        Spacer(modifier = Modifier.height(if (isNewerSame) 4.dp else 16.dp))
     }
 }
 
@@ -576,8 +793,10 @@ fun ChatBubble(
     // 👇 Accept the new parameters
     repliedText: String?,
     repliedSender: String?,
+    reactionEmoji: String?,
     modifier: Modifier = Modifier,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onLongPress: (Rect, Dp, Dp, Dp, Dp) -> Unit
 ) {
     val topStart = if (!isMe && isOlderSame) 4.dp else 16.dp
     val bottomStart = if (!isMe && isNewerSame) 4.dp else 16.dp
@@ -599,69 +818,125 @@ fun ChatBubble(
         animationSpec = tween(durationMillis = 200)
     )
 
+    // 👇 1. Track the coordinates!
+    var bubbleBounds by remember { mutableStateOf(Rect.Zero) }
+
     BoxWithConstraints(
         modifier = modifier.fillMaxWidth(),
         contentAlignment = if (isMe) Alignment.TopEnd else Alignment.TopStart
     ) {
-        // Slightly wider max bubble width to accommodate quotes beautifully
         val maxBubbleWidth = maxWidth * 0.80f
 
         Column(horizontalAlignment = if (isMe) Alignment.End else Alignment.Start) {
 
-            // 👇 Change the inner box to a Column so we can stack the Quote and the Message
-            Column(
-                modifier = Modifier
-                    .widthIn(max = maxBubbleWidth)
-                    .clip(RoundedCornerShape(topStart, topEnd, bottomEnd, bottomStart))
-                    .background(animatedBackgroundColor)
-                    .clickable { onClick() }
-                    .padding(horizontal = 12.dp, vertical = 10.dp) // Adjusted padding slightly
-            ) {
+            Box {
+                val innerBoxScope = this
 
-                // 👇 THE QUOTE PREVIEW UI
-                if (repliedText != null && repliedSender != null) {
-                    Row(
-                        modifier = Modifier
-                            .padding(bottom = 6.dp)
-                            .clip(RoundedCornerShape(6.dp))
-                            // Darken the background slightly for the quote box
-                            .background(Color.Black.copy(alpha = 0.15f))
-                            .height(IntrinsicSize.Min) // Forces the Row to wrap the text height tightly
-                    ) {
-                        // The left accent line
-                        Box(
+                Column(
+                    modifier = Modifier
+                        .widthIn(max = maxBubbleWidth)
+                        // 👇 2. Grab the bounds right here, before the clip!
+                        .onGloballyPositioned { coordinates ->
+                            bubbleBounds = coordinates.boundsInRoot()
+                        }
+                        .clip(RoundedCornerShape(topStart, topEnd, bottomEnd, bottomStart))
+                        .background(animatedBackgroundColor)
+                        .pointerInput(Unit) {
+                            detectTapGestures(
+                                onTap = { onClick() },
+                                // 👇 3. Pass the bounds and the corner radii upward!
+                                onLongPress = {
+                                    onLongPress(bubbleBounds, topStart, topEnd, bottomStart, bottomEnd)
+                                }
+                            )
+                        }
+                        .padding(horizontal = 12.dp, vertical = 10.dp)
+                ) {
+                    // 👇 THE QUOTE PREVIEW UI
+                    if (repliedText != null && repliedSender != null) {
+                        Row(
                             modifier = Modifier
-                                .width(4.dp)
-                                .fillMaxHeight()
-                                .background(if (isMe) Color.White else AppColors.AccentOrange)
-                        )
+                                .padding(bottom = 6.dp)
+                                .clip(RoundedCornerShape(6.dp))
+                                // Darken the background slightly for the quote box
+                                .background(Color.Black.copy(alpha = 0.15f))
+                                .height(IntrinsicSize.Min) // Forces the Row to wrap the text height tightly
+                        ) {
+                            // The left accent line
+                            Box(
+                                modifier = Modifier
+                                    .width(4.dp)
+                                    .fillMaxHeight()
+                                    .background(if (isMe) Color.White else AppColors.AccentOrange)
+                            )
 
-                        // The quoted sender and text
-                        Column(modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)) {
-                            Text(
-                                text = repliedSender,
-                                color = if (isMe) Color.White else AppColors.AccentOrange,
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Text(
-                                text = repliedText,
-                                color = if (isMe) Color.White.copy(alpha = 0.85f) else AppColors.TextPrimary.copy(alpha = 0.85f),
-                                fontSize = 13.sp,
-                                maxLines = 3,
-                                overflow = TextOverflow.Ellipsis
-                            )
+                            // The quoted sender and text
+                            Column(
+                                modifier = Modifier.padding(
+                                    horizontal = 8.dp,
+                                    vertical = 4.dp
+                                )
+                            ) {
+                                Text(
+                                    text = repliedSender,
+                                    color = if (isMe) Color.White else AppColors.AccentOrange,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Text(
+                                    text = repliedText,
+                                    color = if (isMe) Color.White.copy(alpha = 0.85f) else AppColors.TextPrimary.copy(
+                                        alpha = 0.85f
+                                    ),
+                                    fontSize = 13.sp,
+                                    maxLines = 3,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                        }
+                    }
+
+                    // The actual message
+                    Text(
+                        text = text,
+                        color = if (isMe) Color.White else AppColors.TextPrimary,
+                        fontSize = 15.sp,
+                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                    )
+
+                    // 👇 THE REACTION BADGE
+                    if (reactionEmoji != null) {
+                        Box(
+                            // 👇 2. Explicitly tell the compiler to use the inner scope!
+                            modifier = innerBoxScope.run { Modifier.matchParentSize() },
+                            contentAlignment = if (isMe) Alignment.BottomStart else Alignment.BottomEnd
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .offset(
+                                        x = if (isMe) (-8).dp else 8.dp,
+                                        y = 12.dp
+                                    )
+                                    .clip(CircleShape)
+                                    .background(AppColors.Background)
+                                    .padding(2.dp)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .clip(CircleShape)
+                                        .background(AppColors.SurfaceDark)
+                                        .padding(horizontal = 6.dp, vertical = 4.dp)
+                                ) {
+                                    Text(text = reactionEmoji, fontSize = 12.sp)
+                                }
+                            }
                         }
                     }
                 }
-
-                // The actual message
-                Text(
-                    text = text,
-                    color = if (isMe) Color.White else AppColors.TextPrimary,
-                    fontSize = 15.sp,
-                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
-                )
+            }
+            // Add extra spacing at the bottom so the badge doesn't overlap the next message
+            if (reactionEmoji != null) {
+                Spacer(modifier = Modifier.height(12.dp))
             }
         }
     }
