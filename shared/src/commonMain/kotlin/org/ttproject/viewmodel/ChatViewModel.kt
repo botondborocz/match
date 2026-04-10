@@ -8,8 +8,10 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import org.ttproject.data.Location
 import org.ttproject.data.MessageDto
+import org.ttproject.repository.ChatEvent
 import org.ttproject.repository.ChatRepository
 import org.ttproject.util.NotificationEventBus
+import kotlinx.coroutines.flow.update
 
 class ChatViewModel(
     private val repository: ChatRepository,
@@ -34,8 +36,24 @@ class ChatViewModel(
             _isLoading.value = false
 
             // 2. Once history is loaded, open the WebSocket and listen for new ones
-            repository.observeLiveMessages(connectionId).collect { newMessage ->
-                _messages.value = _messages.value + newMessage
+            repository.observeLiveMessages(connectionId).collect { event ->
+                when (event) {
+                    is ChatEvent.Message -> {
+                        // Standard message: Add it to the top of the list
+                        _messages.update { currentList ->
+                            currentList + event.message
+                        }                    }
+                    is ChatEvent.Reaction -> {
+                        // Reaction update: Find the existing message and update its emoji!
+                        _messages.value = _messages.value.map { msg ->
+                            if (msg.id == event.messageId) {
+                                msg.copy(reactionEmoji = event.emoji)
+                            } else {
+                                msg
+                            }
+                        }
+                    }
+                }
             }
         }
     }
@@ -48,6 +66,16 @@ class ChatViewModel(
             // The server will broadcast it back, which will be caught by `observeLiveMessages`
             // and automatically added to the UI!
             repository.sendMessage(text, replyToMessageId)
+            NotificationEventBus.triggerRefresh()
+        }
+    }
+
+    fun sendReaction(messageId: String, emoji: String) {
+        viewModelScope.launch {
+            // Send it to the server.
+            // The server will broadcast it back, which will be caught by `observeLiveMessages`
+            // and automatically added to the UI!
+            repository.sendReaction(messageId, emoji)
             NotificationEventBus.triggerRefresh()
         }
     }
