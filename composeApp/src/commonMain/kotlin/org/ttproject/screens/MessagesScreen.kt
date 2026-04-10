@@ -19,7 +19,6 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.ArrowBackIosNew
@@ -87,7 +86,12 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Reply
+import androidx.compose.material.icons.filled.Reply
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.draw.alpha
+import kotlin.math.abs
 
 data class ChatThread(
     val id: String,
@@ -105,7 +109,8 @@ data class ReactionMenuData(
     val topStart: Dp,
     val topEnd: Dp,
     val bottomStart: Dp,
-    val bottomEnd: Dp
+    val bottomEnd: Dp,
+    val initialTouch: Offset
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -290,6 +295,17 @@ fun ChatDetailScreen(
     val focusManager = LocalFocusManager.current
     val tokenStorage: TokenStorage = koinInject()
 
+    // 👇 1. ADD THESE TWO LINES:
+    val inputFocusRequester = remember { FocusRequester() }
+    val keyboardController = LocalSoftwareKeyboardController.current
+
+    LaunchedEffect(replyingToMessageId) {
+        if (replyingToMessageId != null) {
+            inputFocusRequester.requestFocus()
+            keyboardController?.show()
+        }
+    }
+
     var selectedMessageId by remember { mutableStateOf<String?>(null) }
     val listState = rememberLazyListState()
 
@@ -297,13 +313,13 @@ fun ChatDetailScreen(
 
     LaunchedEffect(chatId) { viewModel.markMessagesAsRead() }
 
-    val presentedMessageIds = remember { mutableSetOf<String>() }
-    var isInitialLoad by remember { mutableStateOf(true) }
+//    val presentedMessageIds = remember { mutableSetOf<String>() }
+//    var isInitialLoad by remember { mutableStateOf(true) }
 
-    if (isInitialLoad && messages.isNotEmpty()) {
-        presentedMessageIds.addAll(messages.map { it.id })
-        isInitialLoad = false
-    }
+//    if (isInitialLoad && messages.isNotEmpty()) {
+//        presentedMessageIds.addAll(messages.map { it.id })
+//        isInitialLoad = false
+//    }
 
     var previousMessageCount by remember { mutableStateOf(messages.size) }
     LaunchedEffect(messages.size) {
@@ -314,7 +330,25 @@ fun ChatDetailScreen(
     }
 
     // 👇 1. Use our new data class instead of just a String ID
+    val emojis = remember { listOf("❤️", "😂", "😮", "😢", "🏓", "👍") }
     var reactionMenuData by remember { mutableStateOf<ReactionMenuData?>(null) }
+
+    // 👇 1. Add these two states to track continuous dragging
+    var activeReactionDragPosition by remember { mutableStateOf<Offset?>(null) }
+    var hoveredReactionIndex by remember { mutableStateOf(-1) }
+
+    // 👇 1. Add the haptic provider and a state to track the previous hover
+    val haptic = LocalHapticFeedback.current
+    var previousHoveredIndex by remember { mutableIntStateOf(-1) }
+
+    // 👇 2. Add this effect. It watches the index and ticks when crossing boundaries!
+    LaunchedEffect(hoveredReactionIndex) {
+        if (hoveredReactionIndex != -1 && hoveredReactionIndex != previousHoveredIndex) {
+            // TextHandleMove produces a very subtle, satisfying "tick"
+            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+        }
+        previousHoveredIndex = hoveredReactionIndex
+    }
 
     // 👇 2. Wrap the whole screen in a Box so the overlay can sit on top of the TopBar!
     Box(
@@ -372,6 +406,16 @@ fun ChatDetailScreen(
 
             HorizontalDivider(color = AppColors.TextGray.copy(alpha = 0.2f))
 
+            // 👇 1. Create a silent ledger of known messages
+            val knownMessageIds = remember { mutableSetOf<String>() }
+            var isInitialBatchProcessed by remember { mutableStateOf(false) }
+
+            // 👇 2. Update the ledger AFTER every render
+            LaunchedEffect(messages) {
+                knownMessageIds.addAll(messages.map { it.id })
+                isInitialBatchProcessed = true
+            }
+
             LazyColumn(
                 state = listState,
                 modifier = Modifier.weight(1f).fillMaxWidth(),
@@ -395,9 +439,17 @@ fun ChatDetailScreen(
                     val visuallyConnectToOlder = olderMessage?.senderId == msg.senderId && !showTimeHeader
                     val visuallyConnectToNewer = newerMessage?.senderId == msg.senderId && !newerShowsHeader
 
-                    val shouldAnimate = !presentedMessageIds.contains(msg.id)
 
-                    LaunchedEffect(msg.id) { presentedMessageIds.add(msg.id) }
+                    // 👇 3. The Magic Logic: Is this a brand new message?
+                    val playAnimation = remember(msg.id) {
+                        if (!isInitialBatchProcessed) {
+                            false // Initial load: do not animate anything
+                        } else {
+                            // Animate ONLY if we've never seen it AND it's a recent message (index < 5)
+                            // (Checking index prevents older paginated messages from animating)
+                            !knownMessageIds.contains(msg.id) && index < 5
+                        }
+                    }
 
                     val repliedMessage = msg.replyToMessageId?.let { replyId -> messages.find { it.id == replyId } }
                     val repliedText = repliedMessage?.content
@@ -413,7 +465,7 @@ fun ChatDetailScreen(
                             text = msg.content,
                             isMe = isMe,
                             time = msg.createdAt,
-                            playAnimation = shouldAnimate,
+                            playAnimation = playAnimation,
                             showTimeHeader = showTimeHeader,
                             isOlderSame = visuallyConnectToOlder,
                             isNewerSame = visuallyConnectToNewer,
@@ -422,16 +474,25 @@ fun ChatDetailScreen(
                             repliedSender = repliedSender,
                             reactionEmoji = msg.reactionEmoji,
                             onClick = { selectedMessageId = if (isSelected) null else msg.id },
-                            onLongPress = { bounds, topStart, topEnd, bottomStart, bottomEnd ->
-                                reactionMenuData = ReactionMenuData(
-                                    messageId = msg.id,
-                                    isMe = isMe,
-                                    bounds = bounds,
-                                    topStart = topStart,
-                                    topEnd = topEnd,
-                                    bottomStart = bottomStart,
-                                    bottomEnd = bottomEnd
-                                )
+                            onLongPress = { bounds, topStart, topEnd, bottomStart, bottomEnd, initialTouch ->
+                                reactionMenuData = ReactionMenuData(msg.id, isMe, bounds, topStart, topEnd, bottomStart, bottomEnd, initialTouch)
+                            },
+                            onLongPressDrag = { globalPos ->
+                                activeReactionDragPosition = globalPos
+                            },
+                            onLongPressEnd = { hasDragged ->
+                                if (hasDragged) {
+                                    // They dragged and released: send reaction if selected, and close menu
+                                    if (reactionMenuData != null && hoveredReactionIndex != -1) {
+                                        viewModel.sendReaction(reactionMenuData!!.messageId, emojis[hoveredReactionIndex])
+                                        reactionMenuData = null
+                                    }
+                                    activeReactionDragPosition = null
+                                    hoveredReactionIndex = -1
+                                } else {
+                                    // They just lifted immediately: leave menu open!
+                                    activeReactionDragPosition = null
+                                }
                             },
                             onSwipeToReply = { replyingToMessageId = msg.id }
                         )
@@ -462,7 +523,7 @@ fun ChatDetailScreen(
                         value = messageText,
                         onValueChange = { messageText = it },
                         placeholder = { Text("Type a message...", color = AppColors.TextGray) },
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier.weight(1f).focusRequester(inputFocusRequester),
                         shape = RoundedCornerShape(24.dp),
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = AppColors.AccentOrange, unfocusedBorderColor = AppColors.TextGray.copy(alpha = 0.5f),
@@ -563,9 +624,37 @@ fun ChatDetailScreen(
                         TransformOrigin(0f, if (isSpaceAbove) 1f else 0f)
                     }
 
-                    // 3. The WhatsApp Drag States
-                    val emojis = listOf("❤️", "😂", "😮", "😢", "🙏", "👍")
-                    var hoveredIndex by remember { mutableStateOf(-1) }
+                    // 3. Dynamic Hover Calculation!
+                    LaunchedEffect(activeReactionDragPosition, menuX, menuY) {
+                        if (activeReactionDragPosition != null && reactionMenuData != null) {
+                            val dragPos = activeReactionDragPosition!!
+                            val initialPos = reactionMenuData!!.initialTouch
+
+                            val isSpaceAbove = localBounds.top > menuHeightPx + 50f
+                            val dragDistanceY = dragPos.y - initialPos.y
+                            val swipeThreshold = with(density) { 10.dp.toPx() } // ~30 pixels
+
+                            // Require them to drag 20dp towards the menu before activating
+                            val hasSwipedTowardsMenu = if (isSpaceAbove) {
+                                dragDistanceY < -swipeThreshold // Swiped UP
+                            } else {
+                                dragDistanceY > swipeThreshold  // Swiped DOWN
+                            }
+
+                            if (hasSwipedTowardsMenu) {
+                                val localX = dragPos.x - menuX
+                                if (localX >= -50f && localX <= menuWidthPx + 50f) {
+                                    val itemWidth = menuWidthPx / emojis.size
+                                    val clampedX = localX.coerceIn(0f, menuWidthPx - 1f)
+                                    hoveredReactionIndex = (clampedX / itemWidth).toInt()
+                                } else {
+                                    hoveredReactionIndex = -1
+                                }
+                            } else {
+                                hoveredReactionIndex = -1 // Finger hasn't moved enough yet
+                            }
+                        }
+                    }
 
                     Box(
                         modifier = Modifier
@@ -579,16 +668,15 @@ fun ChatDetailScreen(
                             )
                             .width(menuWidthDp)
                             .height(menuHeightDp)
-                            .clip(RoundedCornerShape(32.dp))
-                            .background(AppColors.SurfaceDark)
-                            // 4. The Magic Gesture Tracker!
+//                            .clip(RoundedCornerShape(32.dp))
+//                            .background(AppColors.SurfaceDark)
+                            // 4. Fallback for manual taps (if user just lifted finger without dragging)
                             .pointerInput(Unit) {
                                 awaitEachGesture {
                                     val down = awaitFirstDown()
+                                    down.consume()
                                     val itemWidth = menuWidthPx / emojis.size
-
-                                    // Calculate which emoji we touched initially
-                                    hoveredIndex = (down.position.x / itemWidth).toInt().coerceIn(0, emojis.size - 1)
+                                    hoveredReactionIndex = (down.position.x / itemWidth).toInt().coerceIn(0, emojis.size - 1)
 
                                     var isTracking = true
                                     while (isTracking) {
@@ -596,30 +684,42 @@ fun ChatDetailScreen(
                                         val change = event.changes.first()
 
                                         if (change.pressed) {
-                                            // Finger is dragging: update the hovered index!
-                                            hoveredIndex = (change.position.x / itemWidth).toInt().coerceIn(0, emojis.size - 1)
-                                        } else {
-                                            // Finger lifted: Trigger the reaction!
-                                            isTracking = false
-                                            if (hoveredIndex in emojis.indices) {
-                                                viewModel.sendReaction(state.messageId, emojis[hoveredIndex])
+                                            val localY = change.position.y
+                                            if (localY > -100f && localY < menuHeightPx + 100f) {
+                                                hoveredReactionIndex = (change.position.x / itemWidth).toInt().coerceIn(0, emojis.size - 1)
+                                            } else {
+                                                hoveredReactionIndex = -1
                                             }
-                                            reactionMenuData = null
-                                            hoveredIndex = -1
+                                        } else {
+                                            isTracking = false
+                                            if (hoveredReactionIndex != -1 && hoveredReactionIndex in emojis.indices) {
+                                                // 1. Emoji selected via tap/short drag! Send and close.
+                                                viewModel.sendReaction(state.messageId, emojis[hoveredReactionIndex])
+                                                reactionMenuData = null
+                                            }
+                                            hoveredReactionIndex = -1
                                         }
                                     }
                                 }
                             }
                     ) {
+                        // 👇 2. THE BACKGROUND LAYER
+                        // This stays perfectly rounded and sits behind the emojis.
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(AppColors.SurfaceDark, RoundedCornerShape(32.dp))
+                        )
+                        // 👇 3. THE FOREGROUND LAYER (Emojis)
+                        // Because the parent isn't clipped, these can grow over the edges!
                         Row(
                             modifier = Modifier.fillMaxSize(),
                             horizontalArrangement = Arrangement.SpaceEvenly,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             emojis.forEachIndexed { index, emoji ->
-                                // 5. Smoothly animate the scale of the emoji under the finger!
                                 val scale by animateFloatAsState(
-                                    targetValue = if (hoveredIndex == index) 1.6f else 1f,
+                                    targetValue = if (hoveredReactionIndex == index) 1.6f else 1f,
                                     animationSpec = androidx.compose.animation.core.spring(
                                         dampingRatio = androidx.compose.animation.core.Spring.DampingRatioMediumBouncy,
                                         stiffness = androidx.compose.animation.core.Spring.StiffnessLow
@@ -633,8 +733,7 @@ fun ChatDetailScreen(
                                     modifier = Modifier.graphicsLayer {
                                         scaleX = scale
                                         scaleY = scale
-                                        // Slight lift effect when hovered
-                                        translationY = if (hoveredIndex == index) -15f else 0f
+//                                        translationY = if (hoveredReactionIndex == index) -15f else 0f
                                     }
                                 )
                             }
@@ -660,39 +759,26 @@ fun AnimatedMessageBubble(
     repliedSender: String?,
     reactionEmoji: String?,
     onClick: () -> Unit,
-    onLongPress: (Rect, Dp, Dp, Dp, Dp) -> Unit,
+    onLongPress: (Rect, Dp, Dp, Dp, Dp, Offset) -> Unit,
+    onLongPressDrag: (Offset) -> Unit,
+    onLongPressEnd: (Boolean) -> Unit,
     onSwipeToReply: () -> Unit
 ) {
-    // 1. Simple, predictable state
-    var targetAlpha by remember { mutableFloatStateOf(if (playAnimation) 0f else 1f) }
-    var targetOffset by remember { mutableFloatStateOf(if (playAnimation) 100f else 0f) }
+    // 👇 2. Remove the 'hasAnimated' rememberSaveable entirely.
+    // Instead, strictly obey the parent's command using Animatable.
+    val alphaAnim = remember { androidx.compose.animation.core.Animatable(if (playAnimation) 0.01f else 1f) }
+    val offsetAnim = remember { androidx.compose.animation.core.Animatable(if (playAnimation) 100f else 0f) }
 
-    // 2. Trigger animation immediately if it's a new message
-    LaunchedEffect(Unit) {
-        if (playAnimation) {
-            targetAlpha = 1f
-            targetOffset = 0f
-        }
-    }
-
-    // 3. Fallback: If it gets pushed down the list, instantly snap to visible
     LaunchedEffect(playAnimation) {
-        if (!playAnimation) {
-            targetAlpha = 1f
-            targetOffset = 0f
+        if (playAnimation) {
+            launch { alphaAnim.animateTo(1f, tween(250)) }
+            launch { offsetAnim.animateTo(0f, androidx.compose.animation.core.spring(dampingRatio = androidx.compose.animation.core.Spring.DampingRatioMediumBouncy)) }
+        } else {
+            // Instantly snap to visible if scrolling history
+            launch { alphaAnim.snapTo(1f) }
+            launch { offsetAnim.snapTo(0f) }
         }
     }
-
-    val alpha by animateFloatAsState(
-        targetValue = targetAlpha,
-        animationSpec = tween(250),
-        label = "alpha"
-    )
-    val offset by animateFloatAsState(
-        targetValue = targetOffset,
-        animationSpec = androidx.compose.animation.core.spring(dampingRatio = androidx.compose.animation.core.Spring.DampingRatioMediumBouncy),
-        label = "offset"
-    )
 
     val swipeOffset = remember { androidx.compose.animation.core.Animatable(0f) }
     val coroutineScope = rememberCoroutineScope()
@@ -701,13 +787,14 @@ fun AnimatedMessageBubble(
     Column(
         // 👇 THE FIX: Bypass the graphicsLayer cache bug by using physical layout modifiers!
         modifier = Modifier
-            .offset {
-                androidx.compose.ui.unit.IntOffset(
-                    x = if (isMe) (offset / 2).toInt() else (-offset / 2).toInt(),
-                    y = offset.toInt()
-                )
+            // 👇 1. Move BOTH the offset and alpha into the GPU layer!
+            // Do NOT use Modifier.offset() here.
+            .graphicsLayer {
+                // 👇 3. Use the .value of the explicit animations
+                translationX = if (isMe) (offsetAnim.value / 2) else (-offsetAnim.value / 2)
+                translationY = offsetAnim.value
+                this.alpha = alphaAnim.value
             }
-            .alpha(alpha)
     ) {
         // --- THE CENTERED TIMESTAMP ---
         if (showTimeHeader) {
@@ -739,46 +826,108 @@ fun AnimatedMessageBubble(
             }
         }
 
-        ChatBubble(
-            text = text,
-            isMe = isMe,
-            isOlderSame = isOlderSame,
-            isNewerSame = isNewerSame,
-            isSelected = isSelected,
-            repliedText = repliedText,
-            repliedSender = repliedSender,
-            reactionEmoji = reactionEmoji,
-            onClick = onClick,
-            onLongPress = onLongPress,
-            modifier = Modifier
-                .graphicsLayer { translationX = swipeOffset.value }
-                .pointerInput(Unit) {
-                    var hasTriggeredHaptic = false
-                    detectHorizontalDragGestures(
-                        onDragEnd = {
-                            if (swipeOffset.value > 120f) onSwipeToReply()
-                            coroutineScope.launch { swipeOffset.animateTo(0f, androidx.compose.animation.core.spring(dampingRatio = androidx.compose.animation.core.Spring.DampingRatioMediumBouncy)) }
-                            hasTriggeredHaptic = false
-                        },
-                        onDragCancel = {
-                            coroutineScope.launch { swipeOffset.animateTo(0f, androidx.compose.animation.core.spring(dampingRatio = androidx.compose.animation.core.Spring.DampingRatioMediumBouncy)) }
-                            hasTriggeredHaptic = false
-                        },
-                        onHorizontalDrag = { change, dragAmount ->
-                            change.consume()
-                            val newOffset = (swipeOffset.value + dragAmount).coerceIn(0f, 200f)
-                            coroutineScope.launch { swipeOffset.snapTo(newOffset) }
+        // 👇 1. Wrap the ChatBubble in a Box to layer the Icon behind it
+        Box(
+            modifier = Modifier.fillMaxWidth(),
+            // Align to the right for "Me", left for "Them"
+            contentAlignment = if (isMe) Alignment.CenterEnd else Alignment.CenterStart
+        ) {
 
-                            if (newOffset > 120f && !hasTriggeredHaptic) {
-                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                hasTriggeredHaptic = true
-                            } else if (newOffset < 120f) {
-                                hasTriggeredHaptic = false
-                            }
-                        }
-                    )
+            // 👇 2. THE REPLY ICON (Reveals dynamically based on swipe distance)
+            val iconAlpha = (abs(swipeOffset.value) / 120f).coerceIn(0f, 1f)
+
+            if (iconAlpha > 0f) {
+                Box(
+                    modifier = Modifier
+                        .padding(
+                            start = if (isMe) 16.dp else 0.dp,
+                            end = if (isMe) 0.dp else 16.dp
+                        )
+                        .graphicsLayer {
+                            this.alpha = iconAlpha
+                            // Add a subtle pop-in scaling effect
+                            val scale = 0.5f + (0.5f * iconAlpha)
+                            scaleX = scale
+                            scaleY = scale
+                        },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(32.dp)
+                            .clip(CircleShape)
+                            .background(AppColors.SurfaceDark), // Matches the reaction menu style
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.Reply,
+                            contentDescription = "Reply",
+                            tint = AppColors.TextPrimary,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
                 }
-        )
+            }
+
+            // 👇 3. THE CHAT BUBBLE
+            ChatBubble(
+                text = text,
+                isMe = isMe,
+                isOlderSame = isOlderSame,
+                isNewerSame = isNewerSame,
+                isSelected = isSelected,
+                repliedText = repliedText,
+                repliedSender = repliedSender,
+                reactionEmoji = reactionEmoji,
+                onClick = onClick,
+                onLongPress = onLongPress,
+                onLongPressDrag = onLongPressDrag,
+                onLongPressEnd = onLongPressEnd,
+                modifier = Modifier
+                    .graphicsLayer { translationX = swipeOffset.value }
+                    .pointerInput(Unit) {
+                        var hasTriggeredHaptic = false
+                        detectHorizontalDragGestures(
+                            onDragEnd = {
+                                // 👇 Use absolute value since offset can be negative now
+                                if (abs(swipeOffset.value) > 120f) onSwipeToReply()
+                                coroutineScope.launch {
+                                    swipeOffset.animateTo(0f, androidx.compose.animation.core.spring(dampingRatio = androidx.compose.animation.core.Spring.DampingRatioMediumBouncy))
+                                }
+                                hasTriggeredHaptic = false
+                            },
+                            onDragCancel = {
+                                coroutineScope.launch {
+                                    swipeOffset.animateTo(0f, androidx.compose.animation.core.spring(dampingRatio = androidx.compose.animation.core.Spring.DampingRatioMediumBouncy))
+                                }
+                                hasTriggeredHaptic = false
+                            },
+                            onHorizontalDrag = { change, dragAmount ->
+                                change.consume()
+
+                                // 👇 4. THE DIRECTIONAL LOGIC
+                                val newOffset = if (isMe) {
+                                    // Me: Swipe Right-to-Left (Negative numbers)
+                                    (swipeOffset.value + dragAmount).coerceIn(-200f, 0f)
+                                } else {
+                                    // Them: Swipe Left-to-Right (Positive numbers)
+                                    (swipeOffset.value + dragAmount).coerceIn(0f, 200f)
+                                }
+
+                                coroutineScope.launch { swipeOffset.snapTo(newOffset) }
+
+                                val isPastThreshold = abs(newOffset) > 120f
+                                if (isPastThreshold && !hasTriggeredHaptic) {
+                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    hasTriggeredHaptic = true
+                                } else if (!isPastThreshold) {
+                                    hasTriggeredHaptic = false
+                                }
+                            }
+                        )
+                    }
+            )
+        }
         Spacer(modifier = Modifier.height(if (isNewerSame) 4.dp else 16.dp))
     }
 }
@@ -796,8 +945,12 @@ fun ChatBubble(
     reactionEmoji: String?,
     modifier: Modifier = Modifier,
     onClick: () -> Unit,
-    onLongPress: (Rect, Dp, Dp, Dp, Dp) -> Unit
+    onLongPress: (Rect, Dp, Dp, Dp, Dp, Offset) -> Unit,
+    onLongPressDrag: (Offset) -> Unit,
+    onLongPressEnd: (Boolean) -> Unit
 ) {
+    val haptic = LocalHapticFeedback.current
+
     val topStart = if (!isMe && isOlderSame) 4.dp else 16.dp
     val bottomStart = if (!isMe && isNewerSame) 4.dp else 16.dp
     val topEnd = if (isMe && isOlderSame) 4.dp else 16.dp
@@ -820,6 +973,7 @@ fun ChatBubble(
 
     // 👇 1. Track the coordinates!
     var bubbleBounds by remember { mutableStateOf(Rect.Zero) }
+    val bubbleShape = RoundedCornerShape(topStart, topEnd, bottomEnd, bottomStart)
 
     BoxWithConstraints(
         modifier = modifier.fillMaxWidth(),
@@ -839,16 +993,75 @@ fun ChatBubble(
                         .onGloballyPositioned { coordinates ->
                             bubbleBounds = coordinates.boundsInRoot()
                         }
-                        .clip(RoundedCornerShape(topStart, topEnd, bottomEnd, bottomStart))
-                        .background(animatedBackgroundColor)
+                        .background(
+                            color = animatedBackgroundColor,
+                            shape = bubbleShape
+                        )
+                        .clip(bubbleShape)
                         .pointerInput(Unit) {
-                            detectTapGestures(
-                                onTap = { onClick() },
-                                // 👇 3. Pass the bounds and the corner radii upward!
-                                onLongPress = {
-                                    onLongPress(bubbleBounds, topStart, topEnd, bottomStart, bottomEnd)
+                            val slop = viewConfiguration.touchSlop
+
+                            awaitEachGesture {
+                                val down = awaitFirstDown()
+                                var isTap = false
+                                var isLongPress = false
+
+                                // Step 1: Wait to see what kind of gesture this is
+                                try {
+                                    withTimeout(400L) { // 400ms is standard long-press
+                                        var current = down
+                                        while (current.pressed) {
+                                            val event = awaitPointerEvent()
+                                            current = event.changes.first()
+                                            val distance =
+                                                (current.position - down.position).getDistance()
+
+                                            if (distance > slop) {
+                                                // They moved too much! Cancel long-press, let the parent handle the swipe-to-reply
+                                                return@withTimeout
+                                            }
+                                        }
+                                        isTap = true // They lifted before timeout
+                                    }
+                                } catch (e: androidx.compose.ui.input.pointer.PointerEventTimeoutCancellationException) {
+                                    isLongPress = true // Timeout hit without moving -> Long Press!
                                 }
-                            )
+
+                                // Step 2: Execute the action
+                                if (isTap) {
+                                    onClick()
+                                } else if (isLongPress) {
+                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    // 👇 Calculate the global position of the finger
+                                    val globalTouch = bubbleBounds.topLeft + down.position
+
+                                    // 👇 Pass it up to the parent!
+                                    onLongPress(bubbleBounds, topStart, topEnd, bottomStart, bottomEnd, globalTouch)
+
+                                    // Step 3: Start tracking the continuous drag
+                                    var tracking = true
+                                    var hasDragged = false
+
+                                    while (tracking) {
+                                        val event = awaitPointerEvent()
+                                        val change = event.changes.first()
+
+                                        if (change.pressed) {
+                                            val distance =
+                                                (change.position - down.position).getDistance()
+                                            if (distance > slop) hasDragged = true
+
+                                            // Convert local touch to global screen coordinates
+                                            val globalPos = bubbleBounds.topLeft + change.position
+                                            onLongPressDrag(globalPos)
+                                            change.consume()
+                                        } else {
+                                            tracking = false
+                                            onLongPressEnd(hasDragged)
+                                        }
+                                    }
+                                }
+                            }
                         }
                         .padding(horizontal = 12.dp, vertical = 10.dp)
                 ) {
