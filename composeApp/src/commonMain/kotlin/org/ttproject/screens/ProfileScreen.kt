@@ -11,6 +11,7 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -35,10 +36,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -82,8 +87,10 @@ fun ProfileScreen(
     val uiState by viewModel.uiState.collectAsState()
     var isAvatarExpanded by remember { mutableStateOf(false) }
 
-    // 👇 NEW: State for the Edit Profile Modal
-    var isEditProfileModalOpen by remember { mutableStateOf(false) }
+    // 👇 1. THREE SEPARATE MODAL STATES
+    var isEditUsernameModalOpen by remember { mutableStateOf(false) }
+    var isEditBioModalOpen by remember { mutableStateOf(false) }
+    var isEditGearModalOpen by remember { mutableStateOf(false) }
 
     val scope = rememberCoroutineScope()
     var imageToUpload by remember { mutableStateOf<ByteArray?>(null) }
@@ -157,81 +164,87 @@ fun ProfileScreen(
                 )
             }
 
-            // 👇 NEW: EDIT PROFILE DIALOG
-            if (isEditProfileModalOpen) {
-                EditProfileDialog(
+            // --- 👇 2. THE THREE SEPARATE DIALOGS ---
+
+            if (isEditUsernameModalOpen) {
+                EditUsernameDialog(
                     initialName = userData.name ?: "",
-                    initialBlade = userData.blade ?: "Butterfly Viscaria",
-                    initialForehand = userData.rubberFh ?: "Tenergy 05",
-                    initialBackhand = userData.rubberBh ?: "DHS Hurricane 3 Neo",
-                    onDismiss = { isEditProfileModalOpen = false },
-                    onSave = { newName, newBlade, newFh, newBh ->
-                        // 👇 Call ViewModel to update data!
-                        viewModel.updateProfile(newName, newBlade, newFh, newBh)
-                        isEditProfileModalOpen = false
+                    onDismiss = { isEditUsernameModalOpen = false },
+                    onSave = { newName ->
+                        // Pass the new name, but keep the existing gear/bio data!
+                        viewModel.updateProfile(newName, userData.blade ?: "", userData.rubberFh ?: "", userData.rubberBh ?: "")
+                        isEditUsernameModalOpen = false
                     }
                 )
             }
 
-            // 👇 2. UPDATE YOUR MAIN COLUMN MODIFIER
+            if (isEditBioModalOpen) {
+                EditBioDialog(
+                    // TODO: You will need to add `bio` to your ProfileState.Success class!
+                    initialBio = "", // Replace with: userData.bio ?: ""
+                    onDismiss = { isEditBioModalOpen = false },
+                    onSave = { newBio ->
+                        // TODO: Add bio to your viewModel.updateProfile signature
+                        // viewModel.updateProfile(userData.name ?: "", userData.blade ?: "", userData.rubberFh ?: "", userData.rubberBh ?: "", newBio)
+                        isEditBioModalOpen = false
+                    }
+                )
+            }
+
+            if (isEditGearModalOpen) {
+                EditGearDialog(
+                    initialBlade = userData.blade ?: "Butterfly Viscaria",
+                    initialForehand = userData.rubberFh ?: "Tenergy 05",
+                    initialBackhand = userData.rubberBh ?: "DHS Hurricane 3 Neo",
+                    onDismiss = { isEditGearModalOpen = false },
+                    onSave = { newBlade, newFh, newBh ->
+                        // Pass the existing name, update the gear
+                        viewModel.updateProfile(userData.name ?: "", newBlade, newFh, newBh)
+                        isEditGearModalOpen = false
+                    }
+                )
+            }
+
+            // --- MAIN CONTENT ---
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    // 1st: Shave off the bottom so it never touches the Nav Bar
-                    .padding(bottom = bottomNavPadding)
-                    // 2nd: Make the remaining safe area scrollable
                     .verticalScroll(scrollState)
-                    // 3rd: Add your inner aesthetic padding
-                    .padding(horizontal = 24.dp, vertical = 32.dp),
+                    .padding(start = 24.dp, end = 24.dp, top = 32.dp, bottom = 80.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                AnimatedVisibility(
-                    visible = animateTrigger,
-                    enter = fadeIn(tween(400)) + slideInVertically(tween(400)) { 50 }
-                ) {
+                AnimatedVisibility(visible = animateTrigger, enter = fadeIn(tween(400)) + slideInVertically(tween(400)) { 50 }) {
                     Column {
                         ProfileHeader(
                             profileData = userData,
-                            onAvatarClick = { isAvatarExpanded = true  },
+                            onAvatarClick = { isAvatarExpanded = true },
                             onPhotoEditClick = { singleImagePicker.launch() },
-                            // 👇 Pass callback to open text edit modal
-                            onProfileEditClick = { isEditProfileModalOpen = true }
+                            // 👇 Pass the new specific triggers
+                            onUsernameEditClick = { isEditUsernameModalOpen = true },
+                            onBioEditClick = { isEditBioModalOpen = true }
                         )
                         Spacer(modifier = Modifier.height(32.dp))
                     }
                 }
 
-                AnimatedVisibility(
-                    visible = animateTrigger,
-                    enter = fadeIn(tween(400, delayMillis = 150)) + slideInVertically(tween(400, delayMillis = 150)) { 50 }
-                ) {
+                AnimatedVisibility(visible = animateTrigger, enter = fadeIn(tween(400, delayMillis = 150)) + slideInVertically(tween(400, delayMillis = 150)) { 50 }) {
                     Column {
                         GearSection(
                             profileData = userData,
-                            // 👇 Pass callback to open text edit modal
-                            onGearEditClick = { isEditProfileModalOpen = true }
+                            onGearEditClick = { isEditGearModalOpen = true }
                         )
                         Spacer(modifier = Modifier.height(16.dp))
                     }
                 }
 
-                AnimatedVisibility(
-                    visible = animateTrigger,
-                    enter = fadeIn(tween(400, delayMillis = 300)) + slideInVertically(tween(400, delayMillis = 300)) { 50 }
-                ) {
+                AnimatedVisibility(visible = animateTrigger, enter = fadeIn(tween(400, delayMillis = 300)) + slideInVertically(tween(400, delayMillis = 300)) { 50 }) {
                     Column {
                         SettingsAndLogout(
-                            currentLanguage = currentLanguage,
-                            currentThemeMode = currentThemeMode,
-                            onLogoutClick = {
-                                viewModel.clearProfile()
-                                onLogoutClick()
-                            },
-                            onChangeLanguage = onChangeLanguage,
-                            onChangeTheme = onChangeTheme,
-                            viewModel = viewModel
+                            currentLanguage = currentLanguage, currentThemeMode = currentThemeMode,
+                            onLogoutClick = { viewModel.clearProfile(); onLogoutClick() },
+                            onChangeLanguage = onChangeLanguage, onChangeTheme = onChangeTheme, viewModel = viewModel
                         )
-//                        Spacer(modifier = Modifier.height(80.dp))
+                        Spacer(modifier = Modifier.height(20.dp))
                     }
                 }
             }
@@ -294,14 +307,19 @@ fun EditProfileDialog(
 }
 
 @Composable
-private fun EditTextField(label: String, value: String, onValueChange: (String) -> Unit) {
+private fun EditTextField(
+    label: String,
+    value: String,
+    modifier: Modifier = Modifier, // 👇 Added modifier parameter
+    onValueChange: (String) -> Unit
+) {
     Column(modifier = Modifier.fillMaxWidth()) {
         Text(text = label.uppercase(), color = AppColors.TextGray, fontSize = 12.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.5.sp)
         Spacer(modifier = Modifier.height(6.dp))
         OutlinedTextField(
             value = value,
             onValueChange = onValueChange,
-            modifier = Modifier.fillMaxWidth(),
+            modifier = modifier.fillMaxWidth(), // 👇 Applied it here!
             singleLine = true,
             colors = OutlinedTextFieldDefaults.colors(
                 focusedTextColor = Color.White,
@@ -319,117 +337,75 @@ private fun EditTextField(label: String, value: String, onValueChange: (String) 
 private fun ProfileHeader(
     profileData: ProfileState.Success,
     onPhotoEditClick: () -> Unit,
-    onProfileEditClick: () -> Unit, // 👇 Added to trigger edit
+    onUsernameEditClick: () -> Unit, // Renamed
+    onBioEditClick: () -> Unit,      // Added
     onAvatarClick: () -> Unit
 ) {
     val username = profileData.name ?: "Player"
     val imageUrl = profileData.imageUrl
-    val avatarGradient = Brush.linearGradient(
-        colors = listOf(Color(0xFFFF4B4B), Color(0xFF9C27B0))
-    )
+
+    // TODO: Pull this from profileData once you add it to your state!
+    val bio = "" // Replace with: profileData.bio
+
+    val avatarGradient = Brush.linearGradient(colors = listOf(Color(0xFFFF4B4B), Color(0xFF9C27B0)))
 
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Box(
-            modifier = Modifier
-                .size(100.dp)
-                .clickable { onAvatarClick() }
-        ) {
+        Box(modifier = Modifier.size(100.dp).clickable { onAvatarClick() }) {
             Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .clip(CircleShape)
-                    .background(AppColors.SurfaceDark)
-                    .border(4.dp, avatarGradient, CircleShape),
+                modifier = Modifier.fillMaxSize().clip(CircleShape).background(AppColors.SurfaceDark).border(4.dp, avatarGradient, CircleShape),
                 contentAlignment = Alignment.Center
             ) {
                 if (!imageUrl.isNullOrBlank()) {
-                    AsyncImage(
-                        model = imageUrl,
-                        contentDescription = "Profile Picture",
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop,
-                        alignment = BiasAlignment(0f, 0f)
-                    )
+                    AsyncImage(model = imageUrl, contentDescription = "Profile Picture", modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop, alignment = BiasAlignment(0f, 0f))
                 } else {
-                    Text(
-                        text = getInitials(username),
-                        color = AppColors.TextPrimary,
-                        fontSize = 32.sp,
-                        fontWeight = FontWeight.Bold
-                    )
+                    Text(text = getInitials(username), color = AppColors.TextPrimary, fontSize = 32.sp, fontWeight = FontWeight.Bold)
                 }
             }
 
-            Box(
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .offset(x = (-2).dp, y = (-2).dp)
-                    .clip(CircleShape)
-                    .background(AppColors.Background)
-                    .padding(3.dp)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(26.dp)
-                        .clip(CircleShape)
-                        .clickable { onPhotoEditClick() }
-                        .background(AppColors.AccentOrange),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.CameraAlt,
-                        contentDescription = "Edit Profile Picture",
-                        tint = Color.White,
-                        modifier = Modifier.size(14.dp)
-                    )
+            Box(modifier = Modifier.align(Alignment.BottomEnd).offset(x = (-2).dp, y = (-2).dp).clip(CircleShape).background(AppColors.Background).padding(3.dp)) {
+                Box(modifier = Modifier.size(26.dp).clip(CircleShape).clickable { onPhotoEditClick() }.background(AppColors.AccentOrange), contentAlignment = Alignment.Center) {
+                    Icon(Icons.Filled.CameraAlt, contentDescription = "Edit Profile Picture", tint = Color.White, modifier = Modifier.size(14.dp))
                 }
             }
         }
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // 👇 Make the username row clickable to open the edit modal
+        // USERNAME
         Row(
             verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.clip(RoundedCornerShape(8.dp)).clickable { onUsernameEditClick() }.padding(horizontal = 8.dp, vertical = 4.dp)
+        ) {
+            Text(text = username, color = AppColors.TextPrimary, fontSize = 28.sp, fontWeight = FontWeight.ExtraBold)
+            Spacer(modifier = Modifier.width(8.dp))
+            Icon(Icons.Default.Edit, contentDescription = "Edit Username", tint = AppColors.TextGray, modifier = Modifier.size(18.dp))
+        }
+
+        // 👇 NEW: BIO SECTION
+        Box(
             modifier = Modifier
                 .clip(RoundedCornerShape(8.dp))
-                .clickable { onProfileEditClick() }
-                .padding(horizontal = 8.dp, vertical = 4.dp)
+                .clickable { onBioEditClick() }
+                .padding(horizontal = 16.dp, vertical = 8.dp)
         ) {
             Text(
-                text = username,
-                color = AppColors.TextPrimary,
-                fontSize = 28.sp,
-                fontWeight = FontWeight.ExtraBold
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Icon(Icons.Default.Edit, contentDescription = "Edit Profile", tint = AppColors.TextGray, modifier = Modifier.size(18.dp))
-        }
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(Color.Black.copy(alpha = 0.3f))
-                    .border(1.dp, Color(0xFFFF4B4B).copy(alpha = 0.5f), RoundedCornerShape(16.dp))
-                    .padding(horizontal = 12.dp, vertical = 6.dp)
-            ) {
-                Text(
-                    text = "ELO ${profileData.elo}",
-                    color = Color(0xFFFF4B4B),
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-            Spacer(modifier = Modifier.width(12.dp))
-            Text(
-                text = "Win Rate: ${profileData.winRate}",
-                color = AppColors.TextGray,
-                fontSize = 14.sp
+                text = bio.takeIf { it.isNotBlank() } ?: "Add a bio...",
+                color = if (bio.isNotBlank()) AppColors.TextPrimary else AppColors.TextGray,
+                fontSize = 14.sp,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center
             )
         }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // STATS
+//        Row(verticalAlignment = Alignment.CenterVertically) {
+//            Box(modifier = Modifier.clip(RoundedCornerShape(16.dp)).background(Color.Black.copy(alpha = 0.3f)).border(1.dp, Color(0xFFFF4B4B).copy(alpha = 0.5f), RoundedCornerShape(16.dp)).padding(horizontal = 12.dp, vertical = 6.dp)) {
+//                Text("ELO ${profileData.elo}", color = Color(0xFFFF4B4B), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+//            }
+//            Spacer(modifier = Modifier.width(12.dp))
+//            Text("Win Rate: ${profileData.winRate}", color = AppColors.TextGray, fontSize = 14.sp)
+//        }
     }
 }
 
@@ -1024,5 +1000,184 @@ private fun ThemeOptionRow(
         Spacer(modifier = Modifier.width(16.dp))
 
         Text(text = text, color = textColor, fontSize = 15.sp, fontWeight = fontWeight)
+    }
+}
+
+@Composable
+fun EditUsernameDialog(
+    initialName: String,
+    onDismiss: () -> Unit,
+    onSave: (String) -> Unit
+) {
+    var name by remember { mutableStateOf(initialName) }
+    val focusRequester = remember { androidx.compose.ui.focus.FocusRequester() }
+
+    LaunchedEffect(Unit) {
+        focusRequester.requestFocus()
+    }
+
+    androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
+        // 👇 MOVED INSIDE THE DIALOG!
+        val focusManager = LocalFocusManager.current
+        val keyboardController = LocalSoftwareKeyboardController.current
+
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(24.dp))
+                .background(AppColors.SurfaceDark)
+                .pointerInput(Unit) {
+                    detectTapGestures(onTap = {
+                        focusManager.clearFocus()
+                        keyboardController?.hide()
+                    })
+                }
+                .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text("Edit Username", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+            Spacer(modifier = Modifier.height(24.dp))
+
+            EditTextField(
+                label = stringResource(SharedRes.string.username),
+                value = name,
+                modifier = Modifier.focusRequester(focusRequester)
+            ) { name = it }
+
+            Spacer(modifier = Modifier.height(24.dp))
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                TextButton(onClick = onDismiss) { Text(stringResource(SharedRes.string.cancel), color = Color.Gray) }
+                Spacer(modifier = Modifier.width(8.dp))
+                Button(onClick = { onSave(name) }, colors = ButtonDefaults.buttonColors(containerColor = AppColors.AccentOrange)) {
+                    Text(stringResource(SharedRes.string.save), color = Color.White)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun EditBioDialog(
+    initialBio: String,
+    onDismiss: () -> Unit,
+    onSave: (String) -> Unit
+) {
+    var bio by remember { mutableStateOf(initialBio) }
+    val focusRequester = remember { androidx.compose.ui.focus.FocusRequester() }
+
+    LaunchedEffect(Unit) {
+        focusRequester.requestFocus()
+    }
+
+    androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
+        // 👇 MOVED INSIDE THE DIALOG!
+        val focusManager = LocalFocusManager.current
+        val keyboardController = LocalSoftwareKeyboardController.current
+
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(24.dp))
+                .background(AppColors.SurfaceDark)
+                .pointerInput(Unit) {
+                    detectTapGestures(onTap = {
+                        focusManager.clearFocus()
+                        keyboardController?.hide()
+                    })
+                }
+                .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text("Edit Bio", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+            Spacer(modifier = Modifier.height(24.dp))
+
+            OutlinedTextField(
+                value = bio,
+                onValueChange = { if (it.length <= 150) bio = it },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .focusRequester(focusRequester),
+                minLines = 3,
+                maxLines = 5,
+                placeholder = { Text("Tell everyone a bit about your playstyle...", color = AppColors.TextGray.copy(alpha = 0.5f)) },
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedTextColor = Color.White, unfocusedTextColor = Color.White,
+                    focusedBorderColor = AppColors.AccentOrange, unfocusedBorderColor = Color.White.copy(alpha = 0.3f),
+                    cursorColor = AppColors.AccentOrange
+                ),
+                shape = RoundedCornerShape(12.dp)
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                TextButton(onClick = onDismiss) { Text(stringResource(SharedRes.string.cancel), color = Color.Gray) }
+                Spacer(modifier = Modifier.width(8.dp))
+                Button(onClick = { onSave(bio) }, colors = ButtonDefaults.buttonColors(containerColor = AppColors.AccentOrange)) {
+                    Text(stringResource(SharedRes.string.save), color = Color.White)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun EditGearDialog(
+    initialBlade: String,
+    initialForehand: String,
+    initialBackhand: String,
+    onDismiss: () -> Unit,
+    onSave: (String, String, String) -> Unit
+) {
+    var blade by remember { mutableStateOf(initialBlade) }
+    var forehand by remember { mutableStateOf(initialForehand) }
+    var backhand by remember { mutableStateOf(initialBackhand) }
+    val focusRequester = remember { androidx.compose.ui.focus.FocusRequester() }
+
+    LaunchedEffect(Unit) {
+        focusRequester.requestFocus()
+    }
+
+    androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
+        // 👇 MOVED INSIDE THE DIALOG!
+        val focusManager = LocalFocusManager.current
+        val keyboardController = LocalSoftwareKeyboardController.current
+
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(24.dp))
+                .background(AppColors.SurfaceDark)
+                .pointerInput(Unit) {
+                    detectTapGestures(onTap = {
+                        focusManager.clearFocus()
+                        keyboardController?.hide()
+                    })
+                }
+                .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text("Edit Gear", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+            Spacer(modifier = Modifier.height(24.dp))
+
+            EditTextField(
+                label = stringResource(SharedRes.string.blade),
+                value = blade,
+                modifier = Modifier.focusRequester(focusRequester)
+            ) { blade = it }
+
+            Spacer(modifier = Modifier.height(12.dp))
+            EditTextField(stringResource(SharedRes.string.forehand), forehand) { forehand = it }
+            Spacer(modifier = Modifier.height(12.dp))
+            EditTextField(stringResource(SharedRes.string.backhand), backhand) { backhand = it }
+
+            Spacer(modifier = Modifier.height(24.dp))
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                TextButton(onClick = onDismiss) { Text(stringResource(SharedRes.string.cancel), color = Color.Gray) }
+                Spacer(modifier = Modifier.width(8.dp))
+                Button(onClick = { onSave(blade, forehand, backhand) }, colors = ButtonDefaults.buttonColors(containerColor = AppColors.AccentOrange)) {
+                    Text(stringResource(SharedRes.string.save), color = Color.White)
+                }
+            }
+        }
     }
 }

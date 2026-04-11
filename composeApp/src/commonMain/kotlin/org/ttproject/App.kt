@@ -62,6 +62,8 @@ enum class AuthRoute {
 @Serializable
 object HomeBase
 
+val LocalIsDarkTheme = compositionLocalOf { false }
+
 @Composable
 fun App(
     pendingChatId: String? = null,
@@ -136,10 +138,25 @@ fun App(
         )
     }
 
+    // 👇 1. Actively listen to the live system theme
+    val isSystemDark = isSystemInDarkTheme()
+
+    // 👇 2. Calculate a definitive, reactive boolean that changes INSTANTLY
+    val isCurrentlyDark = remember(currentThemeMode, isSystemDark) {
+        when (currentThemeMode) {
+            ThemeMode.Light -> false
+            ThemeMode.Dark -> true
+            ThemeMode.System -> isSystemDark
+        }
+    }
+
     SetStatusBarColors(isDark = currentThemeMode == ThemeMode.Dark || (currentThemeMode == ThemeMode.System && isSystemInDarkTheme()))
 
     key(currentLanguage) {
-        CompositionLocalProvider(LocalThemeMode provides currentThemeMode) {
+        CompositionLocalProvider(
+            LocalThemeMode provides currentThemeMode,
+            LocalIsDarkTheme provides isCurrentlyDark // 👇 Pass the live boolean down!
+        ) {
 
 
 //            val navBackStackEntry by navController.currentBackStackEntryAsState()
@@ -253,7 +270,7 @@ fun App(
                                     // LAYER 3: BOTTOM NAV BAR
                                     // No logic needed! It's permanently glued to the HomeBase screen.
                                     if (isMobile) {
-                                        Box(modifier = Modifier.align(Alignment.BottomCenter)) {
+                                        Box(modifier = Modifier.align(Alignment.BottomCenter).zIndex(10f)) {
                                             MobileBottomNav(currentRoute = currentRoute, onNavigate = onTabNavigate)
                                         }
                                     }
@@ -311,7 +328,7 @@ fun App(
                                         }
 
                                         composable<NavRoute.Profile> {
-                                            Box(modifier = Modifier.fillMaxSize().padding(innerPadding).padding(bottom = frozenBottomPadding)) {
+                                            Box(modifier = Modifier.fillMaxSize().padding(innerPadding).padding(bottom = 0.dp)) {
                                                 if (isLoggedIn) {
                                                     ProfileScreen(
                                                         bottomNavPadding = 0.dp,

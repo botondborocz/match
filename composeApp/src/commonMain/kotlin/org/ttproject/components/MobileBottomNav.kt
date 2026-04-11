@@ -135,11 +135,7 @@ fun MobileBottomNav(
                     Box(
                         modifier = Modifier
                             .width(itemWidth)
-                            .fillMaxHeight()
-                            .clickable(
-                                interactionSource = interactionSource,
-                                indication = null // Removes the grey click splash for a cleaner look
-                            ) { onNavigate(item.route) },
+                            .fillMaxHeight(),
                         contentAlignment = Alignment.Center
                     ) {
                         if (isCoach) {
@@ -148,17 +144,30 @@ fun MobileBottomNav(
                                 item = item,
                                 isSelected = isSelected,
                                 label = label,
-                                glowColor = glowColor
+                                glowColor = glowColor,
+                                // 👇 2. Pass the click function down instead
+                                onClick = { onNavigate(item.route) }
                             )
                         } else {
                             // --- STANDARD TAB ITEM ---
-                            StandardTabItem(
-                                item = item,
-                                isSelected = isSelected,
-                                label = label,
-                                activeColor = glowColor,
-                                badgeCount = if (item.route == NavRoute.Messages) unreadChatsCount else 0
-                            )
+                            // 👇 3. Put the clickable wrapper ONLY on the standard items
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .clickable(
+                                        interactionSource = interactionSource,
+                                        indication = null
+                                    ) { onNavigate(item.route) },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                StandardTabItem(
+                                    item = item,
+                                    isSelected = isSelected,
+                                    label = label,
+                                    activeColor = glowColor,
+                                    badgeCount = if (item.route == NavRoute.Messages) unreadChatsCount else 0
+                                )
+                            }
                         }
                     }
                 }
@@ -233,7 +242,8 @@ fun CoachButton(
     item: NavigationItem,
     isSelected: Boolean,
     label: String,
-    glowColor: Color
+    glowColor: Color,
+    onClick: () -> Unit
 ) {
     // 1. Scale Animation (Bouncy Spring)
     val scale by animateFloatAsState(
@@ -265,6 +275,7 @@ fun CoachButton(
                 .size(56.dp)
                 .clip(CircleShape)
                 .background(glowColor)
+                .clickable { onClick() }
                 .padding(12.dp),
             contentAlignment = Alignment.Center
         ) {

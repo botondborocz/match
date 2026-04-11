@@ -534,7 +534,8 @@ fun ChatDetailScreen(
                         shape = RoundedCornerShape(24.dp),
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = AppColors.AccentOrange, unfocusedBorderColor = AppColors.TextGray.copy(alpha = 0.5f),
-                            focusedTextColor = AppColors.TextPrimary, unfocusedTextColor = AppColors.TextPrimary
+                            focusedTextColor = AppColors.TextPrimary, unfocusedTextColor = AppColors.TextPrimary,
+                            cursorColor = AppColors.AccentOrange
                         ),
                         maxLines = 3
                     )
