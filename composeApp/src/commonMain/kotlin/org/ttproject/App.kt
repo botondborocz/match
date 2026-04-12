@@ -142,12 +142,10 @@ fun App(
     val isSystemDark = isSystemInDarkTheme()
 
     // 👇 2. Calculate a definitive, reactive boolean that changes INSTANTLY
-    val isCurrentlyDark = remember(currentThemeMode, isSystemDark) {
-        when (currentThemeMode) {
-            ThemeMode.Light -> false
-            ThemeMode.Dark -> true
-            ThemeMode.System -> isSystemDark
-        }
+    val isCurrentlyDark = when (currentThemeMode) {
+        ThemeMode.Light -> false
+        ThemeMode.Dark -> true
+        ThemeMode.System -> isSystemDark
     }
 
     SetStatusBarColors(isDark = currentThemeMode == ThemeMode.Dark || (currentThemeMode == ThemeMode.System && isSystemInDarkTheme()))
@@ -331,7 +329,6 @@ fun App(
                                             Box(modifier = Modifier.fillMaxSize().padding(innerPadding).padding(bottom = 0.dp)) {
                                                 if (isLoggedIn) {
                                                     ProfileScreen(
-                                                        bottomNavPadding = 0.dp,
                                                         currentLanguage = currentLanguage,
                                                         currentThemeMode = currentThemeMode,
                                                         onLogoutClick = {

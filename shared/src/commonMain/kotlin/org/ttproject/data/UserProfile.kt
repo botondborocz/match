@@ -15,6 +15,10 @@ data class UserProfile(
     val blade: String? = null,
     val rubberFh: String? = null,
     val rubberBh: String? = null,
+    val bio: String? = null,
+    val birthDate: String? = null,
+    val skillLevel: String? = null,
+    val age: Int? = null
 )
 
 @Serializable
@@ -22,7 +26,10 @@ data class UpdateProfileRequest(
     val name: String,
     val blade: String,
     val forehand: String,
-    val backhand: String
+    val backhand: String,
+    val bio: String? = null,
+    val birthDate: String? = null,
+    val skillLevel: String? = null
 )
 
 @Serializable

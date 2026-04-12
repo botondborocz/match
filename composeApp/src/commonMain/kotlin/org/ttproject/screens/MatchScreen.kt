@@ -512,21 +512,21 @@ fun MatchCardContent(
 
                     Spacer(modifier = Modifier.weight(1f))
 
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier
-                            .border(1.dp, AppColors.AccentOrange, RoundedCornerShape(8.dp))
-                            .padding(horizontal = 8.dp, vertical = 4.dp)
-                    ) {
-                        Icon(Icons.Default.Star, contentDescription = null, tint = AppColors.AccentOrange, modifier = Modifier.size(14.dp))
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = "ELO ${player.elo}",
-                            color = AppColors.AccentOrange,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
+//                    Row(
+//                        verticalAlignment = Alignment.CenterVertically,
+//                        modifier = Modifier
+//                            .border(1.dp, AppColors.AccentOrange, RoundedCornerShape(8.dp))
+//                            .padding(horizontal = 8.dp, vertical = 4.dp)
+//                    ) {
+//                        Icon(Icons.Default.Star, contentDescription = null, tint = AppColors.AccentOrange, modifier = Modifier.size(14.dp))
+//                        Spacer(modifier = Modifier.width(4.dp))
+//                        Text(
+//                            text = "ELO ${player.elo}",
+//                            color = AppColors.AccentOrange,
+//                            fontSize = 12.sp,
+//                            fontWeight = FontWeight.Bold
+//                        )
+//                    }
                 }
 
                 Spacer(modifier = Modifier.height(8.dp))

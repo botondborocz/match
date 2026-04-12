@@ -23,7 +23,10 @@ import org.ttproject.data.UserProfile
 // 1. The Interface
 interface UserRepository {
     suspend fun getMyProfile(): UserProfile
-    suspend fun updateProfile(name: String, blade: String, forehand: String, backhand: String): Result<Boolean>
+    suspend fun updateProfile(
+        name: String, blade: String, forehand: String, backhand: String,
+        bio: String?, birthDate: String?, skillLevel: String? // 👈 ADDED
+    ): Result<Boolean>
     suspend fun updateLanguage(language: String): Result<Boolean>
     suspend fun uploadProfileImage(imageBytes: ByteArray): Result<Boolean>
 }
@@ -54,15 +57,14 @@ class UserRepositoryImpl(
     }
 
     override suspend fun updateProfile(
-        name: String,
-        blade: String,
-        forehand: String,
-        backhand: String
+        name: String, blade: String, forehand: String, backhand: String,
+        bio: String?, birthDate: String?, skillLevel: String?
     ): Result<Boolean> {
         return try {
             val response = httpClient.put("${SERVER_IP}/api/users/me") {
                 contentType(ContentType.Application.Json)
-                setBody(UpdateProfileRequest(name, blade, forehand, backhand))
+                // 👇 Pass the new variables into the Request object
+                setBody(UpdateProfileRequest(name, blade, forehand, backhand, bio, birthDate, skillLevel))
                 bearerAuth(tokenStorage.getToken()!!)
             }
 

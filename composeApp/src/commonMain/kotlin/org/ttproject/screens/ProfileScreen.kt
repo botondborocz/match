@@ -48,12 +48,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.DialogProperties
 import com.preat.peekaboo.image.picker.SelectionMode
 import com.preat.peekaboo.image.picker.rememberImagePickerLauncher
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 import org.ttproject.AppColors
 import org.ttproject.AppColors.TextGray
+import org.ttproject.data.Player
 import org.ttproject.shared.resources.backhand
 import org.ttproject.shared.resources.blade
 import org.ttproject.shared.resources.dark
@@ -73,10 +75,17 @@ import org.ttproject.shared.resources.cancel
 import org.ttproject.shared.resources.edit_profile
 import org.ttproject.shared.resources.save
 import org.ttproject.shared.resources.username
-
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.rememberDatePickerState
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.DropdownMenuItem
+import kotlinx.datetime.Instant
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 @Composable
 fun ProfileScreen(
-    bottomNavPadding: Dp, // 👈 1. ADD THIS PARAMETER
     currentLanguage: String = "en",
     currentThemeMode: ThemeMode = ThemeMode.System,
     onLogoutClick: () -> Unit = {},
@@ -87,10 +96,12 @@ fun ProfileScreen(
     val uiState by viewModel.uiState.collectAsState()
     var isAvatarExpanded by remember { mutableStateOf(false) }
 
-    // 👇 1. THREE SEPARATE MODAL STATES
+    // 👇 MODAL STATES
     var isEditUsernameModalOpen by remember { mutableStateOf(false) }
     var isEditBioModalOpen by remember { mutableStateOf(false) }
     var isEditGearModalOpen by remember { mutableStateOf(false) }
+    var isEditBasicInfoModalOpen by remember { mutableStateOf(false) } // 👈 NEW
+    var isMatchCardPreviewOpen by remember { mutableStateOf(false) } // 👈 NEW
 
     val scope = rememberCoroutineScope()
     var imageToUpload by remember { mutableStateOf<ByteArray?>(null) }
@@ -100,7 +111,6 @@ fun ProfileScreen(
         scope = scope,
         onResult = { byteArrays ->
             byteArrays.firstOrNull()?.let { imageBytes ->
-                println("✅ Image picked! Size: ${imageBytes.size} bytes")
                 imageToUpload = imageBytes
             }
         }
@@ -139,10 +149,6 @@ fun ProfileScreen(
             val userData = uiState as ProfileState.Success
             var animateTrigger by remember { mutableStateOf(true) }
 
-//            LaunchedEffect(Unit) {
-//                animateTrigger = true
-//            }
-
             LaunchedEffect(userData.language) {
                 if (userData.language != null && userData.language != currentLanguage) {
                     onChangeLanguage(userData.language!!)
@@ -151,7 +157,8 @@ fun ProfileScreen(
 
             val scrollState = rememberScrollState()
 
-            // AVATAR PREVIEW DIALOG
+            // --- DIALOGS ---
+
             if (isAvatarExpanded) {
                 AvatarPreviewDialog(
                     username = userData.name ?: "Player",
@@ -164,42 +171,60 @@ fun ProfileScreen(
                 )
             }
 
-            // --- 👇 2. THE THREE SEPARATE DIALOGS ---
+            // 👇 NEW: MATCHCARD PREVIEW DIALOG
+            if (isMatchCardPreviewOpen) {
+                MatchCardPreviewDialog(
+                    profileData = userData,
+                    onDismiss = { isMatchCardPreviewOpen = false }
+                )
+            }
 
+            // USERNAME DIALOG
             if (isEditUsernameModalOpen) {
                 EditUsernameDialog(
                     initialName = userData.name ?: "",
                     onDismiss = { isEditUsernameModalOpen = false },
                     onSave = { newName ->
-                        // Pass the new name, but keep the existing gear/bio data!
-                        viewModel.updateProfile(newName, userData.blade ?: "", userData.rubberFh ?: "", userData.rubberBh ?: "")
+                        viewModel.updateProfile(newName, userData.blade ?: "", userData.rubberFh ?: "", userData.rubberBh ?: "", userData.bio, userData.birthDate, userData.skillLevel)
                         isEditUsernameModalOpen = false
                     }
                 )
             }
 
+            // BIO DIALOG
             if (isEditBioModalOpen) {
                 EditBioDialog(
-                    // TODO: You will need to add `bio` to your ProfileState.Success class!
-                    initialBio = "", // Replace with: userData.bio ?: ""
+                    initialBio = userData.bio ?: "",
                     onDismiss = { isEditBioModalOpen = false },
                     onSave = { newBio ->
-                        // TODO: Add bio to your viewModel.updateProfile signature
-                        // viewModel.updateProfile(userData.name ?: "", userData.blade ?: "", userData.rubberFh ?: "", userData.rubberBh ?: "", newBio)
+                        viewModel.updateProfile(userData.name ?: "", userData.blade ?: "", userData.rubberFh ?: "", userData.rubberBh ?: "", newBio, userData.birthDate, userData.skillLevel)
                         isEditBioModalOpen = false
                     }
                 )
             }
 
+            // BASIC INFO DIALOG
+            if (isEditBasicInfoModalOpen) {
+                EditBasicInfoDialog(
+                    initialBirthDate = userData.birthDate ?: "",
+                    initialLevel = userData.skillLevel ?: "Intermediate",
+                    onDismiss = { isEditBasicInfoModalOpen = false },
+                    onSave = { newBirthDate, newLevel ->
+                        viewModel.updateProfile(userData.name ?: "", userData.blade ?: "", userData.rubberFh ?: "", userData.rubberBh ?: "", userData.bio, newBirthDate, newLevel)
+                        isEditBasicInfoModalOpen = false
+                    }
+                )
+            }
+
+            // GEAR DIALOG
             if (isEditGearModalOpen) {
                 EditGearDialog(
-                    initialBlade = userData.blade ?: "Butterfly Viscaria",
-                    initialForehand = userData.rubberFh ?: "Tenergy 05",
-                    initialBackhand = userData.rubberBh ?: "DHS Hurricane 3 Neo",
+                    initialBlade = userData.blade ?: "",
+                    initialForehand = userData.rubberFh ?: "",
+                    initialBackhand = userData.rubberBh ?: "",
                     onDismiss = { isEditGearModalOpen = false },
                     onSave = { newBlade, newFh, newBh ->
-                        // Pass the existing name, update the gear
-                        viewModel.updateProfile(userData.name ?: "", newBlade, newFh, newBh)
+                        viewModel.updateProfile(userData.name ?: "", newBlade, newFh, newBh, userData.bio, userData.birthDate, userData.skillLevel)
                         isEditGearModalOpen = false
                     }
                 )
@@ -219,11 +244,22 @@ fun ProfileScreen(
                             profileData = userData,
                             onAvatarClick = { isAvatarExpanded = true },
                             onPhotoEditClick = { singleImagePicker.launch() },
-                            // 👇 Pass the new specific triggers
                             onUsernameEditClick = { isEditUsernameModalOpen = true },
-                            onBioEditClick = { isEditBioModalOpen = true }
+                            onBioEditClick = { isEditBioModalOpen = true },
+                            onPreviewMatchcardClick = { isMatchCardPreviewOpen = true } // 👈 NEW
                         )
                         Spacer(modifier = Modifier.height(32.dp))
+                    }
+                }
+
+                // 👇 NEW: BASIC INFO SECTION
+                AnimatedVisibility(visible = animateTrigger, enter = fadeIn(tween(400, delayMillis = 100)) + slideInVertically(tween(400, delayMillis = 100)) { 50 }) {
+                    Column {
+                        BasicInfoSection(
+                            profileData = userData,
+                            onEditClick = { isEditBasicInfoModalOpen = true }
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
                     }
                 }
 
@@ -252,20 +288,143 @@ fun ProfileScreen(
     }
 }
 
-// 👇 NEW: Edit Profile Dialog Composable
+// 👇 NEW: MatchCard Preview Overlay
 @Composable
-fun EditProfileDialog(
-    initialName: String,
-    initialBlade: String,
-    initialForehand: String,
-    initialBackhand: String,
-    onDismiss: () -> Unit,
-    onSave: (String, String, String, String) -> Unit
+fun MatchCardPreviewDialog(
+    profileData: ProfileState.Success,
+    onDismiss: () -> Unit
 ) {
-    var name by remember { mutableStateOf(initialName) }
-    var blade by remember { mutableStateOf(initialBlade) }
-    var forehand by remember { mutableStateOf(initialForehand) }
-    var backhand by remember { mutableStateOf(initialBackhand) }
+    // Map ProfileState to the Player object your MatchCard expects
+    val meAsPlayer = Player(
+        id = "me",
+        username = profileData.name ?: "Player",
+        skillLevel = profileData.skillLevel ?: "Beginner",
+        age = profileData.age ?: 0,
+        elo = profileData.elo,
+        distanceKm = 0,
+        imageUrl = profileData.imageUrl
+    )
+
+    val cardGradient = Brush.verticalGradient(
+        colors = listOf(Color(0xFF3B4CCA), Color(0xFF151C2C))
+    )
+
+    androidx.compose.ui.window.Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false) // Allows it to be full screen width
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.85f))
+                .clickable(
+                    interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                    indication = null,
+                    onClick = onDismiss
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    text = "THIS IS HOW OTHERS SEE YOU",
+                    color = Color.White.copy(alpha = 0.7f),
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.sp
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Standard MatchCard constrained to standard proportions
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(0.85f)
+                        .aspectRatio(3f / 4f)
+                ) {
+                    MatchCard(
+                        player = meAsPlayer,
+                        backgroundBrush = cardGradient,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(32.dp))
+
+                // Close Button
+                Box(
+                    modifier = Modifier
+                        .size(56.dp)
+                        .clip(CircleShape)
+                        .background(Color.White.copy(alpha = 0.1f))
+                        .clickable { onDismiss() },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(Icons.Default.Close, contentDescription = "Close", tint = Color.White)
+                }
+            }
+        }
+    }
+}
+
+// 👇 NEW: Edit Basic Info (Age & Level)
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun EditBasicInfoDialog(
+    initialBirthDate: String, // e.g., "1998-05-24"
+    initialLevel: String,
+    onDismiss: () -> Unit,
+    onSave: (String, String) -> Unit
+) {
+    var birthDate by remember { mutableStateOf(initialBirthDate) }
+    var level by remember { mutableStateOf(initialLevel) }
+
+    // --- DATE PICKER STATE ---
+    var showDatePicker by remember { mutableStateOf(false) }
+    val datePickerState = rememberDatePickerState()
+
+    // --- DROPDOWN STATE ---
+    var expanded by remember { mutableStateOf(false) }
+    val skillLevels = listOf("Beginner", "Intermediate", "Advanced", "Pro")
+
+    // We don't need the keyboard to pop up for these read-only fields!
+    val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
+
+    if (showDatePicker) {
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    datePickerState.selectedDateMillis?.let { millis ->
+                        // Safely convert milliseconds to a YYYY-MM-DD string using kotlinx-datetime
+                        val date = Instant.fromEpochMilliseconds(millis)
+                            .toLocalDateTime(TimeZone.UTC).date
+                        birthDate = date.toString()
+                    }
+                    showDatePicker = false
+                }) { Text("OK", color = AppColors.AccentOrange) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDatePicker = false }) {
+                    Text("Cancel", color = AppColors.TextGray)
+                }
+            },
+            colors = DatePickerDefaults.colors(containerColor = AppColors.SurfaceDark)
+        ) {
+            DatePicker(
+                state = datePickerState,
+                colors = DatePickerDefaults.colors(
+                    titleContentColor = AppColors.AccentOrange,
+                    headlineContentColor = Color.White,
+                    weekdayContentColor = AppColors.TextGray,
+                    dayContentColor = Color.White,
+                    selectedDayContainerColor = AppColors.AccentOrange,
+                    selectedDayContentColor = Color.White,
+                    todayDateBorderColor = AppColors.AccentOrange,
+                    todayContentColor = AppColors.AccentOrange
+                )
+            )
+        }
+    }
 
     androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
         Column(
@@ -273,34 +432,167 @@ fun EditProfileDialog(
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(24.dp))
                 .background(AppColors.SurfaceDark)
+                .pointerInput(Unit) {
+                    detectTapGestures(onTap = {
+                        focusManager.clearFocus()
+                        keyboardController?.hide()
+                        expanded = false // Close dropdown if they tap the background
+                    })
+                }
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(stringResource(SharedRes.string.edit_profile), color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+            Text("Edit Basic Info", color = AppColors.TextPrimary, fontSize = 20.sp, fontWeight = FontWeight.Bold)
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Custom styled text fields
-            EditTextField(stringResource(SharedRes.string.username), name) { name = it }
-            Spacer(modifier = Modifier.height(12.dp))
-            EditTextField(stringResource(SharedRes.string.blade), blade) { blade = it }
-            Spacer(modifier = Modifier.height(12.dp))
-            EditTextField(stringResource(SharedRes.string.forehand), forehand) { forehand = it }
-            Spacer(modifier = Modifier.height(12.dp))
-            EditTextField(stringResource(SharedRes.string.backhand), backhand) { backhand = it }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                TextButton(onClick = onDismiss) {
-                    Text(stringResource(SharedRes.string.cancel), color = Color.Gray)
+            // --- 1. BIRTH DATE INPUT (Clickable Box over a Read-Only Field) ---
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Text("BIRTH DATE", color = AppColors.TextGray, fontSize = 12.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.5.sp)
+                Spacer(modifier = Modifier.height(6.dp))
+                Box(modifier = Modifier.fillMaxWidth()) {
+                    OutlinedTextField(
+                        value = birthDate.ifBlank { "Select Date" },
+                        onValueChange = {},
+                        readOnly = true,
+                        modifier = Modifier.fillMaxWidth(),
+                        trailingIcon = { Icon(Icons.Default.DateRange, contentDescription = "Calendar", tint = AppColors.TextGray) },
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = AppColors.TextPrimary,
+                            unfocusedTextColor = AppColors.TextPrimary,
+                            focusedBorderColor = AppColors.AccentOrange,
+                            unfocusedBorderColor = AppColors.TextPrimary.copy(alpha = 0.3f)
+                        ),
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                    // The invisible clickable layer that intercepts the tap!
+                    Box(
+                        modifier = Modifier
+                            .matchParentSize()
+                            .clickable { showDatePicker = true }
+                    )
                 }
-                Spacer(modifier = Modifier.width(8.dp))
-                Button(
-                    onClick = { onSave(name, blade, forehand, backhand) },
-                    colors = ButtonDefaults.buttonColors(containerColor = AppColors.AccentOrange)
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // --- 2. SKILL LEVEL DROPDOWN ---
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Text("SKILL LEVEL", color = AppColors.TextGray, fontSize = 12.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.5.sp)
+                Spacer(modifier = Modifier.height(6.dp))
+
+                ExposedDropdownMenuBox(
+                    expanded = expanded,
+                    onExpandedChange = { expanded = !expanded }
                 ) {
+                    OutlinedTextField(
+                        value = level.ifBlank { "Select Level" },
+                        onValueChange = {},
+                        readOnly = true,
+                        modifier = Modifier
+                            .menuAnchor()
+                            .fillMaxWidth(),
+                        trailingIcon = {
+                            ExposedDropdownMenuDefaults.TrailingIcon(
+                                expanded = expanded
+                            )
+                        },
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = AppColors.TextPrimary,
+                            unfocusedTextColor = AppColors.TextPrimary,
+                            focusedBorderColor = AppColors.AccentOrange,
+                            unfocusedBorderColor = AppColors.TextPrimary.copy(alpha = 0.3f),
+                            focusedTrailingIconColor = AppColors.AccentOrange,
+                            unfocusedTrailingIconColor = AppColors.TextGray
+                        ),
+                        shape = RoundedCornerShape(12.dp)
+                    )
+
+                    // The Dropdown Menu List
+                    ExposedDropdownMenu(
+                        expanded = expanded,
+                        onDismissRequest = { expanded = false },
+                        modifier = Modifier.background(AppColors.SurfaceDark)
+                    ) {
+                        skillLevels.forEach { selectionOption ->
+                            DropdownMenuItem(
+                                text = { Text(selectionOption, color = AppColors.TextPrimary) },
+                                onClick = {
+                                    level = selectionOption
+                                    expanded = false
+                                },
+                                contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
+                            )
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                TextButton(onClick = onDismiss) { Text(stringResource(SharedRes.string.cancel), color = Color.Gray) }
+                Spacer(modifier = Modifier.width(8.dp))
+                Button(onClick = { onSave(birthDate, level) }, colors = ButtonDefaults.buttonColors(containerColor = AppColors.AccentOrange)) {
                     Text(stringResource(SharedRes.string.save), color = Color.White)
                 }
+            }
+        }
+    }
+}
+
+// 👇 NEW: Basic Info Section UI
+@Composable
+private fun BasicInfoSection(
+    profileData: ProfileState.Success,
+    onEditClick: () -> Unit
+) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Icon(Icons.Default.Person, contentDescription = null, tint = AppColors.TextGray, modifier = Modifier.size(20.dp))
+            Spacer(modifier = Modifier.width(8.dp))
+            Text("BASIC INFO", color = AppColors.TextPrimary, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+
+            Spacer(modifier = Modifier.weight(1f))
+
+            IconButton(onClick = onEditClick, modifier = Modifier.size(24.dp)) {
+                Icon(Icons.Default.Edit, contentDescription = "Edit Info", tint = AppColors.TextGray, modifier = Modifier.size(20.dp))
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        val birthDate = profileData.birthDate ?: "Set birth date"
+        val skillLevel = profileData.skillLevel ?: "Set level"
+
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            // Age Box
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(AppColors.SurfaceDark)
+                    .padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(text = "AGE", color = AppColors.TextGray, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(text = birthDate, color = AppColors.TextPrimary, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+            }
+
+            // Skill Level Box
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(AppColors.SurfaceDark)
+                    .padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(text = "LEVEL", color = AppColors.TextGray, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(text = skillLevel, color = AppColors.AccentOrange, fontSize = 16.sp, fontWeight = FontWeight.Bold)
             }
         }
     }
@@ -310,7 +602,7 @@ fun EditProfileDialog(
 private fun EditTextField(
     label: String,
     value: String,
-    modifier: Modifier = Modifier, // 👇 Added modifier parameter
+    modifier: Modifier = Modifier,
     onValueChange: (String) -> Unit
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
@@ -319,7 +611,7 @@ private fun EditTextField(
         OutlinedTextField(
             value = value,
             onValueChange = onValueChange,
-            modifier = modifier.fillMaxWidth(), // 👇 Applied it here!
+            modifier = modifier.fillMaxWidth(),
             singleLine = true,
             colors = OutlinedTextFieldDefaults.colors(
                 focusedTextColor = Color.White,
@@ -337,15 +629,14 @@ private fun EditTextField(
 private fun ProfileHeader(
     profileData: ProfileState.Success,
     onPhotoEditClick: () -> Unit,
-    onUsernameEditClick: () -> Unit, // Renamed
-    onBioEditClick: () -> Unit,      // Added
+    onUsernameEditClick: () -> Unit,
+    onBioEditClick: () -> Unit,
+    onPreviewMatchcardClick: () -> Unit, // 👈 NEW
     onAvatarClick: () -> Unit
 ) {
     val username = profileData.name ?: "Player"
     val imageUrl = profileData.imageUrl
-
-    // TODO: Pull this from profileData once you add it to your state!
-    val bio = "" // Replace with: profileData.bio
+    val bio = profileData.bio ?: ""
 
     val avatarGradient = Brush.linearGradient(colors = listOf(Color(0xFFFF4B4B), Color(0xFF9C27B0)))
 
@@ -381,7 +672,7 @@ private fun ProfileHeader(
             Icon(Icons.Default.Edit, contentDescription = "Edit Username", tint = AppColors.TextGray, modifier = Modifier.size(18.dp))
         }
 
-        // 👇 NEW: BIO SECTION
+        // BIO SECTION
         Box(
             modifier = Modifier
                 .clip(RoundedCornerShape(8.dp))
@@ -398,16 +689,24 @@ private fun ProfileHeader(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // STATS
-//        Row(verticalAlignment = Alignment.CenterVertically) {
-//            Box(modifier = Modifier.clip(RoundedCornerShape(16.dp)).background(Color.Black.copy(alpha = 0.3f)).border(1.dp, Color(0xFFFF4B4B).copy(alpha = 0.5f), RoundedCornerShape(16.dp)).padding(horizontal = 12.dp, vertical = 6.dp)) {
-//                Text("ELO ${profileData.elo}", color = Color(0xFFFF4B4B), fontSize = 12.sp, fontWeight = FontWeight.Bold)
-//            }
-//            Spacer(modifier = Modifier.width(12.dp))
-//            Text("Win Rate: ${profileData.winRate}", color = AppColors.TextGray, fontSize = 14.sp)
-//        }
+        // 👇 NEW: PREVIEW MATCHCARD BUTTON
+        Button(
+            onClick = { onPreviewMatchcardClick() },
+            colors = ButtonDefaults.buttonColors(containerColor = AppColors.AccentOrange.copy(alpha = 0.15f)),
+            shape = RoundedCornerShape(16.dp),
+            contentPadding = PaddingValues(horizontal = 24.dp, vertical = 12.dp),
+            elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp, pressedElevation = 0.dp)
+        ) {
+            Icon(Icons.Default.Visibility, contentDescription = null, tint = AppColors.AccentOrange, modifier = Modifier.size(18.dp))
+            Spacer(modifier = Modifier.width(8.dp))
+            Text("PREVIEW MATCHCARD", color = AppColors.AccentOrange, fontWeight = FontWeight.Bold, fontSize = 12.sp, letterSpacing = 1.sp)
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
     }
 }
+
+// ... All existing Dialogs (EditUsernameDialog, EditBioDialog, EditGearDialog, AvatarPreviewDialog, AvatarFramerDialog, StatsGrid, GearSection, etc.) stay exactly the same down here!
 
 @Composable
 private fun AvatarPreviewDialog(
@@ -434,7 +733,6 @@ private fun AvatarPreviewDialog(
             contentAlignment = Alignment.Center
         ) {
             // --- 2. THE ALMOST FULL-SCREEN PHOTO CARD ---
-            // 👇 Changed to Box so the image can fill the entire container
             Box(
                 modifier = Modifier
                     .fillMaxWidth(0.9f)
@@ -445,22 +743,20 @@ private fun AvatarPreviewDialog(
                     .border(2.dp, Brush.linearGradient(colors = listOf(Color(0xFFFF4B4B).copy(alpha = 0.1f), Color(0xFF9C27B0).copy(alpha = 0.1f))), RoundedCornerShape(32.dp)),
                 contentAlignment = Alignment.Center
             ) {
-                // 👇 NEW: Check if imageUrl exists
                 if (!imageUrl.isNullOrBlank()) {
                     AsyncImage(
                         model = imageUrl,
                         contentDescription = "Full Screen Profile Picture",
-                        modifier = Modifier.fillMaxSize(), // Fills the rounded corner card perfectly
+                        modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Crop
                     )
                 } else {
-                    // FALLBACK INITIALS
                     Text(
                         text = getInitials(username),
                         color = AppColors.TextPrimary,
                         fontSize = 80.sp,
                         fontWeight = FontWeight.ExtraBold,
-                        modifier = Modifier.padding(32.dp) // Kept padding here for the text
+                        modifier = Modifier.padding(32.dp)
                     )
                 }
             }
@@ -506,7 +802,6 @@ fun AvatarFramerDialog(
     onDismiss: () -> Unit,
     onConfirm: (Float) -> Unit // Returns the Y-Bias they chose
 ) {
-    // State to hold the slider value (-1f to 1f)
     var verticalBias by remember { mutableStateOf(0f) }
 
     androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
@@ -521,7 +816,6 @@ fun AvatarFramerDialog(
             Text("Frame Your Avatar", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
             Spacer(modifier = Modifier.height(24.dp))
 
-            // --- THE 1:1 PREVIEW BOX ---
             Box(
                 modifier = Modifier
                     .fillMaxWidth(0.8f)
@@ -540,7 +834,6 @@ fun AvatarFramerDialog(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // --- THE SLIDER ---
             Text("Adjust Position", color = Color.Gray, fontSize = 14.sp)
             Slider(
                 value = verticalBias,
@@ -554,7 +847,6 @@ fun AvatarFramerDialog(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // --- BUTTONS ---
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                 TextButton(onClick = onDismiss) {
                     Text("Cancel", color = Color.Gray)
@@ -568,73 +860,6 @@ fun AvatarFramerDialog(
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun StatsGrid() {
-    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            StatCard(
-                modifier = Modifier.weight(1f),
-                icon = Icons.Default.EmojiEvents,
-                iconTint = Color(0xFFFF4B4B),
-                value = "147",
-                label = "Matches Played"
-            )
-            StatCard(
-                modifier = Modifier.weight(1f),
-                icon = Icons.Default.ShowChart,
-                iconTint = Color(0xFF00E676),
-                value = "64%",
-                label = "Win Rate"
-            )
-        }
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            StatCard(
-                modifier = Modifier.weight(1f),
-                icon = Icons.Default.TrendingUp,
-                iconTint = Color(0xFF00D2FF),
-                value = "5W",
-                label = "Current Streak"
-            )
-            StatCard(
-                modifier = Modifier.weight(1f),
-                icon = Icons.Default.WorkspacePremium,
-                iconTint = Color(0xFF9C27B0),
-                value = "#234",
-                label = "Global Rank"
-            )
-        }
-    }
-}
-
-@Composable
-private fun StatCard(
-    modifier: Modifier = Modifier,
-    icon: ImageVector,
-    iconTint: Color,
-    value: String,
-    label: String
-) {
-    Column(
-        modifier = modifier
-            .clip(RoundedCornerShape(16.dp))
-            .background(AppColors.SurfaceDark)
-            .padding(vertical = 24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Icon(imageVector = icon, contentDescription = null, tint = iconTint, modifier = Modifier.size(28.dp))
-        Spacer(modifier = Modifier.height(12.dp))
-        Text(text = value, color = AppColors.TextPrimary, fontSize = 24.sp, fontWeight = FontWeight.Bold)
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(text = label, color = AppColors.TextGray, fontSize = 12.sp, fontWeight = FontWeight.Medium)
     }
 }
 
@@ -735,21 +960,7 @@ private fun SettingsAndLogout(
         Spacer(modifier = Modifier.height(12.dp))
 
         // Settings Button
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(16.dp))
-                .background(AppColors.SurfaceDark)
-                .clickable { /* TODO: Navigate to settings */ }
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(Icons.Default.Settings, contentDescription = null, tint = TextGray, modifier = Modifier.size(24.dp))
-            Spacer(modifier = Modifier.width(16.dp))
-            Text("Account Settings", color = AppColors.TextPrimary, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-            Spacer(modifier = Modifier.weight(1f))
-            Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = TextGray)
-        }
+//        Ro
 
         Spacer(modifier = Modifier.height(12.dp))
 
@@ -779,8 +990,6 @@ private fun LanguageSelector(
     viewModel: ProfileViewModel
 ) {
     var expanded by remember { mutableStateOf(false) }
-
-    // Smoothly rotates the arrow up and down
     val rotation by animateFloatAsState(targetValue = if (expanded) 180f else 0f)
 
     val displayLanguage = when (currentLanguage) {
@@ -794,9 +1003,8 @@ private fun LanguageSelector(
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
             .background(AppColors.SurfaceDark)
-            .animateContentSize() // 👈 This makes the expansion buttery smooth!
+            .animateContentSize()
     ) {
-        // --- HEADER ROW (Always Visible) ---
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -812,91 +1020,38 @@ private fun LanguageSelector(
 
             Text(displayLanguage, color = TextGray, fontSize = 14.sp, fontWeight = FontWeight.Medium)
             Spacer(modifier = Modifier.width(4.dp))
-            Icon(
-                imageVector = Icons.Default.KeyboardArrowDown,
-                contentDescription = null,
-                tint = TextGray,
-                modifier = Modifier.rotate(rotation) // Applies the rotation animation
-            )
+            Icon(Icons.Default.KeyboardArrowDown, contentDescription = null, tint = TextGray, modifier = Modifier.rotate(rotation))
         }
 
-        // --- EXPANDED OPTIONS ---
-        AnimatedVisibility(
-            visible = expanded,
-            enter = expandVertically(expandFrom = Alignment.Top),
-            exit = shrinkVertically(shrinkTowards = Alignment.Top)
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clipToBounds()
-                    .padding(bottom = 8.dp) // Slight padding at the bottom of the card
-            ) {
-                // Subtle divider line
-                HorizontalDivider(
-                    color = AppColors.TextPrimary.copy(alpha = 0.05f),
-                    modifier = Modifier.padding(horizontal = 16.dp)
-                )
-
-                // Option: English
-                LanguageOptionRow(
-                    text = "English",
-                    isSelected = currentLanguage == "en",
-                    onClick = {
-                        viewModel.changeLanguage("en")
-                        onChangeLanguage("en")
-                        viewModel.fetchUserProfile()
-                        expanded = false
-                    }
-                )
-
-                // Option: Magyar
-                LanguageOptionRow(
-                    text = "Magyar",
-                    isSelected = currentLanguage == "hu",
-                    onClick = {
-                        viewModel.changeLanguage("hu")
-                        onChangeLanguage("hu")
-                        viewModel.fetchUserProfile()
-                        expanded = false
-                    }
-                )
+        AnimatedVisibility(visible = expanded, enter = expandVertically(expandFrom = Alignment.Top), exit = shrinkVertically(shrinkTowards = Alignment.Top)) {
+            Column(modifier = Modifier.fillMaxWidth().clipToBounds().padding(bottom = 8.dp)) {
+                HorizontalDivider(color = AppColors.TextPrimary.copy(alpha = 0.05f), modifier = Modifier.padding(horizontal = 16.dp))
+                LanguageOptionRow("English", currentLanguage == "en") { viewModel.changeLanguage("en"); onChangeLanguage("en"); viewModel.fetchUserProfile(); expanded = false }
+                LanguageOptionRow("Magyar", currentLanguage == "hu") { viewModel.changeLanguage("hu"); onChangeLanguage("hu"); viewModel.fetchUserProfile(); expanded = false }
             }
         }
     }
 }
 
 @Composable
-private fun LanguageOptionRow(
-    text: String,
-    isSelected: Boolean,
-    onClick: () -> Unit
-) {
-
+private fun LanguageOptionRow(text: String, isSelected: Boolean, onClick: () -> Unit) {
     val textColor = if (isSelected) AppColors.AccentOrange else AppColors.TextPrimary
     val fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
 
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onClick() }
-            .padding(horizontal = 56.dp, vertical = 12.dp), // Indented to perfectly align with the text above
+        modifier = Modifier.fillMaxWidth().clickable { onClick() }.padding(horizontal = 56.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(text = text, color = textColor, fontSize = 15.sp, fontWeight = fontWeight)
         Spacer(modifier = Modifier.weight(1f))
-
-        // Add a checkmark if it is the currently selected language
         if (isSelected) {
             Icon(Icons.Default.Check, contentDescription = "Selected", tint = AppColors.AccentOrange, modifier = Modifier.size(18.dp))
         }
     }
 }
+
 @Composable
-private fun ThemeSelector(
-    currentThemeMode: ThemeMode,
-    onChangeTheme: (ThemeMode) -> Unit
-) {
+private fun ThemeSelector(currentThemeMode: ThemeMode, onChangeTheme: (ThemeMode) -> Unit) {
     var expanded by remember { mutableStateOf(false) }
     val rotation by animateFloatAsState(targetValue = if (expanded) 180f else 0f)
 
@@ -907,18 +1062,10 @@ private fun ThemeSelector(
     }
 
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
-            .background(AppColors.SurfaceDark)
-            .animateContentSize()
+        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(AppColors.SurfaceDark).animateContentSize()
     ) {
-        // --- HEADER ROW ---
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable { expanded = !expanded }
-                .padding(16.dp),
+            modifier = Modifier.fillMaxWidth().clickable { expanded = !expanded }.padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(Icons.Default.Palette, contentDescription = null, tint = AppColors.TextGray, modifier = Modifier.size(24.dp))
@@ -929,76 +1076,31 @@ private fun ThemeSelector(
 
             Text(displayTheme, color = AppColors.TextGray, fontSize = 14.sp, fontWeight = FontWeight.Medium)
             Spacer(modifier = Modifier.width(4.dp))
-            Icon(
-                imageVector = Icons.Default.KeyboardArrowDown,
-                contentDescription = null,
-                tint = AppColors.TextGray,
-                modifier = Modifier.rotate(rotation)
-            )
+            Icon(Icons.Default.KeyboardArrowDown, contentDescription = null, tint = AppColors.TextGray, modifier = Modifier.rotate(rotation))
         }
 
-        // --- EXPANDED OPTIONS ---
-        AnimatedVisibility(
-            visible = expanded,
-            enter = expandVertically(expandFrom = Alignment.Top),
-            exit = shrinkVertically(shrinkTowards = Alignment.Top)
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clipToBounds()
-                    .padding(bottom = 8.dp)
-            ) {
-                HorizontalDivider(
-                    color = AppColors.TextPrimary.copy(alpha = 0.05f),
-                    modifier = Modifier.padding(horizontal = 16.dp)
-                )
-
-                ThemeOptionRow(stringResource(SharedRes.string.system_default), currentThemeMode == ThemeMode.System) {
-                    onChangeTheme(ThemeMode.System)
-//                    expanded = false
-                }
-                ThemeOptionRow(stringResource(SharedRes.string.light), currentThemeMode == ThemeMode.Light) {
-                    onChangeTheme(ThemeMode.Light)
-//                    expanded = false
-                }
-                ThemeOptionRow(stringResource(SharedRes.string.dark), currentThemeMode == ThemeMode.Dark) {
-                    onChangeTheme(ThemeMode.Dark)
-//                    expanded = false
-                }
+        AnimatedVisibility(visible = expanded, enter = expandVertically(expandFrom = Alignment.Top), exit = shrinkVertically(shrinkTowards = Alignment.Top)) {
+            Column(modifier = Modifier.fillMaxWidth().clipToBounds().padding(bottom = 8.dp)) {
+                HorizontalDivider(color = AppColors.TextPrimary.copy(alpha = 0.05f), modifier = Modifier.padding(horizontal = 16.dp))
+                ThemeOptionRow(stringResource(SharedRes.string.system_default), currentThemeMode == ThemeMode.System) { onChangeTheme(ThemeMode.System) }
+                ThemeOptionRow(stringResource(SharedRes.string.light), currentThemeMode == ThemeMode.Light) { onChangeTheme(ThemeMode.Light) }
+                ThemeOptionRow(stringResource(SharedRes.string.dark), currentThemeMode == ThemeMode.Dark) { onChangeTheme(ThemeMode.Dark) }
             }
         }
     }
 }
 
 @Composable
-private fun ThemeOptionRow(
-    text: String,
-    isSelected: Boolean,
-    onClick: () -> Unit
-) {
+private fun ThemeOptionRow(text: String, isSelected: Boolean, onClick: () -> Unit) {
     val textColor = if (isSelected) AppColors.AccentOrange else AppColors.TextPrimary
     val fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
 
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onClick() }
-            .padding(horizontal = 24.dp, vertical = 8.dp), // Adjusted padding to fit the radio button
+        modifier = Modifier.fillMaxWidth().clickable { onClick() }.padding(horizontal = 24.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Radio Button on the left (or you can move it to the right if you prefer!)
-        RadioButton(
-            selected = isSelected,
-            onClick = null, // Handled by the Row's clickable modifier
-            colors = RadioButtonDefaults.colors(
-                selectedColor = AppColors.AccentOrange,
-                unselectedColor = AppColors.TextGray
-            )
-        )
-
+        RadioButton(selected = isSelected, onClick = null, colors = RadioButtonDefaults.colors(selectedColor = AppColors.AccentOrange, unselectedColor = AppColors.TextGray))
         Spacer(modifier = Modifier.width(16.dp))
-
         Text(text = text, color = textColor, fontSize = 15.sp, fontWeight = fontWeight)
     }
 }
@@ -1017,7 +1119,6 @@ fun EditUsernameDialog(
     }
 
     androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
-        // 👇 MOVED INSIDE THE DIALOG!
         val focusManager = LocalFocusManager.current
         val keyboardController = LocalSoftwareKeyboardController.current
 
@@ -1070,7 +1171,6 @@ fun EditBioDialog(
     }
 
     androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
-        // 👇 MOVED INSIDE THE DIALOG!
         val focusManager = LocalFocusManager.current
         val keyboardController = LocalSoftwareKeyboardController.current
 
@@ -1138,7 +1238,6 @@ fun EditGearDialog(
     }
 
     androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
-        // 👇 MOVED INSIDE THE DIALOG!
         val focusManager = LocalFocusManager.current
         val keyboardController = LocalSoftwareKeyboardController.current
 
