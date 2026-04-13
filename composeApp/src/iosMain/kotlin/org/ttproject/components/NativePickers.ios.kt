@@ -50,15 +50,15 @@ actual fun NativeDatePickerField(value: String, label: String, onDateSelected: (
         if (showPicker) {
             val rootVc = UIApplication.sharedApplication.keyWindow?.rootViewController
 
-            // 👇 FIX: Explicitly prefixed UIAlertControllerStyle
+            // 👇 Reverted back to the working top-level constant!
             val alert = UIAlertController.alertControllerWithTitle(
                 "Select Date",
                 "\n\n\n\n\n\n\n\n\n",
-                UIAlertControllerStyle.UIAlertControllerStyleActionSheet
+                UIAlertControllerStyleActionSheet
             )
 
             val datePicker = UIDatePicker()
-            // 👇 FIX: Explicitly prefixed UIDatePickerMode and UIDatePickerStyle
+            // 👇 Kept the required Enum prefix for these!
             datePicker.datePickerMode = UIDatePickerMode.UIDatePickerModeDate
             datePicker.preferredDatePickerStyle = UIDatePickerStyle.UIDatePickerStyleWheels
             datePicker.translatesAutoresizingMaskIntoConstraints = false
@@ -67,15 +67,16 @@ actual fun NativeDatePickerField(value: String, label: String, onDateSelected: (
             datePicker.centerXAnchor.constraintEqualToAnchor(alert.view.centerXAnchor).active = true
             datePicker.topAnchor.constraintEqualToAnchor(alert.view.topAnchor, constant = 35.0).active = true
 
-            // 👇 FIX: Explicitly prefixed UIAlertActionStyle
-            alert.addAction(UIAlertAction.actionWithTitle("Done", UIAlertActionStyle.UIAlertActionStyleDefault) {
+            // 👇 Reverted back to the working top-level constant!
+            alert.addAction(UIAlertAction.actionWithTitle("Done", UIAlertActionStyleDefault) {
                 val formatter = NSDateFormatter()
                 formatter.dateFormat = "yyyy-MM-dd"
                 onDateSelected(formatter.stringFromDate(datePicker.date))
                 showPicker = false
             })
 
-            alert.addAction(UIAlertAction.actionWithTitle("Cancel", UIAlertActionStyle.UIAlertActionStyleCancel) {
+            // 👇 Reverted back to the working top-level constant!
+            alert.addAction(UIAlertAction.actionWithTitle("Cancel", UIAlertActionStyleCancel) {
                 showPicker = false
             })
 
@@ -109,20 +110,23 @@ actual fun NativeDropdownField(value: String, label: String, options: List<Strin
         if (showPicker) {
             val rootVc = UIApplication.sharedApplication.keyWindow?.rootViewController
 
+            // 👇 Reverted back to the working top-level constant!
             val alert = UIAlertController.alertControllerWithTitle(
                 "Select Skill Level",
                 null,
-                UIAlertControllerStyle.UIAlertControllerStyleActionSheet
+                UIAlertControllerStyleActionSheet
             )
 
             options.forEach { option ->
-                alert.addAction(UIAlertAction.actionWithTitle(option, UIAlertActionStyle.UIAlertActionStyleDefault) {
+                // 👇 Reverted back to the working top-level constant!
+                alert.addAction(UIAlertAction.actionWithTitle(option, UIAlertActionStyleDefault) {
                     onOptionSelected(option)
                     showPicker = false
                 })
             }
 
-            alert.addAction(UIAlertAction.actionWithTitle("Cancel", UIAlertActionStyle.UIAlertActionStyleCancel) {
+            // 👇 Reverted back to the working top-level constant!
+            alert.addAction(UIAlertAction.actionWithTitle("Cancel", UIAlertActionStyleCancel) {
                 showPicker = false
             })
 
