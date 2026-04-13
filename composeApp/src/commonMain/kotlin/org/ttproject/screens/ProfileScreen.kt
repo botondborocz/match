@@ -84,6 +84,9 @@ import androidx.compose.material3.DropdownMenuItem
 import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
+import org.ttproject.components.NativeDatePickerField
+import org.ttproject.components.NativeDropdownField
+
 @Composable
 fun ProfileScreen(
     currentLanguage: String = "en",
@@ -366,65 +369,19 @@ fun MatchCardPreviewDialog(
 }
 
 // 👇 NEW: Edit Basic Info (Age & Level)
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditBasicInfoDialog(
-    initialBirthDate: String, // e.g., "1998-05-24"
+    initialBirthDate: String,
     initialLevel: String,
     onDismiss: () -> Unit,
     onSave: (String, String) -> Unit
 ) {
     var birthDate by remember { mutableStateOf(initialBirthDate) }
     var level by remember { mutableStateOf(initialLevel) }
-
-    // --- DATE PICKER STATE ---
-    var showDatePicker by remember { mutableStateOf(false) }
-    val datePickerState = rememberDatePickerState()
-
-    // --- DROPDOWN STATE ---
-    var expanded by remember { mutableStateOf(false) }
     val skillLevels = listOf("Beginner", "Intermediate", "Advanced", "Pro")
 
-    // We don't need the keyboard to pop up for these read-only fields!
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
-
-    if (showDatePicker) {
-        DatePickerDialog(
-            onDismissRequest = { showDatePicker = false },
-            confirmButton = {
-                TextButton(onClick = {
-                    datePickerState.selectedDateMillis?.let { millis ->
-                        // Safely convert milliseconds to a YYYY-MM-DD string using kotlinx-datetime
-                        val date = Instant.fromEpochMilliseconds(millis)
-                            .toLocalDateTime(TimeZone.UTC).date
-                        birthDate = date.toString()
-                    }
-                    showDatePicker = false
-                }) { Text("OK", color = AppColors.AccentOrange) }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDatePicker = false }) {
-                    Text("Cancel", color = AppColors.TextGray)
-                }
-            },
-            colors = DatePickerDefaults.colors(containerColor = AppColors.SurfaceDark)
-        ) {
-            DatePicker(
-                state = datePickerState,
-                colors = DatePickerDefaults.colors(
-                    titleContentColor = AppColors.AccentOrange,
-                    headlineContentColor = Color.White,
-                    weekdayContentColor = AppColors.TextGray,
-                    dayContentColor = Color.White,
-                    selectedDayContainerColor = AppColors.AccentOrange,
-                    selectedDayContentColor = Color.White,
-                    todayDateBorderColor = AppColors.AccentOrange,
-                    todayContentColor = AppColors.AccentOrange
-                )
-            )
-        }
-    }
 
     androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
         Column(
@@ -436,7 +393,6 @@ fun EditBasicInfoDialog(
                     detectTapGestures(onTap = {
                         focusManager.clearFocus()
                         keyboardController?.hide()
-                        expanded = false // Close dropdown if they tap the background
                     })
                 }
                 .padding(24.dp),
@@ -445,87 +401,22 @@ fun EditBasicInfoDialog(
             Text("Edit Basic Info", color = AppColors.TextPrimary, fontSize = 20.sp, fontWeight = FontWeight.Bold)
             Spacer(modifier = Modifier.height(24.dp))
 
-            // --- 1. BIRTH DATE INPUT (Clickable Box over a Read-Only Field) ---
-            Column(modifier = Modifier.fillMaxWidth()) {
-                Text("BIRTH DATE", color = AppColors.TextGray, fontSize = 12.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.5.sp)
-                Spacer(modifier = Modifier.height(6.dp))
-                Box(modifier = Modifier.fillMaxWidth()) {
-                    OutlinedTextField(
-                        value = birthDate.ifBlank { "Select Date" },
-                        onValueChange = {},
-                        readOnly = true,
-                        modifier = Modifier.fillMaxWidth(),
-                        trailingIcon = { Icon(Icons.Default.DateRange, contentDescription = "Calendar", tint = AppColors.TextGray) },
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedTextColor = AppColors.TextPrimary,
-                            unfocusedTextColor = AppColors.TextPrimary,
-                            focusedBorderColor = AppColors.AccentOrange,
-                            unfocusedBorderColor = AppColors.TextPrimary.copy(alpha = 0.3f)
-                        ),
-                        shape = RoundedCornerShape(12.dp)
-                    )
-                    // The invisible clickable layer that intercepts the tap!
-                    Box(
-                        modifier = Modifier
-                            .matchParentSize()
-                            .clickable { showDatePicker = true }
-                    )
-                }
-            }
+            // 👇 1. Our new abstracted Date Picker Field
+            NativeDatePickerField(
+                value = birthDate,
+                label = "BIRTH DATE",
+                onDateSelected = { birthDate = it }
+            )
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // --- 2. SKILL LEVEL DROPDOWN ---
-            Column(modifier = Modifier.fillMaxWidth()) {
-                Text("SKILL LEVEL", color = AppColors.TextGray, fontSize = 12.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.5.sp)
-                Spacer(modifier = Modifier.height(6.dp))
-
-                ExposedDropdownMenuBox(
-                    expanded = expanded,
-                    onExpandedChange = { expanded = !expanded }
-                ) {
-                    OutlinedTextField(
-                        value = level.ifBlank { "Select Level" },
-                        onValueChange = {},
-                        readOnly = true,
-                        modifier = Modifier
-                            .menuAnchor()
-                            .fillMaxWidth(),
-                        trailingIcon = {
-                            ExposedDropdownMenuDefaults.TrailingIcon(
-                                expanded = expanded
-                            )
-                        },
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedTextColor = AppColors.TextPrimary,
-                            unfocusedTextColor = AppColors.TextPrimary,
-                            focusedBorderColor = AppColors.AccentOrange,
-                            unfocusedBorderColor = AppColors.TextPrimary.copy(alpha = 0.3f),
-                            focusedTrailingIconColor = AppColors.AccentOrange,
-                            unfocusedTrailingIconColor = AppColors.TextGray
-                        ),
-                        shape = RoundedCornerShape(12.dp)
-                    )
-
-                    // The Dropdown Menu List
-                    ExposedDropdownMenu(
-                        expanded = expanded,
-                        onDismissRequest = { expanded = false },
-                        modifier = Modifier.background(AppColors.SurfaceDark)
-                    ) {
-                        skillLevels.forEach { selectionOption ->
-                            DropdownMenuItem(
-                                text = { Text(selectionOption, color = AppColors.TextPrimary) },
-                                onClick = {
-                                    level = selectionOption
-                                    expanded = false
-                                },
-                                contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
-                            )
-                        }
-                    }
-                }
-            }
+            // 👇 2. Our new abstracted Dropdown Field
+            NativeDropdownField(
+                value = level,
+                label = "SKILL LEVEL",
+                options = skillLevels,
+                onOptionSelected = { level = it }
+            )
 
             Spacer(modifier = Modifier.height(24.dp))
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
