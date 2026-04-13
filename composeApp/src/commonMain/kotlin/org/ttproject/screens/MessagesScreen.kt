@@ -293,7 +293,7 @@ fun ChatDetailScreen(
 
     var selectedReactionMessageId by remember { mutableStateOf<String?>(null) }
 
-    val imeInsets = if (isIosPlatform()) WindowInsets(bottom = 0.dp) else WindowInsets.ime
+    val imeInsets = if (isIosPlatform()) WindowInsets.ime else WindowInsets.ime
     val bottomNavInset = remember(bottomNavPadding) { WindowInsets(bottom = bottomNavPadding + 10.dp) }
     val focusManager = LocalFocusManager.current
     val tokenStorage: TokenStorage = koinInject()
@@ -1118,16 +1118,15 @@ fun ChatBubble(
                                         val change = event.changes.first()
 
                                         if (change.pressed) {
+                                            change.consume()
                                             val distance = (change.position - down.position).getDistance()
                                             if (distance > slop) hasDragged = true
 
                                             val globalPos = bubbleBounds.topLeft + change.position
                                             currentOnLongPressDrag(globalPos)
-                                            change.consume()
                                         } else {
                                             tracking = false
                                             currentOnLongPressEnd(hasDragged)
-                                            change.consume()
                                         }
                                     }
                                 }
