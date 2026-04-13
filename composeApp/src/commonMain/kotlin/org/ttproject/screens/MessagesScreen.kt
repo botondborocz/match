@@ -293,7 +293,7 @@ fun ChatDetailScreen(
 
     var selectedReactionMessageId by remember { mutableStateOf<String?>(null) }
 
-    val imeInsets = if (isIosPlatform()) WindowInsets.ime else WindowInsets.ime
+    val imeInsets = if (isIosPlatform()) WindowInsets(bottom = 0.dp) else WindowInsets.ime
     val bottomNavInset = remember(bottomNavPadding) { WindowInsets(bottom = bottomNavPadding + 10.dp) }
     val focusManager = LocalFocusManager.current
     val tokenStorage: TokenStorage = koinInject()
