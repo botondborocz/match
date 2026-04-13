@@ -44,31 +44,54 @@ actual fun NativeDatePickerField(value: String, label: String, onDateSelected: (
         ) {
             DatePicker(
                 state = datePickerState,
+                // 👇 THE FIX: We explicitly override ALL Material 3 colors to match your dark theme
                 colors = DatePickerDefaults.colors(
-                    titleContentColor = AppColors.AccentOrange, headlineContentColor = Color.White,
-                    weekdayContentColor = AppColors.TextGray, dayContentColor = Color.White,
-                    selectedDayContainerColor = AppColors.AccentOrange, selectedDayContentColor = Color.White,
-                    todayDateBorderColor = AppColors.AccentOrange, todayContentColor = AppColors.AccentOrange
+                    containerColor = AppColors.SurfaceDark, // Removes the light purple background!
+                    titleContentColor = AppColors.TextGray,
+                    headlineContentColor = AppColors.TextPrimary,
+                    weekdayContentColor = AppColors.TextGray,
+                    dayContentColor = AppColors.TextPrimary,
+                    navigationContentColor = AppColors.TextPrimary, // Makes the < > arrows visible!
+                    yearContentColor = AppColors.TextPrimary, // Makes the year drop-down visible!
+                    currentYearContentColor = AppColors.AccentOrange,
+                    selectedYearContentColor = AppColors.TextPrimary,
+                    selectedYearContainerColor = AppColors.AccentOrange,
+                    selectedDayContainerColor = AppColors.AccentOrange,
+                    selectedDayContentColor = AppColors.TextPrimary,
+                    todayDateBorderColor = AppColors.AccentOrange,
+                    todayContentColor = AppColors.AccentOrange,
+                    disabledDayContentColor = Color.DarkGray
                 )
             )
         }
     }
 
+    // --- The actual input field stays the same ---
     Column(modifier = Modifier.fillMaxWidth()) {
         Text(label, color = AppColors.TextGray, fontSize = 12.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.5.sp)
         Spacer(modifier = Modifier.height(6.dp))
-        Box(modifier = Modifier.fillMaxWidth()) {
-            OutlinedTextField(
-                value = value.ifBlank { "Select Date" }, onValueChange = {}, readOnly = true, modifier = Modifier.fillMaxWidth(),
-                trailingIcon = { Icon(Icons.Default.DateRange, contentDescription = "Calendar", tint = AppColors.TextGray) },
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedTextColor = AppColors.TextPrimary, unfocusedTextColor = AppColors.TextPrimary,
-                    focusedBorderColor = AppColors.AccentOrange, unfocusedBorderColor = AppColors.TextPrimary.copy(alpha = 0.3f)
-                ),
-                shape = RoundedCornerShape(12.dp)
-            )
-            Box(modifier = Modifier.matchParentSize().clickable { showDatePicker = true })
-        }
+
+        OutlinedTextField(
+            value = value, // No longer forced to "Select Date"
+            onValueChange = { onDateSelected(it) }, // 👈 Allows typing!
+            placeholder = { Text("YYYY-MM-DD", color = AppColors.TextGray.copy(alpha = 0.5f)) },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+            trailingIcon = {
+                // 👈 Clicking the icon opens the calendar!
+                IconButton(onClick = { showDatePicker = true }) {
+                    Icon(Icons.Default.DateRange, contentDescription = "Open Calendar", tint = AppColors.TextGray)
+                }
+            },
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedTextColor = AppColors.TextPrimary,
+                unfocusedTextColor = AppColors.TextPrimary,
+                focusedBorderColor = AppColors.AccentOrange,
+                unfocusedBorderColor = AppColors.TextPrimary.copy(alpha = 0.3f),
+                cursorColor = AppColors.AccentOrange
+            ),
+            shape = RoundedCornerShape(12.dp)
+        )
     }
 }
 
