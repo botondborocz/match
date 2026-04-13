@@ -12,11 +12,12 @@ struct ComposeView: UIViewControllerRepresentable {
 
 struct ContentView: View {
     // 👇 THE MAGIC LINE: This forces SwiftUI to redraw and pass the theme to Kotlin!
-    @Environment(\.colorScheme) var colorScheme
+    // @Environment(\.colorScheme) var colorScheme
 
     var body: some View {
         ComposeView()
-            .ignoresSafeArea(.container, edges: .all)    }
+            .ignoresSafeArea()
+    }
 }
 
 
