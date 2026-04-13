@@ -112,7 +112,8 @@ data class ReactionMenuData(
     val topEnd: Dp,
     val bottomStart: Dp,
     val bottomEnd: Dp,
-    val initialTouch: Offset
+    val initialTouch: Offset,
+    val reactionBounds: Rect?
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -481,8 +482,8 @@ fun ChatDetailScreen(
                             reactions = msg.reactions,
                             onClick = { selectedMessageId = if (isSelected) null else msg.id },
                             onReactionClick = { reactionSheetMessageId = msg.id },
-                            onLongPress = { bounds, topStart, topEnd, bottomStart, bottomEnd, initialTouch ->
-                                reactionMenuData = ReactionMenuData(msg.id, isMe, bounds, topStart, topEnd, bottomStart, bottomEnd, initialTouch)
+                            onLongPress = { bounds, topStart, topEnd, bottomStart, bottomEnd, initialTouch, reactionBounds ->
+                                reactionMenuData = ReactionMenuData(msg.id, isMe, bounds, topStart, topEnd, bottomStart, bottomEnd, initialTouch, reactionBounds)
                             },
                             onLongPressDrag = { globalPos ->
                                 activeReactionDragPosition = globalPos
@@ -641,6 +642,18 @@ fun ChatDetailScreen(
                                     bottomLeft = CornerRadius(state.bottomStart.toPx())
                                 )
                             )
+                            // 👇 2. NEW: The Reaction Badge Cutout
+                            state.reactionBounds?.let { rBounds ->
+                                val localReactionBounds = rBounds.translate(-overlayBounds)
+                                val badgeRadius = with(density) { 14.dp.toPx() } // Standard 14.dp you used for the badge
+
+                                addRoundRect(
+                                    RoundRect(
+                                        rect = localReactionBounds,
+                                        cornerRadius = CornerRadius(badgeRadius)
+                                    )
+                                )
+                            }
                         }
 
                         clipPath(cornerRadiusPath, clipOp = ClipOp.Difference) {
@@ -813,7 +826,7 @@ fun AnimatedMessageBubble(
     reactions: List<ReactionDto>,
     onClick: () -> Unit,
     onReactionClick: () -> Unit,
-    onLongPress: (Rect, Dp, Dp, Dp, Dp, Offset) -> Unit,
+    onLongPress: (Rect, Dp, Dp, Dp, Dp, Offset, Rect?) -> Unit,
     onLongPressDrag: (Offset) -> Unit,
     onLongPressEnd: (Boolean) -> Unit,
     onSwipeToReply: () -> Unit
@@ -1001,7 +1014,7 @@ fun ChatBubble(
     modifier: Modifier = Modifier,
     onClick: () -> Unit,
     onReactionClick: () -> Unit,
-    onLongPress: (Rect, Dp, Dp, Dp, Dp, Offset) -> Unit,
+    onLongPress: (Rect, Dp, Dp, Dp, Dp, Offset, Rect?) -> Unit,
     onLongPressDrag: (Offset) -> Unit,
     onLongPressEnd: (Boolean) -> Unit
 ) {
@@ -1039,6 +1052,7 @@ fun ChatBubble(
 
     // 👇 1. Track the coordinates!
     var bubbleBounds by remember { mutableStateOf(Rect.Zero) }
+    var reactionBounds by remember { mutableStateOf<Rect?>(null) }
     val bubbleShape = RoundedCornerShape(topStart, topEnd, bottomEnd, bottomStart)
 
     BoxWithConstraints(
@@ -1095,7 +1109,7 @@ fun ChatBubble(
                                 } else if (isLongPress) {
                                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                     val globalTouch = bubbleBounds.topLeft + down.position
-                                    currentOnLongPress(bubbleBounds, currentTopStart, currentTopEnd, currentBottomStart, currentBottomEnd, globalTouch)
+                                    currentOnLongPress(bubbleBounds, currentTopStart, currentTopEnd, currentBottomStart, currentBottomEnd, globalTouch, reactionBounds)
                                     var tracking = true
                                     var hasDragged = false
 
@@ -1113,6 +1127,7 @@ fun ChatBubble(
                                         } else {
                                             tracking = false
                                             currentOnLongPressEnd(hasDragged)
+                                            change.consume()
                                         }
                                     }
                                 }
@@ -1189,6 +1204,9 @@ fun ChatBubble(
                         ) {
                             Row(
                                 modifier = Modifier
+                                    .onGloballyPositioned { coordinates ->
+                                        reactionBounds = coordinates.boundsInRoot()
+                                    }
                                     .clip(RoundedCornerShape(14.dp))
                                     .background(AppColors.SurfaceDark)
                                     .clickable { onReactionClick() }
