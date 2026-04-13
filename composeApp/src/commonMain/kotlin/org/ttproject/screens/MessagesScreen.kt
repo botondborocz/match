@@ -1118,12 +1118,12 @@ fun ChatBubble(
                                         val change = event.changes.first()
 
                                         if (change.pressed) {
-                                            change.consume()
                                             val distance = (change.position - down.position).getDistance()
                                             if (distance > slop) hasDragged = true
 
                                             val globalPos = bubbleBounds.topLeft + change.position
                                             currentOnLongPressDrag(globalPos)
+                                            change.consume()
                                         } else {
                                             tracking = false
                                             currentOnLongPressEnd(hasDragged)
