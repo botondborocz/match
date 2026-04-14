@@ -3,7 +3,7 @@ package org.ttproject.util
 import androidx.compose.runtime.Composable
 
 @Composable
-actual fun SetStatusBarColors(isDark: Boolean) {
+actual fun SetStatusBarColors(isDark: Boolean, isSystemDefault: Boolean) {
 }
 
 @Composable

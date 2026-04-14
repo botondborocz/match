@@ -9,7 +9,7 @@ enum class ThemeMode { Light, Dark, System }
 val LocalThemeMode = staticCompositionLocalOf { ThemeMode.System }
 
 @Composable
-expect fun SetStatusBarColors(isDark: Boolean)
+expect fun SetStatusBarColors(isDark: Boolean, isSystemDefault: Boolean)
 
 @Composable
 expect fun ClearChatNotificationEffect(chatId: String)

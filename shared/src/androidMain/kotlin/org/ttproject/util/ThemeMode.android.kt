@@ -11,7 +11,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.platform.LocalContext
 
 @Composable
-actual fun SetStatusBarColors(isDark: Boolean) {
+actual fun SetStatusBarColors(isDark: Boolean, isSystemDefault: Boolean) {
     val view = LocalView.current
     if (!view.isInEditMode) {
         SideEffect {

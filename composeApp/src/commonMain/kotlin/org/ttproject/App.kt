@@ -148,7 +148,10 @@ fun App(
         ThemeMode.System -> isSystemDark
     }
 
-    SetStatusBarColors(isDark = currentThemeMode == ThemeMode.Dark || (currentThemeMode == ThemeMode.System && isSystemInDarkTheme()))
+    SetStatusBarColors(
+        isDark = currentThemeMode == ThemeMode.Dark || (currentThemeMode == ThemeMode.System && isSystemInDarkTheme()),
+        isSystemDefault = currentThemeMode == ThemeMode.System
+    )
 
     key(currentLanguage) {
         CompositionLocalProvider(
