@@ -1,6 +1,5 @@
 package org.ttproject.components
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -12,89 +11,73 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.viewinterop.UIKitView
 import platform.UIKit.*
 import platform.Foundation.*
 import org.ttproject.AppColors
 
 @Composable
 actual fun NativeDatePickerField(value: String, label: String, onDateSelected: (String) -> Unit) {
-    var showPicker by remember { mutableStateOf(false) }
-
     Column(modifier = Modifier.fillMaxWidth()) {
         Text(label, color = AppColors.TextGray, fontSize = 12.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.5.sp)
         Spacer(modifier = Modifier.height(6.dp))
 
-        OutlinedTextField(
-            value = value,
-            onValueChange = { onDateSelected(it) },
-            placeholder = { Text("YYYY-MM-DD", color = AppColors.TextGray.copy(alpha = 0.5f)) },
-            modifier = Modifier.fillMaxWidth(),
-            singleLine = true,
-            trailingIcon = {
-                IconButton(onClick = { showPicker = true }) {
+        Box(modifier = Modifier.fillMaxWidth()) {
+            OutlinedTextField(
+                value = value,
+                onValueChange = {},
+                placeholder = { Text("YYYY-MM-DD", color = AppColors.TextGray.copy(alpha = 0.5f)) },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                readOnly = true,
+                trailingIcon = {
                     Icon(Icons.Default.DateRange, contentDescription = "Open Calendar", tint = AppColors.TextGray)
-                }
-            },
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedTextColor = AppColors.TextPrimary,
-                unfocusedTextColor = AppColors.TextPrimary,
-                focusedBorderColor = AppColors.AccentOrange,
-                unfocusedBorderColor = AppColors.TextPrimary.copy(alpha = 0.3f),
-                cursorColor = AppColors.AccentOrange
-            ),
-            shape = RoundedCornerShape(12.dp)
-        )
-    }
-
-    LaunchedEffect(showPicker) {
-        if (showPicker) {
-            val rootVc = UIApplication.sharedApplication.keyWindow?.rootViewController
-
-            // 👇 Reverted back to the working top-level constant!
-            val alert = UIAlertController.alertControllerWithTitle(
-                "Select Date",
-                "\n\n\n\n\n\n\n\n\n",
-                UIAlertControllerStyleActionSheet
+                },
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedTextColor = AppColors.TextPrimary,
+                    unfocusedTextColor = AppColors.TextPrimary,
+                    focusedBorderColor = AppColors.AccentOrange,
+                    unfocusedBorderColor = AppColors.TextPrimary.copy(alpha = 0.3f),
+                    cursorColor = AppColors.AccentOrange
+                ),
+                shape = RoundedCornerShape(12.dp)
             )
 
-            val datePicker = UIDatePicker()
-            // 👇 Kept the required Enum prefix for these!
-            datePicker.datePickerMode = UIDatePickerMode.UIDatePickerModeDate
-            datePicker.preferredDatePickerStyle = UIDatePickerStyle.UIDatePickerStyleWheels
-            datePicker.translatesAutoresizingMaskIntoConstraints = false
+            // 👇 FIX 1: Added explicit <UIDatePicker> type
+            UIKitView<UIDatePicker>(
+                factory = {
+                    val datePicker = UIDatePicker()
+                    datePicker.datePickerMode = UIDatePickerMode.UIDatePickerModeDate
+                    datePicker.preferredDatePickerStyle = UIDatePickerStyle.UIDatePickerStyleCompact
+                    datePicker.alpha = 0.02
 
-            alert.view.addSubview(datePicker)
-            datePicker.centerXAnchor.constraintEqualToAnchor(alert.view.centerXAnchor).active = true
-            datePicker.topAnchor.constraintEqualToAnchor(alert.view.topAnchor, constant = 35.0).active = true
+                    val action = UIAction.actionWithHandler { _ ->
+                        val formatter = NSDateFormatter()
+                        formatter.dateFormat = "yyyy-MM-dd"
+                        onDateSelected(formatter.stringFromDate(datePicker.date))
+                    }
 
-            // 👇 Reverted back to the working top-level constant!
-            alert.addAction(UIAlertAction.actionWithTitle("Done", UIAlertActionStyleDefault) {
-                val formatter = NSDateFormatter()
-                formatter.dateFormat = "yyyy-MM-dd"
-                onDateSelected(formatter.stringFromDate(datePicker.date))
-                showPicker = false
-            })
-
-            // 👇 Reverted back to the working top-level constant!
-            alert.addAction(UIAlertAction.actionWithTitle("Cancel", UIAlertActionStyleCancel) {
-                showPicker = false
-            })
-
-            rootVc?.presentViewController(alert, animated = true, completion = null)
+                    datePicker.addAction(action, forControlEvents = UIControlEventValueChanged)
+                    datePicker
+                },
+                modifier = Modifier.matchParentSize()
+            )
         }
     }
 }
 
 @Composable
 actual fun NativeDropdownField(value: String, label: String, options: List<String>, onOptionSelected: (String) -> Unit) {
-    var showPicker by remember { mutableStateOf(false) }
-
     Column(modifier = Modifier.fillMaxWidth()) {
         Text(label, color = AppColors.TextGray, fontSize = 12.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.5.sp)
         Spacer(modifier = Modifier.height(6.dp))
+
         Box(modifier = Modifier.fillMaxWidth()) {
             OutlinedTextField(
-                value = value.ifBlank { "Select Level" }, onValueChange = {}, readOnly = true, modifier = Modifier.fillMaxWidth(),
+                value = value.ifBlank { "Select Level" },
+                onValueChange = {},
+                readOnly = true,
+                modifier = Modifier.fillMaxWidth(),
                 trailingIcon = { Icon(Icons.Default.ArrowDropDown, contentDescription = "Dropdown", tint = AppColors.TextGray) },
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedTextColor = AppColors.TextPrimary, unfocusedTextColor = AppColors.TextPrimary,
@@ -102,35 +85,31 @@ actual fun NativeDropdownField(value: String, label: String, options: List<Strin
                 ),
                 shape = RoundedCornerShape(12.dp)
             )
-            Box(modifier = Modifier.matchParentSize().clickable { showPicker = true })
-        }
-    }
 
-    LaunchedEffect(showPicker) {
-        if (showPicker) {
-            val rootVc = UIApplication.sharedApplication.keyWindow?.rootViewController
+            // 👇 FIX 2: Added explicit <UIButton> type
+            UIKitView<UIButton>(
+                factory = {
+                    // 👇 FIX 3: Used default constructor instead of UIButtonTypeCustom enum
+                    val button = UIButton()
+                    button.backgroundColor = UIColor.clearColor
 
-            // 👇 Reverted back to the working top-level constant!
-            val alert = UIAlertController.alertControllerWithTitle(
-                "Select Skill Level",
-                null,
-                UIAlertControllerStyleActionSheet
+                    val actions = options.map { option ->
+                        UIAction.actionWithTitle(
+                            title = option,
+                            image = null,
+                            identifier = null,
+                            handler = { _ -> onOptionSelected(option) }
+                        )
+                    }
+
+                    val menu = UIMenu.menuWithTitle(title = "", children = actions)
+                    button.showsMenuAsPrimaryAction = true
+                    button.menu = menu
+
+                    button
+                },
+                modifier = Modifier.matchParentSize()
             )
-
-            options.forEach { option ->
-                // 👇 Reverted back to the working top-level constant!
-                alert.addAction(UIAlertAction.actionWithTitle(option, UIAlertActionStyleDefault) {
-                    onOptionSelected(option)
-                    showPicker = false
-                })
-            }
-
-            // 👇 Reverted back to the working top-level constant!
-            alert.addAction(UIAlertAction.actionWithTitle("Cancel", UIAlertActionStyleCancel) {
-                showPicker = false
-            })
-
-            rootVc?.presentViewController(alert, animated = true, completion = null)
         }
     }
 }
