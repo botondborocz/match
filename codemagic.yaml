@@ -56,7 +56,7 @@ workflows:
           # 4. Package the IPA
           # The app will now always be in this exact folder
           mkdir -p Payload
-          cp -R build-xcode/Build/Products/Debug-iphoneos/Match.app Payload/
+          cp -R build-xcode/Build/Products/Debug-iphoneos/MatchPoint.app Payload/
           zip -r KmpApp.ipa Payload
 
     artifacts:
