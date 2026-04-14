@@ -59,8 +59,10 @@
     import androidx.compose.ui.platform.LocalUriHandler
     import androidx.compose.ui.unit.Velocity
     import org.jetbrains.compose.resources.painterResource
+    import org.koin.compose.koinInject
     import org.koin.compose.viewmodel.koinViewModel
     import org.ttproject.data.LocationType
+    import org.ttproject.data.TokenStorage
     import org.ttproject.isIosPlatform
     import org.ttproject.viewmodel.LocationViewModel
     import org.ttproject.viewmodel.LocationsUiState
@@ -106,6 +108,7 @@
     @Composable
     fun MapScreen(
         viewModel: LocationViewModel = koinViewModel(),
+        tokenStorage: TokenStorage = koinInject(),
         isActive: Boolean = true
     ) {
         val state by viewModel.uiState.collectAsState()
@@ -447,7 +450,8 @@
                         club = currentClub,
                         cardBg = cardBg,
                         brandOrange = brandOrange,
-                        onClose = { selectedClub = null }
+                        onClose = { selectedClub = null },
+                        tokenStorage = tokenStorage
                     )
                 } else {
                     Box(modifier = Modifier.fillMaxWidth())
@@ -521,7 +525,7 @@
     }
 
     @Composable
-    fun FloatingClubCard(club: TTClub, cardBg: Color, brandOrange: Color, onClose: () -> Unit) {
+    fun FloatingClubCard(club: TTClub, cardBg: Color, brandOrange: Color, onClose: () -> Unit, tokenStorage: TokenStorage) {
         val uriHandler = LocalUriHandler.current
         var showMapChoice by remember { mutableStateOf(false) }
 
@@ -573,6 +577,7 @@
                             onClick = {
                                 uriHandler.openUri("https://maps.apple.com/?q=${club.lat},${club.lng}")
                                 showMapChoice = false
+                                tokenStorage.saveMapChoice("apple") // Save the user's choice for next time!
                             },
                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2A2D34)),
                             shape = RoundedCornerShape(10.dp),
@@ -596,6 +601,7 @@
                             onClick = {
                                 uriHandler.openUri("https://maps.google.com/?q=${club.lat},${club.lng}")
                                 showMapChoice = false
+                                tokenStorage.saveMapChoice("google") // Save the user's choice for next time!
                             },
                             colors = ButtonDefaults.buttonColors(containerColor = brandOrange),
                             shape = RoundedCornerShape(10.dp),
@@ -631,7 +637,15 @@
                         Button(
                             onClick = {
                                 if (isIosPlatform()) {
+                                    if (tokenStorage.getMapChoice() != null) {
+                                        if (tokenStorage.getMapChoice() == "apple") {
+                                            uriHandler.openUri("https://maps.apple.com/?q=${club.lat},${club.lng}")
+                                        } else {
+                                            uriHandler.openUri("https://maps.google.com/?q=${club.lat},${club.lng}")
+                                        }
+                                    } else {
                                     showMapChoice = true
+                                        }
                                 } else {
                                     uriHandler.openUri("https://maps.google.com/?q=${club.lat},${club.lng}")
                                 }
