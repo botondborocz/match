@@ -20,6 +20,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.automirrored.filled.ManageSearch
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -84,8 +85,11 @@ import androidx.compose.material3.DropdownMenuItem
 import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
+import org.koin.compose.koinInject
 import org.ttproject.components.NativeDatePickerField
 import org.ttproject.components.NativeDropdownField
+import org.ttproject.data.TokenStorage
+import org.ttproject.isIosPlatform
 
 @Composable
 fun ProfileScreen(
@@ -839,7 +843,8 @@ private fun SettingsAndLogout(
     onLogoutClick: () -> Unit,
     onChangeLanguage: (String) -> Unit,
     onChangeTheme: (ThemeMode) -> Unit,
-    viewModel: ProfileViewModel
+    viewModel: ProfileViewModel,
+    tokenStorage: TokenStorage = koinInject()
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
         LanguageSelector(currentLanguage, onChangeLanguage, viewModel)
@@ -852,6 +857,35 @@ private fun SettingsAndLogout(
 
         // Settings Button
 //        Ro
+        if (isIosPlatform()) {
+
+            // Reset Map Choice Button
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(Color(0xFFFF4B4B).copy(alpha = 0.1f))
+                    .border(1.dp, Color(0xFFFF4B4B).copy(alpha = 0.3f), RoundedCornerShape(16.dp))
+                    .clickable { tokenStorage.clearMapChoice() }
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                Icon(
+                    Icons.AutoMirrored.Filled.ManageSearch,
+                    contentDescription = "Reset",
+                    tint = Color(0xFFFF4B4B),
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    "Reset Map Choice",
+                    color = Color(0xFFFF4B4B),
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
 
         Spacer(modifier = Modifier.height(12.dp))
 
