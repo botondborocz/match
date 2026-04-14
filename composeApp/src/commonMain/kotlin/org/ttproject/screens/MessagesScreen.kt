@@ -86,12 +86,18 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Reply
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Reply
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.layout.layout
+import androidx.compose.ui.text.TextStyle
 import org.ttproject.data.ReactionDto
 import kotlin.math.abs
 
@@ -284,21 +290,28 @@ fun ChatDetailScreen(
     val isLoading by viewModel.isLoading.collectAsState()
 
     var messageText by remember { mutableStateOf("") }
-
-    // 👇 1. New State to track the reply!
     var replyingToMessageId by remember { mutableStateOf<String?>(null) }
     val replyingToMessage = remember(replyingToMessageId, messages) {
         messages.find { it.id == replyingToMessageId }
     }
 
-    var selectedReactionMessageId by remember { mutableStateOf<String?>(null) }
+    // 👇 1. THEME STATE
+    val defaultBg = AppColors.Background
+    val defaultSurface = AppColors.SurfaceDark
+    val defaultOrange = AppColors.AccentOrange
 
+    val chatThemes = org.ttproject.ChatThemeManager.themes
+
+    var currentTheme by remember { mutableStateOf(chatThemes[0]) }
+    var isThemeSheetOpen by remember { mutableStateOf(false) }
+    val themeSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+    var selectedReactionMessageId by remember { mutableStateOf<String?>(null) }
     val imeInsets = if (isIosPlatform()) WindowInsets.ime else WindowInsets.ime
     val bottomNavInset = remember(bottomNavPadding) { WindowInsets(bottom = bottomNavPadding + 10.dp) }
     val focusManager = LocalFocusManager.current
     val tokenStorage: TokenStorage = koinInject()
 
-    // 👇 1. ADD THESE TWO LINES:
     val inputFocusRequester = remember { FocusRequester() }
     val keyboardController = LocalSoftwareKeyboardController.current
 
@@ -313,16 +326,7 @@ fun ChatDetailScreen(
     val listState = rememberLazyListState()
 
     ClearChatNotificationEffect(chatId = chatId)
-
     LaunchedEffect(chatId) { viewModel.markMessagesAsRead() }
-
-//    val presentedMessageIds = remember { mutableSetOf<String>() }
-//    var isInitialLoad by remember { mutableStateOf(true) }
-
-//    if (isInitialLoad && messages.isNotEmpty()) {
-//        presentedMessageIds.addAll(messages.map { it.id })
-//        isInitialLoad = false
-//    }
 
     var previousMessageCount by remember { mutableStateOf(messages.size) }
     LaunchedEffect(messages.size) {
@@ -332,36 +336,30 @@ fun ChatDetailScreen(
         previousMessageCount = messages.size
     }
 
-    // 👇 1. Use our new data class instead of just a String ID
     val emojis = remember { listOf("❤️", "😂", "😮", "😢", "🏓", "👍") }
     var reactionMenuData by remember { mutableStateOf<ReactionMenuData?>(null) }
-
     var reactionSheetMessageId by remember { mutableStateOf<String?>(null) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val coroutineScope = rememberCoroutineScope()
 
-    // 👇 1. Add these two states to track continuous dragging
     var activeReactionDragPosition by remember { mutableStateOf<Offset?>(null) }
     var hoveredReactionIndex by remember { mutableStateOf(-1) }
 
-    // 👇 1. Add the haptic provider and a state to track the previous hover
     val haptic = LocalHapticFeedback.current
     var previousHoveredIndex by remember { mutableIntStateOf(-1) }
 
-    // 👇 2. Add this effect. It watches the index and ticks when crossing boundaries!
     LaunchedEffect(hoveredReactionIndex) {
         if (hoveredReactionIndex != -1 && hoveredReactionIndex != previousHoveredIndex) {
-            // TextHandleMove produces a very subtle, satisfying "tick"
             haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
         }
         previousHoveredIndex = hoveredReactionIndex
     }
 
-    // 👇 2. Wrap the whole screen in a Box so the overlay can sit on top of the TopBar!
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(AppColors.Background)
+            // 👇 2. Apply the beautiful theme gradient to the background!
+            .background(currentTheme.backgroundBrush)
             .windowInsetsPadding(bottomNavInset.union(imeInsets))
     ) {
         Column(
@@ -381,18 +379,11 @@ fun ChatDetailScreen(
                         ) {
                             if (!otherUserImageUrl.isNullOrBlank()) {
                                 AsyncImage(
-                                    model = otherUserImageUrl,
-                                    contentDescription = "Profile picture",
-                                    modifier = Modifier.fillMaxSize(),
-                                    contentScale = ContentScale.Crop
+                                    model = otherUserImageUrl, contentDescription = "Profile picture",
+                                    modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop
                                 )
                             } else {
-                                Text(
-                                    text = getInitials(otherUsername),
-                                    color = AppColors.AccentOrange,
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 18.sp
-                                )
+                                Text(getInitials(otherUsername), color = AppColors.AccentOrange, fontWeight = FontWeight.Bold, fontSize = 18.sp)
                             }
                         }
                         Spacer(modifier = Modifier.width(12.dp))
@@ -401,23 +392,24 @@ fun ChatDetailScreen(
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(
-                            imageVector = if (isIosPlatform()) Icons.Filled.ArrowBackIosNew else Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
-                            tint = AppColors.TextPrimary
-                        )
+                        Icon(if (isIosPlatform()) Icons.Filled.ArrowBackIosNew else Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = AppColors.TextPrimary)
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = AppColors.Background)
+                // 👇 3. ADD THE THEME PALETTE ICON HERE
+                actions = {
+                    IconButton(onClick = { isThemeSheetOpen = true }) {
+                        Icon(Icons.Default.Palette, contentDescription = "Change Theme", tint = AppColors.TextPrimary)
+                    }
+                },
+                // 👇 4. Make it transparent so the gradient flows behind it!
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
             )
 
             HorizontalDivider(color = AppColors.TextGray.copy(alpha = 0.2f))
 
-            // 👇 1. Create a silent ledger of known messages
             val knownMessageIds = remember { mutableSetOf<String>() }
             var isInitialBatchProcessed by remember { mutableStateOf(false) }
 
-            // 👇 2. Update the ledger AFTER every render
             LaunchedEffect(messages) {
                 knownMessageIds.addAll(messages.map { it.id })
                 isInitialBatchProcessed = true
@@ -432,8 +424,6 @@ fun ChatDetailScreen(
                 val currentUserId = tokenStorage.getUserId() ?: ""
                 val displayMessages = messages.reversed()
 
-                // ... inside ChatDetailScreen's LazyColumn ...
-
                 itemsIndexed(displayMessages, key = { _, msg -> msg.id }) { index, msg ->
                     val isMe = msg.senderId == currentUserId
                     val isSelected = selectedMessageId == msg.id
@@ -446,28 +436,15 @@ fun ChatDetailScreen(
                     val visuallyConnectToOlder = olderMessage?.senderId == msg.senderId && !showTimeHeader
                     val visuallyConnectToNewer = newerMessage?.senderId == msg.senderId && !newerShowsHeader
 
-
-                    // 👇 3. The Magic Logic: Is this a brand new message?
                     val playAnimation = remember(msg.id) {
-                        if (!isInitialBatchProcessed) {
-                            false // Initial load: do not animate anything
-                        } else {
-                            // Animate ONLY if we've never seen it AND it's a recent message (index < 5)
-                            // (Checking index prevents older paginated messages from animating)
-                            !knownMessageIds.contains(msg.id) && index < 5
-                        }
+                        if (!isInitialBatchProcessed) false else !knownMessageIds.contains(msg.id) && index < 5
                     }
 
                     val repliedMessage = msg.replyToMessageId?.let { replyId -> messages.find { it.id == replyId } }
                     val repliedText = repliedMessage?.content
                     val repliedSender = if (repliedMessage?.senderId == currentUserId) "You" else otherUsername
 
-                    // 👇 THE FIX: Wrap the bubble in a Box and reverse the Z-Index!
-                    // This forces index 0 (newest message) to have the highest Z-Index,
-                    // guaranteeing it draws ON TOP of the older messages.
-                    Box(
-                        modifier = Modifier.zIndex(displayMessages.size - index.toFloat())
-                    ) {
+                    Box(modifier = Modifier.zIndex(displayMessages.size - index.toFloat())) {
                         AnimatedMessageBubble(
                             text = msg.content,
                             isMe = isMe,
@@ -480,17 +457,16 @@ fun ChatDetailScreen(
                             repliedText = repliedText,
                             repliedSender = repliedSender,
                             reactions = msg.reactions,
+                            myBubbleColor = currentTheme.myBubbleColor,       // 👈 Pass Theme Color
+                            otherBubbleColor = currentTheme.otherBubbleColor, // 👈 Pass Theme Color
                             onClick = { selectedMessageId = if (isSelected) null else msg.id },
                             onReactionClick = { reactionSheetMessageId = msg.id },
                             onLongPress = { bounds, topStart, topEnd, bottomStart, bottomEnd, initialTouch, reactionBounds ->
                                 reactionMenuData = ReactionMenuData(msg.id, isMe, bounds, topStart, topEnd, bottomStart, bottomEnd, initialTouch, reactionBounds)
                             },
-                            onLongPressDrag = { globalPos ->
-                                activeReactionDragPosition = globalPos
-                            },
+                            onLongPressDrag = { globalPos -> activeReactionDragPosition = globalPos },
                             onLongPressEnd = { hasDragged ->
                                 if (hasDragged) {
-                                    // They dragged and released: send reaction if selected, and close menu
                                     if (reactionMenuData != null && hoveredReactionIndex != -1) {
                                         viewModel.sendReaction(reactionMenuData!!.messageId, emojis[hoveredReactionIndex])
                                         reactionMenuData = null
@@ -498,7 +474,6 @@ fun ChatDetailScreen(
                                     activeReactionDragPosition = null
                                     hoveredReactionIndex = -1
                                 } else {
-                                    // They just lifted immediately: leave menu open!
                                     activeReactionDragPosition = null
                                 }
                             },
@@ -509,7 +484,8 @@ fun ChatDetailScreen(
             }
 
             // --- THE KEYBOARD-AWARE INPUT AREA ---
-            Column(modifier = Modifier.fillMaxWidth().background(AppColors.Background)) {
+            // 👇 THE FIX: Removed the .background(Color.Black.copy(alpha = 0.4f)) so it matches the theme
+            Column(modifier = Modifier.fillMaxWidth()) {
                 AnimatedVisibility(
                     visible = replyingToMessage != null,
                     enter = expandVertically() + fadeIn(),
@@ -518,6 +494,7 @@ fun ChatDetailScreen(
                     if (replyingToMessage != null) {
                         ReplyPreview(
                             messageContent = replyingToMessage.content,
+                            themeColor = currentTheme.myBubbleColor, // 👈 Pass the active theme color!
                             onCancel = { replyingToMessageId = null }
                         )
                     }
@@ -525,24 +502,55 @@ fun ChatDetailScreen(
 
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.Bottom
                 ) {
-                    OutlinedTextField(
+                    // 👇 1. Dynamically adjust the inset shadow!
+                    val isDarkMode = org.ttproject.isDark // (Or isSystemInDarkTheme() depending on your imports)
+                    val inputBgColor = if (isDarkMode) {
+                        Color.Black.copy(alpha = 0.25f) // Deep shadow for Dark Mode
+                    } else {
+                        Color.Black.copy(alpha = 0.05f) // Extremely subtle, clean shadow for Light Mode
+                    }
+
+                    BasicTextField(
                         value = messageText,
                         onValueChange = { messageText = it },
-                        placeholder = { Text("Type a message...", color = AppColors.TextGray) },
-                        modifier = Modifier.weight(1f).focusRequester(inputFocusRequester),
-                        shape = RoundedCornerShape(24.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = AppColors.AccentOrange, unfocusedBorderColor = AppColors.TextGray.copy(alpha = 0.5f),
-                            focusedTextColor = AppColors.TextPrimary, unfocusedTextColor = AppColors.TextPrimary,
-                            cursorColor = AppColors.AccentOrange
+                        modifier = Modifier
+                            .weight(1f)
+                            .focusRequester(inputFocusRequester)
+                            .clip(RoundedCornerShape(24.dp))
+                            // 👇 2. Apply the dynamic color
+                            .background(inputBgColor)
+                            .border(
+                                width = 1.dp,
+                                color = if (messageText.isNotBlank()) currentTheme.myBubbleColor else AppColors.TextGray.copy(alpha = 0.3f),
+                                shape = RoundedCornerShape(24.dp)
+                            )
+                            .padding(horizontal = 16.dp, vertical = 10.dp),
+                        textStyle = TextStyle(
+                            color = AppColors.TextPrimary,
+                            fontSize = 15.sp
                         ),
-                        maxLines = 3
+                        cursorBrush = SolidColor(currentTheme.myBubbleColor),
+                        maxLines = 4,
+                        decorationBox = { innerTextField ->
+                            Box(contentAlignment = Alignment.CenterStart) {
+                                if (messageText.isEmpty()) {
+                                    Text("Type a message...", color = AppColors.TextGray, fontSize = 15.sp)
+                                }
+                                innerTextField()
+                            }
+                        }
                     )
+
                     Spacer(modifier = Modifier.width(8.dp))
+
+                    // Send Button
                     Box(
-                        modifier = Modifier.size(48.dp).clip(CircleShape).background(if (messageText.isNotBlank()) AppColors.AccentOrange else AppColors.SurfaceDark)
+                        modifier = Modifier
+                            .size(42.dp)
+                            .clip(CircleShape)
+                            .background(if (messageText.isNotBlank()) currentTheme.myBubbleColor else AppColors.SurfaceDark.copy(alpha = 0.5f))
                             .clickable(enabled = messageText.isNotBlank()) {
                                 viewModel.sendMessage(messageText, replyingToMessageId)
                                 messageText = ""
@@ -550,7 +558,75 @@ fun ChatDetailScreen(
                             },
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Send", tint = if (messageText.isNotBlank()) Color.White else AppColors.TextGray, modifier = Modifier.size(20.dp).offset(x = 2.dp))
+                        Icon(
+                            Icons.AutoMirrored.Filled.Send,
+                            contentDescription = "Send",
+                            tint = if (messageText.isNotBlank()) Color.White else AppColors.TextGray,
+                            modifier = Modifier.size(18.dp).offset(x = 2.dp)
+                        )
+                    }
+                }
+            }
+        }
+
+        // 👇 6. THEME SELECTION BOTTOM SHEET
+        if (isThemeSheetOpen) {
+            ModalBottomSheet(
+                onDismissRequest = { isThemeSheetOpen = false },
+                sheetState = themeSheetState,
+                containerColor = AppColors.Background
+            ) {
+                Column(modifier = Modifier.fillMaxWidth().padding(bottom = 32.dp)) {
+                    Text(
+                        "Chat Theme",
+                        color = AppColors.TextPrimary,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)
+                    )
+                    HorizontalDivider(color = AppColors.TextGray.copy(alpha = 0.1f))
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    LazyColumn(
+                        modifier = Modifier.fillMaxWidth(),
+                        contentPadding = PaddingValues(horizontal = 24.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        items(chatThemes) { theme ->
+                            val isSelected = currentTheme.name == theme.name
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(16.dp))
+                                    .background(if (isSelected) AppColors.SurfaceDark else Color.Transparent)
+                                    .clickable {
+                                        currentTheme = theme
+                                        coroutineScope.launch { themeSheetState.hide(); isThemeSheetOpen = false }
+                                    }
+                                    .padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                // Theme preview circle
+                                Box(
+                                    modifier = Modifier
+                                        .size(40.dp)
+                                        .clip(CircleShape)
+                                        .background(theme.backgroundBrush)
+                                        .border(2.dp, if (isSelected) theme.myBubbleColor else Color.Transparent, CircleShape)
+                                )
+                                Spacer(modifier = Modifier.width(16.dp))
+                                Text(
+                                    text = theme.name,
+                                    color = AppColors.TextPrimary,
+                                    fontSize = 16.sp,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+                                )
+                                Spacer(modifier = Modifier.weight(1f))
+                                if (isSelected) {
+                                    Icon(Icons.Default.Check, contentDescription = "Selected", tint = theme.myBubbleColor)
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -824,6 +900,8 @@ fun AnimatedMessageBubble(
     repliedText: String?,
     repliedSender: String?,
     reactions: List<ReactionDto>,
+    myBubbleColor: Color,
+    otherBubbleColor: Color,
     onClick: () -> Unit,
     onReactionClick: () -> Unit,
     onLongPress: (Rect, Dp, Dp, Dp, Dp, Offset, Rect?) -> Unit,
@@ -946,6 +1024,8 @@ fun AnimatedMessageBubble(
                 repliedText = repliedText,
                 repliedSender = repliedSender,
                 reactions = reactions,
+                myBubbleColor = myBubbleColor,
+                otherBubbleColor = otherBubbleColor,
                 onClick = onClick,
                 onReactionClick = onReactionClick,
                 onLongPress = onLongPress,
@@ -1011,6 +1091,8 @@ fun ChatBubble(
     repliedText: String?,
     repliedSender: String?,
     reactions: List<ReactionDto>,
+    myBubbleColor: Color,
+    otherBubbleColor: Color,
     modifier: Modifier = Modifier,
     onClick: () -> Unit,
     onReactionClick: () -> Unit,
@@ -1035,7 +1117,7 @@ fun ChatBubble(
     val currentBottomStart by rememberUpdatedState(bottomStart)
     val currentBottomEnd by rememberUpdatedState(bottomEnd)
 
-    val baseColor = if (isMe) AppColors.AccentOrange else AppColors.SurfaceDark
+    val baseColor = if (isMe) myBubbleColor else otherBubbleColor
     val targetColor = if (isSelected) {
         Color(
             red = baseColor.red * 0.85f, green = baseColor.green * 0.85f,
@@ -1148,12 +1230,14 @@ fun ChatBubble(
                                 modifier = Modifier
                                     .width(4.dp)
                                     .fillMaxHeight()
-                                    .background(if (isMe) Color.White else AppColors.AccentOrange)
+                                    // 👇 Uses Theme Color!
+                                    .background(if (isMe) Color.White else myBubbleColor)
                             )
                             Column(modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)) {
                                 Text(
                                     text = repliedSender,
-                                    color = if (isMe) Color.White else AppColors.AccentOrange,
+                                    // 👇 Uses Theme Color!
+                                    color = if (isMe) Color.White else myBubbleColor,
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.Bold
                                 )
@@ -1362,6 +1446,7 @@ fun EmptyMessagesState() {
 @Composable
 fun ReplyPreview(
     messageContent: String,
+    themeColor: Color, // 👈 Accept the theme color
     onCancel: () -> Unit
 ) {
     Row(
@@ -1369,10 +1454,10 @@ fun ReplyPreview(
             .fillMaxWidth()
             .padding(start = 16.dp, end = 16.dp, top = 8.dp)
             .clip(RoundedCornerShape(8.dp))
-            .background(AppColors.SurfaceDark)
+            .background(Color.Black.copy(alpha = 0.2f)) // 👈 Translucent to blend with gradient!
             .border(
                 width = 1.dp,
-                color = AppColors.TextGray.copy(alpha = 0.2f),
+                color = themeColor.copy(alpha = 0.3f), // 👈 Theme matched border
                 shape = RoundedCornerShape(8.dp)
             ),
         verticalAlignment = Alignment.CenterVertically
@@ -1382,12 +1467,12 @@ fun ReplyPreview(
             modifier = Modifier
                 .width(4.dp)
                 .height(40.dp)
-                .background(AppColors.AccentOrange)
+                .background(themeColor) // 👈 Theme matched bar
         )
         Spacer(modifier = Modifier.width(8.dp))
 
         Column(modifier = Modifier.weight(1f).padding(vertical = 8.dp)) {
-            Text("Replying to", color = AppColors.AccentOrange, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+            Text("Replying to", color = themeColor, fontSize = 12.sp, fontWeight = FontWeight.Bold) // 👈 Theme matched title
             Text(
                 text = messageContent,
                 color = AppColors.TextPrimary,

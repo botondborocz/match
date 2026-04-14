@@ -82,14 +82,17 @@ import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.DropdownMenuItem
+import kotlinx.coroutines.launch
 import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import org.koin.compose.koinInject
+import org.ttproject.AppIcon
 import org.ttproject.components.NativeDatePickerField
 import org.ttproject.components.NativeDropdownField
 import org.ttproject.data.TokenStorage
 import org.ttproject.isIosPlatform
+import ttproject.composeapp.generated.resources.Res as AppRes
 
 @Composable
 fun ProfileScreen(
@@ -155,6 +158,7 @@ fun ProfileScreen(
         is ProfileState.Success -> {
             val userData = uiState as ProfileState.Success
             var animateTrigger by remember { mutableStateOf(true) }
+            val snackbarHostState = remember { SnackbarHostState() }
 
             LaunchedEffect(userData.language) {
                 if (userData.language != null && userData.language != currentLanguage) {
@@ -238,58 +242,96 @@ fun ProfileScreen(
             }
 
             // --- MAIN CONTENT ---
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(scrollState)
-                    .padding(start = 24.dp, end = 24.dp, top = 32.dp, bottom = 80.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                AnimatedVisibility(visible = animateTrigger, enter = fadeIn(tween(400)) + slideInVertically(tween(400)) { 50 }) {
-                    Column {
-                        ProfileHeader(
-                            profileData = userData,
-                            onAvatarClick = { isAvatarExpanded = true },
-                            onPhotoEditClick = { singleImagePicker.launch() },
-                            onUsernameEditClick = { isEditUsernameModalOpen = true },
-                            onBioEditClick = { isEditBioModalOpen = true },
-                            onPreviewMatchcardClick = { isMatchCardPreviewOpen = true } // 👈 NEW
-                        )
-                        Spacer(modifier = Modifier.height(32.dp))
+            Box(modifier = Modifier.fillMaxSize()) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(scrollState)
+                        .padding(start = 24.dp, end = 24.dp, top = 32.dp, bottom = 80.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    AnimatedVisibility(
+                        visible = animateTrigger,
+                        enter = fadeIn(tween(400)) + slideInVertically(tween(400)) { 50 }) {
+                        Column {
+                            ProfileHeader(
+                                profileData = userData,
+                                onAvatarClick = { isAvatarExpanded = true },
+                                onPhotoEditClick = { singleImagePicker.launch() },
+                                onUsernameEditClick = { isEditUsernameModalOpen = true },
+                                onBioEditClick = { isEditBioModalOpen = true },
+                                onPreviewMatchcardClick = {
+                                    isMatchCardPreviewOpen = true
+                                } // 👈 NEW
+                            )
+                            Spacer(modifier = Modifier.height(32.dp))
+                        }
                     }
-                }
 
-                // 👇 NEW: BASIC INFO SECTION
-                AnimatedVisibility(visible = animateTrigger, enter = fadeIn(tween(400, delayMillis = 100)) + slideInVertically(tween(400, delayMillis = 100)) { 50 }) {
-                    Column {
-                        BasicInfoSection(
-                            profileData = userData,
-                            onEditClick = { isEditBasicInfoModalOpen = true }
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
+                    // 👇 NEW: BASIC INFO SECTION
+                    AnimatedVisibility(
+                        visible = animateTrigger,
+                        enter = fadeIn(tween(400, delayMillis = 100)) + slideInVertically(
+                            tween(
+                                400,
+                                delayMillis = 100
+                            )
+                        ) { 50 }) {
+                        Column {
+                            BasicInfoSection(
+                                profileData = userData,
+                                onEditClick = { isEditBasicInfoModalOpen = true }
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                        }
                     }
-                }
 
-                AnimatedVisibility(visible = animateTrigger, enter = fadeIn(tween(400, delayMillis = 150)) + slideInVertically(tween(400, delayMillis = 150)) { 50 }) {
-                    Column {
-                        GearSection(
-                            profileData = userData,
-                            onGearEditClick = { isEditGearModalOpen = true }
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
+                    AnimatedVisibility(
+                        visible = animateTrigger,
+                        enter = fadeIn(tween(400, delayMillis = 150)) + slideInVertically(
+                            tween(
+                                400,
+                                delayMillis = 150
+                            )
+                        ) { 50 }) {
+                        Column {
+                            GearSection(
+                                profileData = userData,
+                                onGearEditClick = { isEditGearModalOpen = true }
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                        }
                     }
-                }
 
-                AnimatedVisibility(visible = animateTrigger, enter = fadeIn(tween(400, delayMillis = 300)) + slideInVertically(tween(400, delayMillis = 300)) { 50 }) {
-                    Column {
-                        SettingsAndLogout(
-                            currentLanguage = currentLanguage, currentThemeMode = currentThemeMode,
-                            onLogoutClick = { viewModel.clearProfile(); onLogoutClick() },
-                            onChangeLanguage = onChangeLanguage, onChangeTheme = onChangeTheme, viewModel = viewModel
-                        )
-                        Spacer(modifier = Modifier.height(20.dp))
+                    AnimatedVisibility(
+                        visible = animateTrigger,
+                        enter = fadeIn(tween(400, delayMillis = 300)) + slideInVertically(
+                            tween(
+                                400,
+                                delayMillis = 300
+                            )
+                        ) { 50 }) {
+                        Column {
+                            SettingsAndLogout(
+                                currentLanguage = currentLanguage,
+                                currentThemeMode = currentThemeMode,
+                                onLogoutClick = { viewModel.clearProfile(); onLogoutClick() },
+                                onChangeLanguage = onChangeLanguage,
+                                onChangeTheme = onChangeTheme,
+                                viewModel = viewModel,
+                                snackbarHostState = snackbarHostState
+                            )
+                            Spacer(modifier = Modifier.height(20.dp))
+                        }
                     }
                 }
+                // 👇 4. Add the actual Snackbar UI to the bottom of the screen
+                SnackbarHost(
+                    hostState = snackbarHostState,
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = 90.dp) // Sits just above your bottom navigation
+                )
             }
         }
     }
@@ -844,8 +886,11 @@ private fun SettingsAndLogout(
     onChangeLanguage: (String) -> Unit,
     onChangeTheme: (ThemeMode) -> Unit,
     viewModel: ProfileViewModel,
+    snackbarHostState: SnackbarHostState, // 👈 Accept the state
     tokenStorage: TokenStorage = koinInject()
 ) {
+    val scope = rememberCoroutineScope() // 👈 Add a coroutine scope for the snackbar
+
     Column(modifier = Modifier.fillMaxWidth()) {
         LanguageSelector(currentLanguage, onChangeLanguage, viewModel)
 
@@ -855,39 +900,45 @@ private fun SettingsAndLogout(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // Settings Button
-//        Ro
-        if (isIosPlatform()) {
-
-            // Reset Map Choice Button
+        if (true) {
+            // 👇 The cleanly styled Reset Map Choice Button
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(16.dp))
-                    .background(Color(0xFFFF4B4B).copy(alpha = 0.1f))
-                    .border(1.dp, Color(0xFFFF4B4B).copy(alpha = 0.3f), RoundedCornerShape(16.dp))
-                    .clickable { tokenStorage.clearMapChoice() }
+                    .background(AppColors.SurfaceDark) // Matches Language/Theme background
+                    .clickable {
+                        tokenStorage.clearMapChoice()
+
+                        // Fire the snackbar action!
+                        scope.launch {
+                            snackbarHostState.showSnackbar(
+                                message = "Map preference reset successfully",
+                                duration = SnackbarDuration.Short
+                            )
+                        }
+                    }
                     .padding(16.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center
+                verticalAlignment = Alignment.CenterVertically // Standard left-alignment
             ) {
+                // More accurate Map icon matching the selector style
                 Icon(
-                    Icons.AutoMirrored.Filled.ManageSearch,
-                    contentDescription = "Reset",
-                    tint = Color(0xFFFF4B4B),
-                    modifier = Modifier.size(20.dp)
+                    Icons.Default.Map,
+                    contentDescription = "Reset Map Choice",
+                    tint = AppColors.TextGray,
+                    modifier = Modifier.size(24.dp)
                 )
-                Spacer(modifier = Modifier.width(8.dp))
+                Spacer(modifier = Modifier.width(16.dp))
                 Text(
                     "Reset Map Choice",
-                    color = Color(0xFFFF4B4B),
+                    color = AppColors.TextPrimary,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold
                 )
             }
-        }
 
-        Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(12.dp))
+        }
 
         // Logout Button
         Row(
