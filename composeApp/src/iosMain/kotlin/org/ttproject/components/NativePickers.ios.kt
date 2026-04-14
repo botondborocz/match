@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -12,8 +13,24 @@ import platform.UIKit.*
 import platform.Foundation.*
 import org.ttproject.AppColors
 
+// Converts Compose Color to iOS UIColor
+private fun Color.toUIColor(): UIColor = UIColor(
+    red = this.red.toDouble(),
+    green = this.green.toDouble(),
+    blue = this.blue.toDouble(),
+    alpha = this.alpha.toDouble()
+)
+
 @Composable
 actual fun NativeDatePickerField(value: String, label: String, onDateSelected: (String) -> Unit) {
+    // 👇 Prefixed with 'compose' to prevent ANY shadowing of iOS Native properties!
+    val composeBgColor = AppColors.Background.toUIColor()
+    val composeSurfaceColor = AppColors.SurfaceDark.toUIColor()
+    val composeTextColor = AppColors.TextPrimary.toUIColor()
+    val composePlaceholderColor = AppColors.TextGray.copy(alpha = 0.5f).toUIColor()
+    val composeBorderColor = AppColors.TextPrimary.copy(alpha = 0.3f).toUIColor()
+    val composeIconColor = AppColors.TextGray.toUIColor()
+
     Column(modifier = Modifier.fillMaxWidth()) {
         Text(label, color = AppColors.TextGray, fontSize = 12.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.5.sp)
         Spacer(modifier = Modifier.height(6.dp))
@@ -22,51 +39,47 @@ actual fun NativeDatePickerField(value: String, label: String, onDateSelected: (
 
             UIKitView<UIView>(
                 factory = {
-                    // 👇 1. The "Base View" (Solid square that perfectly patches the Compose hole)
                     val baseView = UIView().apply {
-                        backgroundColor = UIColor(red = 30.0/255.0, green = 37.0/255.0, blue = 50.0/255.0, alpha = 1.0)
+                        backgroundColor = composeBgColor // 👈 No more shadowing errors!
                     }
 
-                    // 2. The "Border" View (Rounded, 30% white)
                     val borderView = UIView().apply {
-                        backgroundColor = UIColor.whiteColor.colorWithAlphaComponent(0.3)
+                        tag = 10L
+                        backgroundColor = composeBorderColor
                         layer.cornerRadius = 12.0
                         translatesAutoresizingMaskIntoConstraints = false
                     }
 
-                    // Pin border to base
                     baseView.addSubview(borderView)
                     borderView.leadingAnchor.constraintEqualToAnchor(baseView.leadingAnchor).active = true
                     borderView.trailingAnchor.constraintEqualToAnchor(baseView.trailingAnchor).active = true
                     borderView.topAnchor.constraintEqualToAnchor(baseView.topAnchor).active = true
                     borderView.bottomAnchor.constraintEqualToAnchor(baseView.bottomAnchor).active = true
 
-                    // 3. The "Inner" View (Solid dark field background)
                     val innerView = UIView().apply {
-                        backgroundColor = UIColor(red = 30.0/255.0, green = 37.0/255.0, blue = 50.0/255.0, alpha = 1.0)
+                        tag = 20L
+                        backgroundColor = composeSurfaceColor
                         layer.cornerRadius = 11.0
                         translatesAutoresizingMaskIntoConstraints = false
                     }
 
-                    // Pin inner to border with a 1px gap
                     borderView.addSubview(innerView)
                     innerView.leadingAnchor.constraintEqualToAnchor(borderView.leadingAnchor, constant = 1.0).active = true
                     innerView.trailingAnchor.constraintEqualToAnchor(borderView.trailingAnchor, constant = -1.0).active = true
                     innerView.topAnchor.constraintEqualToAnchor(borderView.topAnchor, constant = 1.0).active = true
                     innerView.bottomAnchor.constraintEqualToAnchor(borderView.bottomAnchor, constant = -1.0).active = true
 
-                    // 4. Add the text natively
                     val textLabel = UILabel().apply {
                         tag = 100L
                         text = value.ifBlank { "YYYY-MM-DD" }
-                        textColor = if (value.isBlank()) UIColor.grayColor else UIColor.whiteColor
+                        textColor = if (value.isBlank()) composePlaceholderColor else composeTextColor
                         font = UIFont.systemFontOfSize(16.0)
                         translatesAutoresizingMaskIntoConstraints = false
                     }
 
-                    // 5. Add the icon natively
                     val iconView = UIImageView(UIImage.systemImageNamed("calendar")).apply {
-                        tintColor = UIColor.grayColor
+                        tag = 200L
+                        tintColor = composeIconColor
                         translatesAutoresizingMaskIntoConstraints = false
                     }
 
@@ -81,11 +94,10 @@ actual fun NativeDatePickerField(value: String, label: String, onDateSelected: (
                     iconView.widthAnchor.constraintEqualToConstant(20.0).active = true
                     iconView.heightAnchor.constraintEqualToConstant(20.0).active = true
 
-                    // 6. Add the actual iOS Compact Date Picker
                     val datePicker = UIDatePicker().apply {
                         datePickerMode = UIDatePickerMode.UIDatePickerModeDate
                         preferredDatePickerStyle = UIDatePickerStyle.UIDatePickerStyleCompact
-                        alpha = 0.02 // Invisible, but intercepts physical touches!
+                        alpha = 0.02
                         translatesAutoresizingMaskIntoConstraints = false
                     }
 
@@ -102,13 +114,19 @@ actual fun NativeDatePickerField(value: String, label: String, onDateSelected: (
                     datePicker.topAnchor.constraintEqualToAnchor(innerView.topAnchor).active = true
                     datePicker.bottomAnchor.constraintEqualToAnchor(innerView.bottomAnchor).active = true
 
-                    baseView // Return the solid square container
+                    baseView
                 },
                 update = { view ->
-                    // viewWithTag searches the whole subview tree automatically!
+                    view.backgroundColor = composeBgColor
+                    view.viewWithTag(10L)?.backgroundColor = composeBorderColor
+                    view.viewWithTag(20L)?.backgroundColor = composeSurfaceColor
+
                     val labelView = view.viewWithTag(100L) as? UILabel
                     labelView?.text = value.ifBlank { "YYYY-MM-DD" }
-                    labelView?.textColor = if (value.isBlank()) UIColor.grayColor else UIColor.whiteColor
+                    labelView?.textColor = if (value.isBlank()) composePlaceholderColor else composeTextColor
+
+                    val currentIconView = view.viewWithTag(200L) as? UIImageView
+                    currentIconView?.tintColor = composeIconColor
                 },
                 modifier = Modifier.fillMaxSize()
             )
@@ -118,6 +136,13 @@ actual fun NativeDatePickerField(value: String, label: String, onDateSelected: (
 
 @Composable
 actual fun NativeDropdownField(value: String, label: String, options: List<String>, onOptionSelected: (String) -> Unit) {
+    val composeBgColor = AppColors.Background.toUIColor()
+    val composeSurfaceColor = AppColors.SurfaceDark.toUIColor()
+    val composeTextColor = AppColors.TextPrimary.toUIColor()
+    val composePlaceholderColor = AppColors.TextGray.copy(alpha = 0.5f).toUIColor()
+    val composeBorderColor = AppColors.TextPrimary.copy(alpha = 0.3f).toUIColor()
+    val composeIconColor = AppColors.TextGray.toUIColor()
+
     Column(modifier = Modifier.fillMaxWidth()) {
         Text(label, color = AppColors.TextGray, fontSize = 12.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.5.sp)
         Spacer(modifier = Modifier.height(6.dp))
@@ -126,14 +151,13 @@ actual fun NativeDropdownField(value: String, label: String, options: List<Strin
 
             UIKitView<UIView>(
                 factory = {
-                    // 👇 1. The "Base View" (Solid square that perfectly patches the Compose hole)
                     val baseView = UIView().apply {
-                        backgroundColor = UIColor(red = 30.0/255.0, green = 37.0/255.0, blue = 50.0/255.0, alpha = 1.0)
+                        backgroundColor = composeBgColor
                     }
 
-                    // 2. The "Border" View
                     val borderView = UIView().apply {
-                        backgroundColor = UIColor.whiteColor.colorWithAlphaComponent(0.3)
+                        tag = 10L
+                        backgroundColor = composeBorderColor
                         layer.cornerRadius = 12.0
                         translatesAutoresizingMaskIntoConstraints = false
                     }
@@ -144,9 +168,9 @@ actual fun NativeDropdownField(value: String, label: String, options: List<Strin
                     borderView.topAnchor.constraintEqualToAnchor(baseView.topAnchor).active = true
                     borderView.bottomAnchor.constraintEqualToAnchor(baseView.bottomAnchor).active = true
 
-                    // 3. The "Inner" View
                     val innerView = UIView().apply {
-                        backgroundColor = UIColor(red = 30.0/255.0, green = 37.0/255.0, blue = 50.0/255.0, alpha = 1.0)
+                        tag = 20L
+                        backgroundColor = composeSurfaceColor
                         layer.cornerRadius = 11.0
                         translatesAutoresizingMaskIntoConstraints = false
                     }
@@ -157,18 +181,17 @@ actual fun NativeDropdownField(value: String, label: String, options: List<Strin
                     innerView.topAnchor.constraintEqualToAnchor(borderView.topAnchor, constant = 1.0).active = true
                     innerView.bottomAnchor.constraintEqualToAnchor(borderView.bottomAnchor, constant = -1.0).active = true
 
-                    // 4. Native text label
                     val textLabel = UILabel().apply {
                         tag = 100L
                         text = value.ifBlank { "Select Level" }
-                        textColor = if (value.isBlank()) UIColor.grayColor else UIColor.whiteColor
+                        textColor = if (value.isBlank()) composePlaceholderColor else composeTextColor
                         font = UIFont.systemFontOfSize(16.0)
                         translatesAutoresizingMaskIntoConstraints = false
                     }
 
-                    // 5. Native chevron icon
                     val iconView = UIImageView(UIImage.systemImageNamed("chevron.down")).apply {
-                        tintColor = UIColor.grayColor
+                        tag = 200L
+                        tintColor = composeIconColor
                         translatesAutoresizingMaskIntoConstraints = false
                     }
 
@@ -183,7 +206,6 @@ actual fun NativeDropdownField(value: String, label: String, options: List<Strin
                     iconView.widthAnchor.constraintEqualToConstant(20.0).active = true
                     iconView.heightAnchor.constraintEqualToConstant(20.0).active = true
 
-                    // 6. The Native iOS Menu Button Overlay
                     val button = UIButton().apply {
                         showsMenuAsPrimaryAction = true
                         backgroundColor = UIColor.clearColor
@@ -206,12 +228,19 @@ actual fun NativeDropdownField(value: String, label: String, options: List<Strin
                     button.topAnchor.constraintEqualToAnchor(innerView.topAnchor).active = true
                     button.bottomAnchor.constraintEqualToAnchor(innerView.bottomAnchor).active = true
 
-                    baseView // Return the solid square container
+                    baseView
                 },
                 update = { view ->
+                    view.backgroundColor = composeBgColor
+                    view.viewWithTag(10L)?.backgroundColor = composeBorderColor
+                    view.viewWithTag(20L)?.backgroundColor = composeSurfaceColor
+
                     val labelView = view.viewWithTag(100L) as? UILabel
                     labelView?.text = value.ifBlank { "Select Level" }
-                    labelView?.textColor = if (value.isBlank()) UIColor.grayColor else UIColor.whiteColor
+                    labelView?.textColor = if (value.isBlank()) composePlaceholderColor else composeTextColor
+
+                    val currentIconView = view.viewWithTag(200L) as? UIImageView
+                    currentIconView?.tintColor = composeIconColor
                 },
                 modifier = Modifier.fillMaxSize()
             )
