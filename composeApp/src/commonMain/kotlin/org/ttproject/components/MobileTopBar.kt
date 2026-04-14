@@ -33,6 +33,8 @@ import ttproject.composeapp.generated.resources.Res
 import ttproject.composeapp.generated.resources.match_logo
 import ttproject.composeapp.generated.resources.match_logo_long
 import ttproject.composeapp.generated.resources.match_logo_long_dark
+import ttproject.composeapp.generated.resources.matchpoint_logo_long_dark
+import ttproject.composeapp.generated.resources.matchpoint_logo_long_light
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -44,14 +46,14 @@ fun MobileTopBar(
         title = {
             if (isDark) {
                 Image(
-                    painter = painterResource(Res.drawable.match_logo_long),
+                    painter = painterResource(Res.drawable.matchpoint_logo_long_dark),
                     contentDescription = "App Logo",
                     modifier = Modifier.height(28.dp)
                 )
             }
             else {
                 Image(
-                    painter = painterResource(Res.drawable.match_logo_long_dark),
+                    painter = painterResource(Res.drawable.matchpoint_logo_long_light),
                     contentDescription = "App Logo",
                     modifier = Modifier.height(28.dp)
                 )

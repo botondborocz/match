@@ -51,6 +51,8 @@ import org.ttproject.util.rememberGoogleAuthClient
 import org.ttproject.viewmodel.LoginState
 import org.ttproject.viewmodel.LoginViewModel
 import ttproject.composeapp.generated.resources.google_log
+import ttproject.composeapp.generated.resources.matchpoint_logo_long_dark
+import ttproject.composeapp.generated.resources.matchpoint_logo_long_light
 
 @Composable
 fun RegisterScreen(
@@ -109,13 +111,13 @@ fun RegisterScreen(
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     if (isDark) {
                         Image(
-                            painter = painterResource(Res.drawable.match_logo_long),
+                            painter = painterResource(Res.drawable.matchpoint_logo_long_dark),
                             contentDescription = "App Logo",
                             modifier = Modifier.height(64.dp)
                         )
                     } else {
                         Image(
-                            painter = painterResource(Res.drawable.match_logo_long_dark),
+                            painter = painterResource(Res.drawable.matchpoint_logo_long_light),
                             contentDescription = "App Logo",
                             modifier = Modifier.height(64.dp)
                         )
