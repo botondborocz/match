@@ -22,27 +22,40 @@ actual fun NativeDatePickerField(value: String, label: String, onDateSelected: (
 
             UIKitView<UIView>(
                 factory = {
-                    // 1. The "Border" View (Slightly larger, white with 30% alpha)
-                    val container = UIView().apply {
-                        backgroundColor = UIColor.whiteColor.colorWithAlphaComponent(0.3)
-                        layer.cornerRadius = 12.0
+                    // 👇 1. The "Base View" (Solid square that perfectly patches the Compose hole)
+                    val baseView = UIView().apply {
+                        backgroundColor = UIColor(red = 30.0/255.0, green = 37.0/255.0, blue = 50.0/255.0, alpha = 1.0)
                     }
 
-                    // 2. The "Inner" View (Dark, 1 pixel smaller on all sides)
+                    // 2. The "Border" View (Rounded, 30% white)
+                    val borderView = UIView().apply {
+                        backgroundColor = UIColor.whiteColor.colorWithAlphaComponent(0.3)
+                        layer.cornerRadius = 12.0
+                        translatesAutoresizingMaskIntoConstraints = false
+                    }
+
+                    // Pin border to base
+                    baseView.addSubview(borderView)
+                    borderView.leadingAnchor.constraintEqualToAnchor(baseView.leadingAnchor).active = true
+                    borderView.trailingAnchor.constraintEqualToAnchor(baseView.trailingAnchor).active = true
+                    borderView.topAnchor.constraintEqualToAnchor(baseView.topAnchor).active = true
+                    borderView.bottomAnchor.constraintEqualToAnchor(baseView.bottomAnchor).active = true
+
+                    // 3. The "Inner" View (Solid dark field background)
                     val innerView = UIView().apply {
                         backgroundColor = UIColor(red = 30.0/255.0, green = 37.0/255.0, blue = 50.0/255.0, alpha = 1.0)
                         layer.cornerRadius = 11.0
                         translatesAutoresizingMaskIntoConstraints = false
                     }
 
-                    // Add innerView to container and force a 1px gap to create the "border"
-                    container.addSubview(innerView)
-                    innerView.leadingAnchor.constraintEqualToAnchor(container.leadingAnchor, constant = 1.0).active = true
-                    innerView.trailingAnchor.constraintEqualToAnchor(container.trailingAnchor, constant = -1.0).active = true
-                    innerView.topAnchor.constraintEqualToAnchor(container.topAnchor, constant = 1.0).active = true
-                    innerView.bottomAnchor.constraintEqualToAnchor(container.bottomAnchor, constant = -1.0).active = true
+                    // Pin inner to border with a 1px gap
+                    borderView.addSubview(innerView)
+                    innerView.leadingAnchor.constraintEqualToAnchor(borderView.leadingAnchor, constant = 1.0).active = true
+                    innerView.trailingAnchor.constraintEqualToAnchor(borderView.trailingAnchor, constant = -1.0).active = true
+                    innerView.topAnchor.constraintEqualToAnchor(borderView.topAnchor, constant = 1.0).active = true
+                    innerView.bottomAnchor.constraintEqualToAnchor(borderView.bottomAnchor, constant = -1.0).active = true
 
-                    // 3. Add the text natively
+                    // 4. Add the text natively
                     val textLabel = UILabel().apply {
                         tag = 100L
                         text = value.ifBlank { "YYYY-MM-DD" }
@@ -51,7 +64,7 @@ actual fun NativeDatePickerField(value: String, label: String, onDateSelected: (
                         translatesAutoresizingMaskIntoConstraints = false
                     }
 
-                    // 4. Add the icon natively
+                    // 5. Add the icon natively
                     val iconView = UIImageView(UIImage.systemImageNamed("calendar")).apply {
                         tintColor = UIColor.grayColor
                         translatesAutoresizingMaskIntoConstraints = false
@@ -68,7 +81,7 @@ actual fun NativeDatePickerField(value: String, label: String, onDateSelected: (
                     iconView.widthAnchor.constraintEqualToConstant(20.0).active = true
                     iconView.heightAnchor.constraintEqualToConstant(20.0).active = true
 
-                    // 5. Add the actual iOS Compact Date Picker
+                    // 6. Add the actual iOS Compact Date Picker
                     val datePicker = UIDatePicker().apply {
                         datePickerMode = UIDatePickerMode.UIDatePickerModeDate
                         preferredDatePickerStyle = UIDatePickerStyle.UIDatePickerStyleCompact
@@ -89,12 +102,11 @@ actual fun NativeDatePickerField(value: String, label: String, onDateSelected: (
                     datePicker.topAnchor.constraintEqualToAnchor(innerView.topAnchor).active = true
                     datePicker.bottomAnchor.constraintEqualToAnchor(innerView.bottomAnchor).active = true
 
-                    container // Return the outer border view
+                    baseView // Return the solid square container
                 },
                 update = { view ->
-                    // The label is now inside the innerView, so we search the subviews
-                    val inner = view.subviews.firstOrNull() as? UIView
-                    val labelView = inner?.viewWithTag(100L) as? UILabel
+                    // viewWithTag searches the whole subview tree automatically!
+                    val labelView = view.viewWithTag(100L) as? UILabel
                     labelView?.text = value.ifBlank { "YYYY-MM-DD" }
                     labelView?.textColor = if (value.isBlank()) UIColor.grayColor else UIColor.whiteColor
                 },
@@ -114,26 +126,38 @@ actual fun NativeDropdownField(value: String, label: String, options: List<Strin
 
             UIKitView<UIView>(
                 factory = {
-                    // 1. The "Border" View
-                    val container = UIView().apply {
-                        backgroundColor = UIColor.whiteColor.colorWithAlphaComponent(0.3)
-                        layer.cornerRadius = 12.0
+                    // 👇 1. The "Base View" (Solid square that perfectly patches the Compose hole)
+                    val baseView = UIView().apply {
+                        backgroundColor = UIColor(red = 30.0/255.0, green = 37.0/255.0, blue = 50.0/255.0, alpha = 1.0)
                     }
 
-                    // 2. The "Inner" View
+                    // 2. The "Border" View
+                    val borderView = UIView().apply {
+                        backgroundColor = UIColor.whiteColor.colorWithAlphaComponent(0.3)
+                        layer.cornerRadius = 12.0
+                        translatesAutoresizingMaskIntoConstraints = false
+                    }
+
+                    baseView.addSubview(borderView)
+                    borderView.leadingAnchor.constraintEqualToAnchor(baseView.leadingAnchor).active = true
+                    borderView.trailingAnchor.constraintEqualToAnchor(baseView.trailingAnchor).active = true
+                    borderView.topAnchor.constraintEqualToAnchor(baseView.topAnchor).active = true
+                    borderView.bottomAnchor.constraintEqualToAnchor(baseView.bottomAnchor).active = true
+
+                    // 3. The "Inner" View
                     val innerView = UIView().apply {
                         backgroundColor = UIColor(red = 30.0/255.0, green = 37.0/255.0, blue = 50.0/255.0, alpha = 1.0)
                         layer.cornerRadius = 11.0
                         translatesAutoresizingMaskIntoConstraints = false
                     }
 
-                    container.addSubview(innerView)
-                    innerView.leadingAnchor.constraintEqualToAnchor(container.leadingAnchor, constant = 1.0).active = true
-                    innerView.trailingAnchor.constraintEqualToAnchor(container.trailingAnchor, constant = -1.0).active = true
-                    innerView.topAnchor.constraintEqualToAnchor(container.topAnchor, constant = 1.0).active = true
-                    innerView.bottomAnchor.constraintEqualToAnchor(container.bottomAnchor, constant = -1.0).active = true
+                    borderView.addSubview(innerView)
+                    innerView.leadingAnchor.constraintEqualToAnchor(borderView.leadingAnchor, constant = 1.0).active = true
+                    innerView.trailingAnchor.constraintEqualToAnchor(borderView.trailingAnchor, constant = -1.0).active = true
+                    innerView.topAnchor.constraintEqualToAnchor(borderView.topAnchor, constant = 1.0).active = true
+                    innerView.bottomAnchor.constraintEqualToAnchor(borderView.bottomAnchor, constant = -1.0).active = true
 
-                    // 3. Native text label
+                    // 4. Native text label
                     val textLabel = UILabel().apply {
                         tag = 100L
                         text = value.ifBlank { "Select Level" }
@@ -142,7 +166,7 @@ actual fun NativeDropdownField(value: String, label: String, options: List<Strin
                         translatesAutoresizingMaskIntoConstraints = false
                     }
 
-                    // 4. Native chevron icon
+                    // 5. Native chevron icon
                     val iconView = UIImageView(UIImage.systemImageNamed("chevron.down")).apply {
                         tintColor = UIColor.grayColor
                         translatesAutoresizingMaskIntoConstraints = false
@@ -159,7 +183,7 @@ actual fun NativeDropdownField(value: String, label: String, options: List<Strin
                     iconView.widthAnchor.constraintEqualToConstant(20.0).active = true
                     iconView.heightAnchor.constraintEqualToConstant(20.0).active = true
 
-                    // 5. The Native iOS Menu Button Overlay
+                    // 6. The Native iOS Menu Button Overlay
                     val button = UIButton().apply {
                         showsMenuAsPrimaryAction = true
                         backgroundColor = UIColor.clearColor
@@ -182,11 +206,10 @@ actual fun NativeDropdownField(value: String, label: String, options: List<Strin
                     button.topAnchor.constraintEqualToAnchor(innerView.topAnchor).active = true
                     button.bottomAnchor.constraintEqualToAnchor(innerView.bottomAnchor).active = true
 
-                    container
+                    baseView // Return the solid square container
                 },
                 update = { view ->
-                    val inner = view.subviews.firstOrNull() as? UIView
-                    val labelView = inner?.viewWithTag(100L) as? UILabel
+                    val labelView = view.viewWithTag(100L) as? UILabel
                     labelView?.text = value.ifBlank { "Select Level" }
                     labelView?.textColor = if (value.isBlank()) UIColor.grayColor else UIColor.whiteColor
                 },
