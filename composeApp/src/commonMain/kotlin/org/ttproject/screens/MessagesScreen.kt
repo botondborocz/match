@@ -7,8 +7,6 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -23,9 +21,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.ArrowBackIosNew
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
-import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -42,8 +38,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
-import kotlinx.datetime.LocalDateTime
-import kotlinx.datetime.TimeZone
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import org.ttproject.AppColors
@@ -56,17 +50,13 @@ import org.ttproject.util.ClearChatNotificationEffect
 import org.ttproject.util.formatMessageTime
 import org.ttproject.viewmodel.ChatViewModel
 import org.ttproject.viewmodel.MessagesViewModel
-import kotlin.time.Duration.Companion.hours
 import kotlin.time.Instant
-import kotlinx.datetime.toInstant
-import org.ttproject.components.AdaptivePullToRefresh
 import kotlin.time.Duration.Companion.minutes
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -89,12 +79,11 @@ import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Reply
+import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Palette
-import androidx.compose.material.icons.filled.Reply
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.graphics.Brush
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material3.SheetState
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.text.TextStyle
@@ -128,7 +117,7 @@ fun MessagesScreen(
     viewModel: MessagesViewModel = koinViewModel(),
     playAnimation: Boolean = true,
     bottomNavPadding: Dp,
-    onNavigateToChat: (String, String, String?) -> Unit
+    onNavigateToChat: (String, String, String?, String) -> Unit
 ) {
     val chatThreads by viewModel.filteredThreads.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
@@ -264,7 +253,8 @@ fun MessagesScreen(
                                     onNavigateToChat(
                                         thread.id,
                                         thread.otherUserName,
-                                        thread.otherUserImageUrl
+                                        thread.otherUserImageUrl,
+                                        thread.theme
                                     )
                                 }
                             )
@@ -283,9 +273,16 @@ fun ChatDetailScreen(
     chatId: String,
     otherUsername: String,
     otherUserImageUrl: String?,
+    initialThemeName: String,
     bottomNavPadding: Dp,
     onBack: () -> Unit
 ) {
+    LaunchedEffect(otherUsername) {
+        viewModel.fetchOtherUserProfile(otherUsername)
+    }
+
+    val otherUserProfile by viewModel.otherUserProfile.collectAsState()
+
     val messages by viewModel.messages.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
 
@@ -295,14 +292,15 @@ fun ChatDetailScreen(
         messages.find { it.id == replyingToMessageId }
     }
 
-    // 👇 1. THEME STATE
-    val defaultBg = AppColors.Background
-    val defaultSurface = AppColors.SurfaceDark
-    val defaultOrange = AppColors.AccentOrange
+    var isUserProfileSheetOpen by remember { mutableStateOf(false) }
+    val userProfileSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     val chatThemes = org.ttproject.ChatThemeManager.themes
 
-    var currentTheme by remember { mutableStateOf(chatThemes[0]) }
+    var currentTheme by remember(initialThemeName) {
+        mutableStateOf(chatThemes.find { it.name == initialThemeName } ?: chatThemes[0])
+    }
+
     var isThemeSheetOpen by remember { mutableStateOf(false) }
     val themeSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
@@ -372,7 +370,13 @@ fun ChatDetailScreen(
             // --- ANCHORED TOP BAR ---
             TopAppBar(
                 title = {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .clickable { isUserProfileSheetOpen = true }
+                            .padding(end = 8.dp, top = 4.dp, bottom = 4.dp) // Subtle padding for the touch target
+                    ) {
                         Box(
                             modifier = Modifier.size(36.dp).clip(CircleShape).background(AppColors.SurfaceDark),
                             contentAlignment = Alignment.Center
@@ -601,6 +605,7 @@ fun ChatDetailScreen(
                                     .background(if (isSelected) AppColors.SurfaceDark else Color.Transparent)
                                     .clickable {
                                         currentTheme = theme
+                                        viewModel.updateChatTheme(chatId, theme.name)
                                         coroutineScope.launch { themeSheetState.hide(); isThemeSheetOpen = false }
                                     }
                                     .padding(12.dp),
@@ -630,6 +635,22 @@ fun ChatDetailScreen(
                     }
                 }
             }
+        }
+
+        // 👇 TRIGGER THE USER PROFILE SHEET
+        if (isUserProfileSheetOpen) {
+            OtherUserProfileSheet(
+                username = otherUsername,
+                imageUrl = otherUserProfile?.imageUrl ?: otherUserImageUrl, // Use the fresh one if available
+                bio = otherUserProfile?.bio,
+                age = otherUserProfile?.age,
+                skillLevel = otherUserProfile?.skillLevel,
+                blade = otherUserProfile?.blade,
+                rubberFh = otherUserProfile?.rubberFh,
+                rubberBh = otherUserProfile?.rubberBh,
+                sheetState = userProfileSheetState,
+                onDismiss = { isUserProfileSheetOpen = false }
+            )
         }
 
         // 👇 3. THE REACTION BOTTOM SHEET
@@ -1219,11 +1240,14 @@ fun ChatBubble(
                 ) {
                     // 👇 THE QUOTE PREVIEW UI
                     if (repliedText != null && repliedSender != null) {
+                        val isDarkMode = org.ttproject.isDark
+                        val quoteBgColor = if (isDarkMode) Color.Black.copy(alpha = 0.15f) else Color.Black.copy(alpha = 0.05f)
+
                         Row(
                             modifier = Modifier
                                 .padding(bottom = 6.dp)
                                 .clip(RoundedCornerShape(6.dp))
-                                .background(Color.Black.copy(alpha = 0.15f))
+                                .background(quoteBgColor)
                                 .height(IntrinsicSize.Min)
                         ) {
                             Box(
@@ -1310,7 +1334,7 @@ fun ChatBubble(
                                         if (reactionList.size > 1) {
                                             Text(
                                                 text = reactionList.size.toString(),
-                                                color = Color.White, // Adjust to AppColors.TextPrimary if needed
+                                                color = AppColors.TextPrimary,
                                                 fontSize = 11.sp,
                                                 fontWeight = FontWeight.Bold
                                             )
@@ -1449,12 +1473,14 @@ fun ReplyPreview(
     themeColor: Color, // 👈 Accept the theme color
     onCancel: () -> Unit
 ) {
+    val isDarkMode = org.ttproject.isDark
+    val bgColor = if (isDarkMode) Color.Black.copy(alpha = 0.2f) else Color.Black.copy(alpha = 0.05f)
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(start = 16.dp, end = 16.dp, top = 8.dp)
             .clip(RoundedCornerShape(8.dp))
-            .background(Color.Black.copy(alpha = 0.2f)) // 👈 Translucent to blend with gradient!
+            .background(bgColor) // 👈 Translucent to blend with gradient!
             .border(
                 width = 1.dp,
                 color = themeColor.copy(alpha = 0.3f), // 👈 Theme matched border
@@ -1589,6 +1615,154 @@ fun ReactionsBottomSheet(
                     Text(text = reaction.emoji, fontSize = 24.sp)
                 }
             }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun OtherUserProfileSheet(
+    username: String,
+    imageUrl: String?,
+    // NOTE: Pass the actual fetched user data here if you have it in your ViewModel!
+    bio: String? = null,
+    age: Int? = 0,
+    skillLevel: String? = "Unknown",
+    blade: String? = "Unknown",
+    rubberFh: String? = "Unknown",
+    rubberBh: String? = "Unknown",
+    sheetState: SheetState,
+    onDismiss: () -> Unit
+) {
+    // 👇 Your dynamic frosted glass background logic!
+    val isDarkMode = org.ttproject.isDark
+    val cardBgColor = if (isDarkMode) Color.Black.copy(alpha = 0.2f) else Color.Black.copy(alpha = 0.05f)
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        containerColor = AppColors.Background
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp)
+                .padding(bottom = 32.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            // --- HEADER ---
+            Box(
+                modifier = Modifier
+                    .size(100.dp)
+                    .clip(CircleShape)
+                    .background(AppColors.SurfaceDark),
+                contentAlignment = Alignment.Center
+            ) {
+                if (!imageUrl.isNullOrBlank()) {
+                    AsyncImage(
+                        model = imageUrl,
+                        contentDescription = "Profile Picture",
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    Text(
+                        text = getInitials(username),
+                        color = AppColors.AccentOrange,
+                        fontSize = 32.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Text(
+                text = username,
+                color = AppColors.TextPrimary,
+                fontSize = 28.sp,
+                fontWeight = FontWeight.ExtraBold
+            )
+
+            if (!bio.isNullOrBlank()) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = bio,
+                    color = AppColors.TextPrimary,
+                    fontSize = 14.sp,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(cardBgColor)
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            // --- BASIC INFO ---
+            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.Person, contentDescription = null, tint = AppColors.TextGray, modifier = Modifier.size(20.dp))
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("BASIC INFO", color = AppColors.TextPrimary, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Column(
+                    modifier = Modifier.weight(1f).clip(RoundedCornerShape(16.dp)).background(cardBgColor).padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(text = "AGE", color = AppColors.TextGray, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(text = age.toString(), color = AppColors.TextPrimary, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                }
+                Column(
+                    modifier = Modifier.weight(1f).clip(RoundedCornerShape(16.dp)).background(cardBgColor).padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(text = "LEVEL", color = AppColors.TextGray, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(text = skillLevel ?: "?", color = AppColors.AccentOrange, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // --- GEAR ---
+            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.Build, contentDescription = null, tint = AppColors.TextGray, modifier = Modifier.size(20.dp))
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("GEAR", color = AppColors.TextPrimary, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Blade
+            ReadOnlyGearItem("BLADE", blade ?: "?", cardBgColor) { Text("🏓", fontSize = 16.sp) }
+            Spacer(modifier = Modifier.height(8.dp))
+            // FH
+            ReadOnlyGearItem("FOREHAND", rubberFh ?: "?", cardBgColor) { Box(modifier = Modifier.size(12.dp).clip(CircleShape).background(Color(0xFFFF4B4B))) }
+            Spacer(modifier = Modifier.height(8.dp))
+            // BH
+            ReadOnlyGearItem("BACKHAND", rubberBh ?: "?", cardBgColor) { Box(modifier = Modifier.size(12.dp).clip(CircleShape).background(Color.Black)) }
+        }
+    }
+}
+
+@Composable
+private fun ReadOnlyGearItem(label: String, value: String, bgColor: Color, iconContent: @Composable () -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(bgColor).padding(12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier.size(40.dp).clip(RoundedCornerShape(12.dp)).background(Color.Black.copy(alpha = 0.1f)),
+            contentAlignment = Alignment.Center
+        ) { iconContent() }
+        Spacer(modifier = Modifier.width(16.dp))
+        Column {
+            Text(text = label, color = AppColors.TextGray, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(text = value, color = AppColors.TextPrimary, fontSize = 15.sp, fontWeight = FontWeight.Bold)
         }
     }
 }

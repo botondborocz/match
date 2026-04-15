@@ -48,7 +48,7 @@ sealed class NavRoute {
     @Serializable data object Coach : NavRoute()
     @Serializable data object Messages : NavRoute()
     @Serializable data object Profile : NavRoute()
-    @Serializable data class ChatDetail(val chatId: String, val otherUsername: String, val otherUserImageUrl: String?) : NavRoute()
+    @Serializable data class ChatDetail(val chatId: String, val otherUsername: String, val otherUserImageUrl: String?, val themeName: String) : NavRoute()
 }
 
 // 2. Your Navigation Item Data Class

@@ -20,6 +20,7 @@ import org.ttproject.data.ChatThreadDto
 import org.ttproject.data.IncomingMessageDto
 import org.ttproject.data.Location
 import org.ttproject.data.MessageDto
+import org.ttproject.data.ThemeUpdateRequest
 import org.ttproject.data.TokenResponse
 import org.ttproject.data.TokenStorage
 
@@ -39,6 +40,7 @@ interface ChatRepository {
     suspend fun getConnections(): List<ChatThreadDto>
     suspend fun savePushToken(fcmToken: String)
     suspend fun markMessagesAsRead(chatId: String)
+    suspend fun updateChatTheme(connectionId: String, themeName: String)
 }
 
 class ChatRepositoryImpl (
@@ -194,6 +196,21 @@ class ChatRepositoryImpl (
             e.printStackTrace()
             // It's okay if this fails silently in the background,
             // the user will just try again next time they open the chat.
+        }
+    }
+
+    override suspend fun updateChatTheme(connectionId: String, themeName: String) {
+        val token = tokenStorage.getToken() ?: return
+
+        try {
+            client.put("${SERVER_IP}/api/connections/$connectionId/theme") {
+                contentType(ContentType.Application.Json)
+                header(HttpHeaders.Authorization, "Bearer $token")
+                setBody(ThemeUpdateRequest(themeName = themeName))
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            // Fail silently, the theme just won't persist if offline
         }
     }
 

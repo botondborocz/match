@@ -123,7 +123,7 @@ fun App(
     LaunchedEffect(pendingChatId) {
         if (pendingChatId != null) {
             tabNavController.navigate(NavRoute.Messages) // Inner switch
-            rootNavController.navigate(NavRoute.ChatDetail(pendingChatId, "Chat", null)) // Outer push!
+            rootNavController.navigate(NavRoute.ChatDetail(pendingChatId, "Chat", null, "Default")) // Outer push!
             onChatConsumed()
         }
     }
@@ -320,10 +320,10 @@ fun App(
                                             MessagesScreen(
                                                 playAnimation = playMessagesAnimation,
                                                 bottomNavPadding = frozenBottomPadding,
-                                                onNavigateToChat = { chatId, otherUsername, otherUserImageUrl ->
+                                                onNavigateToChat = { chatId, otherUsername, otherUserImageUrl, themeName ->
                                                     playMessagesAnimation = false
                                                     // 👇 THE MAGIC: Push ChatDetail onto the ROOT stack!
-                                                    rootNavController.navigate(NavRoute.ChatDetail(chatId, otherUsername, otherUserImageUrl))
+                                                    rootNavController.navigate(NavRoute.ChatDetail(chatId, otherUsername, otherUserImageUrl, themeName))
                                                 }
                                             )
                                         }
@@ -428,6 +428,7 @@ fun App(
                                     chatId = route.chatId,
                                     otherUsername = route.otherUsername,
                                     otherUserImageUrl = route.otherUserImageUrl,
+                                    initialThemeName = route.themeName,
                                     bottomNavPadding = 0.dp,
                                     onBack = { rootNavController.popBackStack() } // 👇 Pops the root stack!
                                 )

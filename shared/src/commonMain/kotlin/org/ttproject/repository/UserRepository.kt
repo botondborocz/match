@@ -23,6 +23,7 @@ import org.ttproject.data.UserProfile
 // 1. The Interface
 interface UserRepository {
     suspend fun getMyProfile(): UserProfile
+    suspend fun getUserProfile(username: String): Result<UserProfile>
     suspend fun updateProfile(
         name: String, blade: String, forehand: String, backhand: String,
         bio: String?, birthDate: String?, skillLevel: String? // 👈 ADDED
@@ -53,6 +54,25 @@ class UserRepositoryImpl(
             throw Exception("Session expired. Please log in again.")
         } else {
             throw Exception("Server error: ${response.status.description}")
+        }
+    }
+
+    override suspend fun getUserProfile(username: String): Result<UserProfile> {
+        return try {
+            val token = tokenStorage.getToken() ?: throw Exception("No auth token")
+
+            val response = httpClient.get("${SERVER_IP}/api/users/profile/$username") {
+                bearerAuth(token)
+            }
+
+            if (response.status.isSuccess()) {
+                Result.success(response.body())
+            } else {
+                Result.failure(Exception("Failed to fetch profile. Server returned: ${response.status}"))
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Result.failure(e)
         }
     }
 

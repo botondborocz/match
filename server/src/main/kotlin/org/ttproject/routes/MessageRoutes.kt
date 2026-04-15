@@ -14,6 +14,7 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.server.auth.authenticate
 import io.ktor.server.auth.jwt.JWTPrincipal
 import io.ktor.server.auth.principal
+import io.ktor.server.request.receive
 import kotlinx.coroutines.channels.consumeEach
 import kotlinx.serialization.json.Json
 import org.jetbrains.exposed.sql.Op
@@ -65,6 +66,7 @@ fun Route.messageRoutes() {
                     val connectionId = row[Connections.id]
                     val user1 = row[Connections.user1Id]
                     val user2 = row[Connections.user2Id]
+                    val theme = row[Connections.theme]
 
                     // Determine who the *other* person is
                     val otherUserId = if (user1 == currentUserId) user2 else user1
@@ -98,7 +100,8 @@ fun Route.messageRoutes() {
                         lastMessage = lastMessageText,
                         timestamp = timestamp,
                         unreadCount = unreadMessagesCount, // Implement unread logic later
-                        isOnline = false // Implement presence logic later
+                        isOnline = false, // Implement presence logic later
+                        theme = theme
                     )
                 }
             }
@@ -401,6 +404,33 @@ fun Route.messageRoutes() {
                     // 👇 Pass the senderId during cleanup
                     connectionManager.removeSession(connectionId, senderId)
                 }
+            }
+            // --------------------------------------------------------
+            // 3. UPDATE CHAT THEME
+            // --------------------------------------------------------
+            put("/theme") {
+                val connectionIdStr = call.parameters["connectionId"] ?: return@put call.respond(
+                    HttpStatusCode.BadRequest,
+                    "Missing connection ID"
+                )
+                val connectionId = UUID.fromString(connectionIdStr)
+
+                // Ensure the user is authenticated
+                val principal = call.principal<JWTPrincipal>()
+                val currentUserIdStr = principal?.payload?.getClaim("userId")?.asString()
+                    ?: return@put call.respond(HttpStatusCode.Unauthorized)
+
+                // Parse the requested theme name
+                val request = call.receive<org.ttproject.data.ThemeUpdateRequest>()
+
+                transaction {
+                    // Update the theme for this specific connection
+                    Connections.update({ Connections.id eq connectionId }) {
+                        it[theme] = request.themeName
+                    }
+                }
+
+                call.respond(HttpStatusCode.OK, "Theme updated successfully")
             }
         }
     }

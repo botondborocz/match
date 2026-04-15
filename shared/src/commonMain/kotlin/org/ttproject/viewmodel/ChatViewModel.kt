@@ -13,9 +13,12 @@ import org.ttproject.repository.ChatRepository
 import org.ttproject.util.NotificationEventBus
 import kotlinx.coroutines.flow.update
 import org.ttproject.data.ReactionDto
+import org.ttproject.data.UserProfile
+import org.ttproject.repository.UserRepository
 
 class ChatViewModel(
     private val repository: ChatRepository,
+    private val userRepository: UserRepository,
     private val connectionId: String,
 ) : ViewModel() {
 
@@ -24,6 +27,9 @@ class ChatViewModel(
 
     private val _isLoading = MutableStateFlow(true)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
+
+    private val _otherUserProfile = MutableStateFlow<UserProfile?>(null)
+    val otherUserProfile: StateFlow<UserProfile?> = _otherUserProfile.asStateFlow()
 
     init {
         loadChat()
@@ -108,6 +114,20 @@ class ChatViewModel(
         viewModelScope.launch {
             repository.markMessagesAsRead(connectionId)
             NotificationEventBus.triggerRefresh()
+        }
+    }
+
+    fun updateChatTheme(connectionId: String, themeName: String) {
+        viewModelScope.launch {
+            repository.updateChatTheme(connectionId, themeName)
+        }
+    }
+
+    fun fetchOtherUserProfile(username: String) {
+        viewModelScope.launch {
+            userRepository.getUserProfile(username).onSuccess { profile ->
+                _otherUserProfile.value = profile
+            }
         }
     }
 }

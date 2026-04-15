@@ -146,8 +146,8 @@ fun Route.userRoutes() {
                                 rubberBh = row[Users.gearRubberBh],
                                 // 👇 Add the new DB pulls
                                 bio = row[Users.bio],
-                                birthDate = row[Users.birthDate],
                                 skillLevel = row[Users.skillLevel]?.name,
+                                birthDate =  row[Users.birthDate],
                                 age = calculateAge(row[Users.birthDate]) // Calculate on the fly!
                             )
                         }
@@ -195,6 +195,40 @@ fun Route.userRoutes() {
                     else call.respond(HttpStatusCode.NotFound, "User not found.")
                 } catch (e: Exception) {
                     call.respond(HttpStatusCode.InternalServerError, "Database error: ${e.message}")
+                }
+            }
+
+            // 👇 Fetch a public profile by username
+            get("/profile/{username}") {
+                val username = call.parameters["username"] ?: return@get call.respond(HttpStatusCode.BadRequest, "Missing username")
+
+                val userProfile = transaction {
+                    Users.selectAll().where { Users.username eq username }
+                        .singleOrNull()?.let { row ->
+                            UserProfile(
+                                id = row[Users.id].toString(),
+                                name = row[Users.username],
+                                // 🚨 SECURITY: Blank out private info so it doesn't leak to other users!
+                                email = "",
+                                preferredLanguage = "",
+
+                                elo = row[Users.eloRating],
+                                winRate = "50%",
+                                imageUrl = row[Users.profileImageUrl],
+                                blade = row[Users.gearBlade],
+                                rubberFh = row[Users.gearRubberFh],
+                                rubberBh = row[Users.gearRubberBh],
+                                bio = row[Users.bio],
+                                skillLevel = row[Users.skillLevel]?.name,
+                                age = calculateAge(row[Users.birthDate])
+                            )
+                        }
+                }
+
+                if (userProfile != null) {
+                    call.respond(HttpStatusCode.OK, userProfile)
+                } else {
+                    call.respond(HttpStatusCode.NotFound, "User not found")
                 }
             }
 

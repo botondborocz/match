@@ -501,6 +501,7 @@ private fun BasicInfoSection(
         Spacer(modifier = Modifier.height(16.dp))
 
         val birthDate = profileData.birthDate ?: "Set birth date"
+        val ageDisplay = profileData.age?.toString() ?: "Set age"
         val skillLevel = profileData.skillLevel ?: "Set level"
 
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -515,7 +516,7 @@ private fun BasicInfoSection(
             ) {
                 Text(text = "AGE", color = AppColors.TextGray, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
                 Spacer(modifier = Modifier.height(4.dp))
-                Text(text = birthDate, color = AppColors.TextPrimary, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                Text(text = ageDisplay, color = AppColors.TextPrimary, fontSize = 18.sp, fontWeight = FontWeight.Bold)
             }
 
             // Skill Level Box

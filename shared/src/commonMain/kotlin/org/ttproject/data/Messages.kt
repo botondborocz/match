@@ -19,6 +19,11 @@ data class MessageDto(
 )
 
 @Serializable
+data class ThemeUpdateRequest(
+    val themeName: String
+)
+
+@Serializable
 data class IncomingMessageDto(
     val type: String,
     val content: String,
@@ -34,5 +39,6 @@ data class ChatThreadDto(
     val lastMessage: String,
     val timestamp: String,
     val unreadCount: Int = 0,
-    val isOnline: Boolean = false
+    val isOnline: Boolean = false,
+    val theme: String
 )
