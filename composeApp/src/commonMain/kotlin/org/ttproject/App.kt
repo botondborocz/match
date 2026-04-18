@@ -41,7 +41,9 @@ import org.ttproject.components.DesktopSidebar
 import org.ttproject.components.MobileBottomNav
 import org.ttproject.components.MobileTopBar
 import org.ttproject.data.TokenStorage
+import org.ttproject.screens.AiHubScreen
 import org.ttproject.screens.ChatDetailScreen
+import org.ttproject.screens.DummyAiChatPlayground
 import org.ttproject.screens.LoginScreen
 import org.ttproject.screens.MapScreen
 import org.ttproject.screens.MatchScreen
@@ -198,6 +200,7 @@ fun App(
                 NavRoute.Messages -> "Messages" // Or use stringResource(SharedStrings.home)
                 NavRoute.Map -> "Map"
                 NavRoute.Coach -> "AI Coach"
+                NavRoute.AiChat -> "AI Coach"
                 NavRoute.Match -> "Match"
                 NavRoute.Profile -> "Profile"
                 NavRoute.ChatDetail -> "Chat"
@@ -227,12 +230,14 @@ fun App(
                         // --- SCREEN A: THE TAB CONTAINER (Including Bottom Nav) ---
                         composable<HomeBase>(
                             exitTransition = {
-                                if (targetState.destination.hasRoute(NavRoute.ChatDetail::class)) {
+                                if (targetState.destination.hasRoute(NavRoute.ChatDetail::class) ||
+                                    targetState.destination.hasRoute(NavRoute.AiChat::class)) {
                                     slideOutHorizontally(targetOffsetX = { -it / 3 }, animationSpec = tween(300, easing = LinearEasing))
                                 } else null
                             },
                             popEnterTransition = {
-                                if (initialState.destination.hasRoute(NavRoute.ChatDetail::class)) {
+                                if (initialState.destination.hasRoute(NavRoute.ChatDetail::class) ||
+                                    initialState.destination.hasRoute(NavRoute.AiChat::class)) {
                                     slideInHorizontally(initialOffsetX = { -it / 3 }, animationSpec = tween(300, easing = LinearEasing))
                                 } else null
                             }
@@ -240,7 +245,7 @@ fun App(
                             // Scaffold is now INSIDE the route, so it slides beautifully!
                             Scaffold(
                                 topBar = {
-                                    if (isMobile && currentRoute != NavRoute.Map && currentRoute != NavRoute.Messages && currentRoute != NavRoute.Match && currentRoute != NavRoute.Profile) {
+                                    if (isMobile && currentRoute != NavRoute.Map && currentRoute != NavRoute.Messages && currentRoute != NavRoute.Match && currentRoute != NavRoute.Profile && currentRoute != NavRoute.Coach) {
                                         MobileTopBar()
                                     }
                                 },
@@ -301,18 +306,17 @@ fun App(
                                         }
 
                                         composable<NavRoute.Coach> {
-                                            Box(modifier = Modifier.fillMaxSize().padding(innerPadding).padding(bottom = frozenBottomPadding).padding(16.dp)) {
-                                                Text("Coach Screen", color = AppColors.TextPrimary)
-                                                Button(
-                                                    onClick = {
-                                                        tokenStorage.clearToken()
-                                                        tokenStorage.clearLanguage()
-                                                        isLoggedIn = false
+                                            // 👇 NEW: Mount the AiHubScreen on the Coach tab!
+                                            Box(modifier = Modifier.fillMaxSize().padding(innerPadding).padding(bottom = frozenBottomPadding)) {
+                                                AiHubScreen(
+                                                    onNavigateToAiChat = {
+                                                        // Push the AI Chat full screen onto the ROOT controller
+                                                        rootNavController.navigate(NavRoute.AiChat)
                                                     },
-                                                    modifier = Modifier.padding(top = 16.dp)
-                                                ) {
-                                                    Text("Logout")
-                                                }
+                                                    onNavigateToVideoAnalysis = {
+                                                        // Ready for your next AI feature
+                                                    }
+                                                )
                                             }
                                         }
 
@@ -431,6 +435,21 @@ fun App(
                                     initialThemeName = route.themeName,
                                     bottomNavPadding = 0.dp,
                                     onBack = { rootNavController.popBackStack() } // 👇 Pops the root stack!
+                                )
+                            }
+                        }
+                        // 👇 NEW SCREEN C: AI CHAT SCREEN (Full Screen slide over bottom nav)
+                        composable<NavRoute.AiChat>(
+                            enterTransition = {
+                                slideInHorizontally(initialOffsetX = { it }, animationSpec = tween(300, easing = LinearEasing))
+                            },
+                            popExitTransition = {
+                                slideOutHorizontally(targetOffsetX = { it }, animationSpec = tween(300, easing = LinearEasing))
+                            }
+                        ) {
+                            Box(modifier = Modifier.fillMaxSize()) {
+                                DummyAiChatPlayground(
+                                    onBack = { rootNavController.popBackStack() }
                                 )
                             }
                         }

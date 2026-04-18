@@ -46,6 +46,7 @@ sealed class NavRoute {
     @Serializable data object Map : NavRoute()
     @Serializable data object Match : NavRoute()
     @Serializable data object Coach : NavRoute()
+    @Serializable data object AiChat : NavRoute()
     @Serializable data object Messages : NavRoute()
     @Serializable data object Profile : NavRoute()
     @Serializable data class ChatDetail(val chatId: String, val otherUsername: String, val otherUserImageUrl: String?, val themeName: String) : NavRoute()
