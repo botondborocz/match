@@ -37,6 +37,7 @@ import coil3.compose.AsyncImage
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.koinInject
+import org.koin.compose.viewmodel.koinViewModel
 import org.ttproject.AppColors
 import org.ttproject.data.Player
 import org.ttproject.shared.resources.find
@@ -51,7 +52,7 @@ import kotlin.math.abs
 
 @Composable
 fun MatchScreen(
-    viewModel: MatchViewModel = koinInject(),
+    viewModel: MatchViewModel = koinViewModel(),
     onNavigateToLogin: () -> Unit,
     onNavigateToMessages: () -> Unit
 ) {
@@ -93,6 +94,32 @@ fun MatchScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Spacer(modifier = Modifier.height(24.dp))
+
+            // --- HEADER ---
+            AnimatedVisibility(
+                visible = isVisible,
+                enter = fadeIn(tween(400)) + slideInVertically(initialOffsetY = { -40 }, animationSpec = tween(400))
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.Star,
+                            contentDescription = null,
+                            tint = AppColors.AccentOrange,
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = stringResource(SharedRes.string.find_your_match),
+                            color = AppColors.TextPrimary,
+                            fontSize = 22.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+//                    Spacer(modifier = Modifier.height(16.dp))
+                }
+            }
+
             Spacer(modifier = Modifier.height(24.dp))
 
             // --- DYNAMIC CARD STACK AREA ---
@@ -146,7 +173,7 @@ fun MatchScreen(
                         val offsetX = remember(topPlayer?.id) { Animatable(0f) }
                         val offsetY = remember(topPlayer?.id) { Animatable(0f) }
                         val coroutineScope = rememberCoroutineScope()
-                        var showContent by remember { mutableStateOf(false) }
+                        var showContent by remember { mutableStateOf(true) }
 
                         LaunchedEffect(Unit) {
                             showContent = true
@@ -511,21 +538,21 @@ fun MatchCardContent(
 
                     Spacer(modifier = Modifier.weight(1f))
 
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier
-                            .border(1.dp, AppColors.AccentOrange, RoundedCornerShape(8.dp))
-                            .padding(horizontal = 8.dp, vertical = 4.dp)
-                    ) {
-                        Icon(Icons.Default.Star, contentDescription = null, tint = AppColors.AccentOrange, modifier = Modifier.size(14.dp))
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = "ELO ${player.elo}",
-                            color = AppColors.AccentOrange,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
+//                    Row(
+//                        verticalAlignment = Alignment.CenterVertically,
+//                        modifier = Modifier
+//                            .border(1.dp, AppColors.AccentOrange, RoundedCornerShape(8.dp))
+//                            .padding(horizontal = 8.dp, vertical = 4.dp)
+//                    ) {
+//                        Icon(Icons.Default.Star, contentDescription = null, tint = AppColors.AccentOrange, modifier = Modifier.size(14.dp))
+//                        Spacer(modifier = Modifier.width(4.dp))
+//                        Text(
+//                            text = "ELO ${player.elo}",
+//                            color = AppColors.AccentOrange,
+//                            fontSize = 12.sp,
+//                            fontWeight = FontWeight.Bold
+//                        )
+//                    }
                 }
 
                 Spacer(modifier = Modifier.height(8.dp))

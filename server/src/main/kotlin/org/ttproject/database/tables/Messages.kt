@@ -10,6 +10,7 @@ object Messages : Table("messages") {
     val content = text("content")
     val isRead = bool("is_read").default(false)
     val createdAt = timestamp("created_at")
+    val replyToMessageId = reference("reply_to_message_id", id).nullable()
 
     override val primaryKey = PrimaryKey(id)
 }

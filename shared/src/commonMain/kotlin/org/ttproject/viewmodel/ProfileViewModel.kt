@@ -19,7 +19,11 @@ sealed class ProfileState {
         val imageUrl: String? = null,
         val blade: String? = null,
         val rubberFh: String? = null,
-        val rubberBh: String? = null
+        val rubberBh: String? = null,
+        val bio: String? = null,
+        val birthDate: String? = null,
+        val skillLevel: String? = null,
+        val age: Int? = null
     ) : ProfileState()
     data class Error(val message: String) : ProfileState()
 }
@@ -52,14 +56,12 @@ class ProfileViewModel(
                 val user = userRepository.getMyProfile()
 
                 _uiState.value = ProfileState.Success(
-                    name = user.name,
-                    elo = user.elo,
-                    winRate = user.winRate,
-                    language = user.preferredLanguage,
-                    imageUrl = user.imageUrl, // 👈 Make sure your UserProfile data class has this property!
-                    blade = user.blade,
-                    rubberFh = user.rubberFh,
-                    rubberBh = user.rubberBh
+                    name = user.name, elo = user.elo, winRate = user.winRate,
+                    language = user.preferredLanguage, imageUrl = user.imageUrl,
+                    blade = user.blade, rubberFh = user.rubberFh, rubberBh = user.rubberBh,
+                    // 👇 Map the new fields
+                    bio = user.bio, birthDate = user.birthDate,
+                    skillLevel = user.skillLevel, age = user.age
                 )
             } catch (e: Exception) {
                 _uiState.value = ProfileState.Error("Failed to load profile: ${e.message}")
@@ -67,11 +69,14 @@ class ProfileViewModel(
         }
     }
 
-    fun updateProfile(name: String, blade: String, forehand: String, backhand: String) {
+    fun updateProfile(
+        name: String, blade: String, forehand: String, backhand: String,
+        bio: String?, birthDate: String?, skillLevel: String? // 👈 Added
+    ) {
         viewModelScope.launch {
             _updateState.value = UpdateState.Loading
-
-            val result = userRepository.updateProfile(name, blade, forehand, backhand)
+            // 👇 Pass them to the repo
+            val result = userRepository.updateProfile(name, blade, forehand, backhand, bio, birthDate, skillLevel)
 
             if (result.isSuccess) {
                 _updateState.value = UpdateState.Success

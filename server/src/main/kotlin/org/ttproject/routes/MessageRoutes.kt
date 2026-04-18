@@ -14,21 +14,28 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.server.auth.authenticate
 import io.ktor.server.auth.jwt.JWTPrincipal
 import io.ktor.server.auth.principal
+import io.ktor.server.request.receive
 import kotlinx.coroutines.channels.consumeEach
+import kotlinx.serialization.json.Json
 import org.jetbrains.exposed.sql.Op
 import org.jetbrains.exposed.sql.insertAndGetId
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.SqlExpressionBuilder
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.and
+import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.or
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.update
 import org.ttproject.data.ChatThreadDto
 import org.ttproject.data.MessageDto
+import org.ttproject.data.IncomingMessageDto
+import org.ttproject.data.ReactionDto
 import org.ttproject.database.tables.Connections
+import org.ttproject.database.tables.MessageReactions
 import org.ttproject.database.tables.Messages
 import org.ttproject.database.tables.Users
 import org.ttproject.services.ConnectionManager
@@ -59,6 +66,7 @@ fun Route.messageRoutes() {
                     val connectionId = row[Connections.id]
                     val user1 = row[Connections.user1Id]
                     val user2 = row[Connections.user2Id]
+                    val theme = row[Connections.theme]
 
                     // Determine who the *other* person is
                     val otherUserId = if (user1 == currentUserId) user2 else user1
@@ -92,7 +100,8 @@ fun Route.messageRoutes() {
                         lastMessage = lastMessageText,
                         timestamp = timestamp,
                         unreadCount = unreadMessagesCount, // Implement unread logic later
-                        isOnline = false // Implement presence logic later
+                        isOnline = false, // Implement presence logic later
+                        theme = theme
                     )
                 }
             }
@@ -113,20 +122,43 @@ fun Route.messageRoutes() {
                 )
                 val connectionId = UUID.fromString(connectionIdStr)
 
-                // Query the database using Exposed
                 val messages = transaction {
-                    Messages.selectAll().where { Messages.connectionId eq connectionId }
-                        .orderBy(Messages.createdAt to SortOrder.ASC) // Oldest first, so UI scrolls down
-                        .map {
-                            // Map your DB row to a simple Data Transfer Object (DTO)
-                            MessageDto(
-                                id = it[Messages.id].toString(),
-                                senderId = it[Messages.senderId].toString(),
-                                content = it[Messages.content],
-                                createdAt = it[Messages.createdAt].toString()
-                            )
-                        }
+                    // 👇 1. Fetch all messages for this chat
+                    val messageRows = Messages.selectAll().where { Messages.connectionId eq connectionId }
+                        .orderBy(Messages.createdAt to SortOrder.ASC)
+                        .toList()
+
+                    if (messageRows.isEmpty()) return@transaction emptyList<MessageDto>()
+
+                    // 👇 2. Extract just their IDs
+                    val messageIds = messageRows.map { it[Messages.id] }
+
+                    // 👇 3. Fetch all reactions attached to these specific messages
+                    // .associate() maps them so we can easily look them up by Message ID later
+                    val reactionsMap = MessageReactions.selectAll()
+                        .where { MessageReactions.messageId inList messageIds }
+                        .groupBy(
+                            keySelector = { it[MessageReactions.messageId] },
+                            valueTransform = {
+                                ReactionDto(
+                                    userId = it[MessageReactions.userId].toString(),
+                                    emoji = it[MessageReactions.emoji]
+                                )
+                            }
+                        )
+
+                    // 👇 4. Combine them! Map the DB rows to your DTO, and attach the emoji if it exists.
+                    messageRows.map {
+                        MessageDto(
+                            id = it[Messages.id].toString(),
+                            senderId = it[Messages.senderId].toString(),
+                            content = it[Messages.content],
+                            createdAt = it[Messages.createdAt].toString(),
+                            replyToMessageId = it[Messages.replyToMessageId]?.toString(),
+                            reactions = reactionsMap[it[Messages.id]] ?: emptyList()                        )
+                    }
                 }
+
                 call.respond(HttpStatusCode.OK, messages)
             }
 
@@ -185,35 +217,67 @@ fun Route.messageRoutes() {
                 // 👇 Pass the senderId to the manager
                 connectionManager.addSession(connectionId, senderId, this)
 
+                // Create a lenient JSON parser
+                val jsonParser = Json { ignoreUnknownKeys = true }
+
                 try {
                     incoming.consumeEach { frame ->
                         if (frame is Frame.Text) {
-                            val textContent = frame.readText()
-                            val created_at = Instant.now()
-
-                            // Move the try/catch INSIDE the loop so one bad message doesn't drop the connection!
                             try {
-                                val newMessageId = transaction {
-                                    Messages.insert {
-                                        it[Messages.connectionId] = connectionId
-                                        it[Messages.senderId] = senderId
-                                        it[content] = textContent
-                                        it[createdAt] = created_at
-                                    } get Messages.id
-                                }
+                                val rawPayload = frame.readText()
+                                val created_at = Instant.now()
 
-                                // 👇 Use the new ConnectionManager function!
-                                if (!connectionManager.isUserConnected(connectionId, receiverId)) {
-                                    val targetToken = transaction {
-                                        Users.slice(Users.fcmToken).select { Users.id eq receiverId }.singleOrNull()?.get(Users.fcmToken)
-                                    }
+                                val incomingEvent =
+                                    jsonParser.decodeFromString<IncomingMessageDto>(rawPayload)
 
-                                    println("🔍 Checking push notification for Receiver: $receiverId")
-                                    println("🔍 Token found in DB: $targetToken")
+                                if (incomingEvent.type == "message") {
 
-                                    // Check for isNullOrBlank instead of just null!
-                                    if (!targetToken.isNullOrBlank()) {
-                                        try {
+                                    try {
+                                        // 👇 1. Parse the incoming JSON from the client
+                                        val incomingMessage =
+                                            jsonParser.decodeFromString<IncomingMessageDto>(
+                                                rawPayload
+                                            )
+                                        val textContent = incomingMessage.content
+
+                                        // Safely convert the string ID to a UUID if it exists
+                                        val replyToId =
+                                            incomingMessage.replyToMessageId?.let {
+                                                UUID.fromString(
+                                                    it
+                                                )
+                                            }
+
+                                        val newMessageId = transaction {
+                                            Messages.insert {
+                                                it[Messages.connectionId] = connectionId
+                                                it[Messages.senderId] = senderId
+                                                it[content] = textContent
+                                                it[createdAt] = created_at
+                                                // 👇 2. Save the reply ID to the database!
+                                                it[replyToMessageId] = replyToId
+                                            } get Messages.id
+                                        }
+
+                                        // 👇 Use the new ConnectionManager function!
+                                        if (!connectionManager.isUserConnected(
+                                                connectionId,
+                                                receiverId
+                                            )
+                                        ) {
+                                            val targetToken = transaction {
+                                                Users.slice(Users.fcmToken)
+                                                    .select { Users.id eq receiverId }
+                                                    .singleOrNull()
+                                                    ?.get(Users.fcmToken)
+                                            }
+
+                                            println("🔍 Checking push notification for Receiver: $receiverId")
+                                            println("🔍 Token found in DB: $targetToken")
+
+                                            // Check for isNullOrBlank instead of just null!
+                                            if (!targetToken.isNullOrBlank()) {
+                                                try {
 //                                            val message = Message.builder()
 //                                                .setToken(targetToken)
 //                                                .setNotification(
@@ -234,35 +298,103 @@ fun Route.messageRoutes() {
 //                                                )
 //                                                .putData("chatId", connectionId.toString())
 //                                                .build()
-                                            val message = Message.builder()
-                                                .setToken(targetToken)
-                                                // 🚨 NO .setNotification() HERE! 🚨
-                                                // We send raw data, forcing the Android app to wake up and handle it.
-                                                .putData("chatId", connectionId.toString())
-                                                .putData("senderName", senderName)
-                                                .putData("text", textContent)
-                                                .build()
+                                                    val message = Message.builder()
+                                                        .setToken(targetToken)
+                                                        // 🚨 NO .setNotification() HERE! 🚨
+                                                        // We send raw data, forcing the Android app to wake up and handle it.
+                                                        .putData("chatId", connectionId.toString())
+                                                        .putData("senderName", senderName)
+                                                        .putData("text", textContent)
+                                                        .build()
 
-                                            // 👇 Use synchronous .send() so we can actually catch the Google API errors
-                                            val response = FirebaseMessaging.getInstance().send(message)
-                                            println("✅ FCM Success Response: $response")
+                                                    // 👇 Use synchronous .send() so we can actually catch the Google API errors
+                                                    val response =
+                                                        FirebaseMessaging.getInstance()
+                                                            .send(message)
+                                                    println("✅ FCM Success Response: $response")
 
-                                        } catch (e: Exception) {
-                                            println("❌ FCM Sending Failed!")
-                                            e.printStackTrace() // This will tell us exactly why Google rejected it
+                                                } catch (e: Exception) {
+                                                    println("❌ FCM Sending Failed!")
+                                                    e.printStackTrace() // This will tell us exactly why Google rejected it
+                                                }
+                                            } else {
+                                                println("⚠️ Warning: targetToken is empty or null for user $receiverId. Cannot send push.")
+                                            }
+                                        } else {
+                                            println("ℹ️ User $receiverId is currently connected to the WebSocket, skipping push notification.")
                                         }
-                                    } else {
-                                        println("⚠️ Warning: targetToken is empty or null for user $receiverId. Cannot send push.")
+
+                                        // 👇 3. Include the replyToMessageId in the broadcast payload back to the clients
+                                        val replyJsonStr =
+                                            if (replyToId != null) "\"$replyToId\"" else "null"
+
+                                        val payload = """
+                                        {
+                                            "id": "$newMessageId", 
+                                            "senderId": "$senderId", 
+                                            "content": "${textContent.replace("\"", "\\\"")}", 
+                                            "createdAt": "$created_at",
+                                            "replyToMessageId": $replyJsonStr
+                                        }
+                                    """.trimIndent()
+
+                                        connectionManager.broadcast(connectionId, payload)
+
+                                    } catch (e: Exception) {
+                                        call.application.environment.log.error(
+                                            "Failed to process individual message",
+                                            e
+                                        )
                                     }
-                                } else {
-                                    println("ℹ️ User $receiverId is currently connected to the WebSocket, skipping push notification.")
+                                } else if (incomingEvent.type == "reaction") {
+                                    val targetId = UUID.fromString(incomingEvent.targetMessageId!!)
+
+                                    transaction {
+                                        // Upsert the reaction (insert, or update if they already reacted)
+                                        // Note: Exposed doesn't have a native upsert for all DBs, so you can delete and re-insert
+                                        MessageReactions.deleteWhere {
+                                            (MessageReactions.messageId eq targetId) and (MessageReactions.userId eq senderId)
+                                        }
+                                        MessageReactions.insert {
+                                            it[messageId] = targetId
+                                            it[userId] = senderId
+                                            it[emoji] = incomingEvent.content
+                                        }
+                                    }
+
+                                    // Broadcast the reaction to the clients
+                                    val payload = """
+                                        {
+                                            "type": "reaction",
+                                            "messageId": "$targetId",
+                                            "userId": "$senderId", 
+                                            "emoji": "${incomingEvent.content}"
+                                        }
+                                    """.trimIndent()
+                                    connectionManager.broadcast(connectionId, payload)
+                                } else if (incomingEvent.type == "remove_reaction") {
+                                    val targetId = UUID.fromString(incomingEvent.targetMessageId!!)
+
+                                    transaction {
+                                        // Delete the specific reaction for this user and message
+                                        MessageReactions.deleteWhere {
+                                            (MessageReactions.messageId eq targetId) and (MessageReactions.userId eq senderId)
+                                        }
+                                    }
+
+                                    // Broadcast the removal to both clients so their UIs update instantly
+                                    val payload = """
+                                            {
+                                                "type": "remove_reaction",
+                                                "messageId": "$targetId",
+                                                "userId": "$senderId"
+                                            }
+                                        """.trimIndent()
+                                    connectionManager.broadcast(connectionId, payload)
                                 }
-
-                                val payload = """{"id": "$newMessageId", "senderId": "$senderId", "content": "$textContent", "createdAt": "$created_at"}"""
-                                connectionManager.broadcast(connectionId, payload)
-
                             } catch (e: Exception) {
-                                call.application.environment.log.error("Failed to process individual message", e)
+                                call.application.environment.log.error("Failed to process WebSocket frame: ${e.message}", e)
+                                e.printStackTrace() // This will print the exact DB error in your server console!
                             }
                         }
                     }
@@ -272,6 +404,33 @@ fun Route.messageRoutes() {
                     // 👇 Pass the senderId during cleanup
                     connectionManager.removeSession(connectionId, senderId)
                 }
+            }
+            // --------------------------------------------------------
+            // 3. UPDATE CHAT THEME
+            // --------------------------------------------------------
+            put("/theme") {
+                val connectionIdStr = call.parameters["connectionId"] ?: return@put call.respond(
+                    HttpStatusCode.BadRequest,
+                    "Missing connection ID"
+                )
+                val connectionId = UUID.fromString(connectionIdStr)
+
+                // Ensure the user is authenticated
+                val principal = call.principal<JWTPrincipal>()
+                val currentUserIdStr = principal?.payload?.getClaim("userId")?.asString()
+                    ?: return@put call.respond(HttpStatusCode.Unauthorized)
+
+                // Parse the requested theme name
+                val request = call.receive<org.ttproject.data.ThemeUpdateRequest>()
+
+                transaction {
+                    // Update the theme for this specific connection
+                    Connections.update({ Connections.id eq connectionId }) {
+                        it[theme] = request.themeName
+                    }
+                }
+
+                call.respond(HttpStatusCode.OK, "Theme updated successfully")
             }
         }
     }

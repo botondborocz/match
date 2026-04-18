@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.ttproject.data.Player
 import org.ttproject.repository.MatchRepository
+import org.ttproject.util.NotificationEventBus
 
 // Represents the different states your UI can be in
 sealed class MatchUiState {
@@ -65,5 +66,6 @@ class MatchViewModel(
     // Called when the user clicks "Keep Swiping" or "Send Message"
     fun dismissMatchPopup() {
         _matchedPlayer.value = null
+        NotificationEventBus.triggerRefresh()
     }
 }

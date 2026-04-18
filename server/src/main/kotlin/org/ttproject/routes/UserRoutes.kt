@@ -30,6 +30,8 @@ import org.ttproject.database.tables.Swipes
 import org.ttproject.services.MatchService
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
+import java.time.LocalDate
+import java.time.Period
 import java.util.UUID
 
 fun Route.userRoutes() {
@@ -123,6 +125,7 @@ fun Route.userRoutes() {
                 // 5. Reply to the mobile app!
                 call.respond(HttpStatusCode.OK, SwipeResponse(isMatch = isMatch))
             }
+
             get("/me") {
                 val principal = call.principal<JWTPrincipal>()
                 val userId = principal?.payload?.getClaim("userId")?.asString()
@@ -135,14 +138,19 @@ fun Route.userRoutes() {
                                 name = row[Users.username],
                                 email = row[Users.email],
                                 elo = row[Users.eloRating],
-                                winRate = "50%", // Placeholder, calculate based on your matches table
+                                winRate = "50%",
                                 preferredLanguage = row[Users.preferred_language],
-                                imageUrl = row[Users.profileImageUrl], // Make sure this column exists in your DB and is selected here!
+                                imageUrl = row[Users.profileImageUrl],
                                 blade = row[Users.gearBlade],
                                 rubberFh = row[Users.gearRubberFh],
-                                rubberBh = row[Users.gearRubberBh]
+                                rubberBh = row[Users.gearRubberBh],
+                                // 👇 Add the new DB pulls
+                                bio = row[Users.bio],
+                                skillLevel = row[Users.skillLevel]?.name,
+                                birthDate =  row[Users.birthDate],
+                                age = calculateAge(row[Users.birthDate]) // Calculate on the fly!
                             )
-                    }
+                        }
                 }
 
                 if (userProfile != null) {
@@ -151,39 +159,21 @@ fun Route.userRoutes() {
                     call.respond(HttpStatusCode.NotFound, "User not found")
                 }
             }
+
             put("/me") {
-                // 1. Grab the user's ID from their secure JWT token
                 val principal = call.principal<JWTPrincipal>()
-                val userId = principal?.payload?.getClaim("userId")?.asString()
+                val userId = principal?.payload?.getClaim("userId")?.asString() ?: return@put call.respond(HttpStatusCode.Unauthorized)
 
-                if (userId == null) {
-                    call.respond(HttpStatusCode.Unauthorized, "Invalid token")
-                    return@put
-                }
+                val request = try { call.receive<UpdateProfileRequest>() } catch (e: Exception) { return@put call.respond(HttpStatusCode.BadRequest, "Invalid JSON") }
 
-                // 2. Parse the JSON body from the React/KMP app
-                val request = try {
-                    call.receive<UpdateProfileRequest>()
-                } catch (e: Exception) {
-                    call.respond(HttpStatusCode.BadRequest, "Invalid JSON format")
-                    return@put
-                }
-
-                // 3. Update the database!
                 try {
                     val userUuid = UUID.fromString(userId)
-
-                    // 👇 1. Check if the username is taken by SOMEONE ELSE
                     val isNameTaken = transaction {
-                        Users.selectAll()
-                            .where { (Users.username eq request.name) and (Users.id neq userUuid) }
-                            .count() > 0
+                        Users.selectAll().where { (Users.username eq request.name) and (Users.id neq userUuid) }.count() > 0
                     }
 
                     if (isNameTaken) {
-                        // 409 Conflict is the standard HTTP status for "Duplicate Resource"
-                        call.respond(HttpStatusCode.Conflict, "Username is already taken.")
-                        return@put
+                        return@put call.respond(HttpStatusCode.Conflict, "Username is already taken.")
                     }
 
                     val updatedRows = transaction {
@@ -192,19 +182,56 @@ fun Route.userRoutes() {
                             it[gearBlade] = request.blade
                             it[gearRubberFh] = request.forehand
                             it[gearRubberBh] = request.backhand
+                            // 👇 Add the new fields to the update query!
+                            it[bio] = request.bio
+                            it[birthDate] = request.birthDate
+                            it[skillLevel] = request.skillLevel?.let { levelStr ->
+                                try { org.ttproject.database.tables.SkillLevel.valueOf(levelStr) } catch (e: Exception) { null }
+                            }
                         }
                     }
 
-                    if (updatedRows > 0) {
-                        call.respond(HttpStatusCode.OK, mapOf("message" to "Profile updated successfully!"))
-                    } else {
-                        call.respond(HttpStatusCode.NotFound, "User not found in database.")
-                    }
+                    if (updatedRows > 0) call.respond(HttpStatusCode.OK, mapOf("message" to "Profile updated!"))
+                    else call.respond(HttpStatusCode.NotFound, "User not found.")
                 } catch (e: Exception) {
-                    e.printStackTrace()
                     call.respond(HttpStatusCode.InternalServerError, "Database error: ${e.message}")
                 }
             }
+
+            // 👇 Fetch a public profile by username
+            get("/profile/{username}") {
+                val username = call.parameters["username"] ?: return@get call.respond(HttpStatusCode.BadRequest, "Missing username")
+
+                val userProfile = transaction {
+                    Users.selectAll().where { Users.username eq username }
+                        .singleOrNull()?.let { row ->
+                            UserProfile(
+                                id = row[Users.id].toString(),
+                                name = row[Users.username],
+                                // 🚨 SECURITY: Blank out private info so it doesn't leak to other users!
+                                email = "",
+                                preferredLanguage = "",
+
+                                elo = row[Users.eloRating],
+                                winRate = "50%",
+                                imageUrl = row[Users.profileImageUrl],
+                                blade = row[Users.gearBlade],
+                                rubberFh = row[Users.gearRubberFh],
+                                rubberBh = row[Users.gearRubberBh],
+                                bio = row[Users.bio],
+                                skillLevel = row[Users.skillLevel]?.name,
+                                age = calculateAge(row[Users.birthDate])
+                            )
+                        }
+                }
+
+                if (userProfile != null) {
+                    call.respond(HttpStatusCode.OK, userProfile)
+                } else {
+                    call.respond(HttpStatusCode.NotFound, "User not found")
+                }
+            }
+
             put("/language") {
                 // 1. Grab the user's ID from their secure JWT token
                 val principal = call.principal<JWTPrincipal>()
@@ -323,4 +350,12 @@ fun Route.userRoutes() {
             }
         }
     }
+}
+
+fun calculateAge(birthDateStr: String?): Int? {
+    if (birthDateStr.isNullOrBlank()) return null
+    return try {
+        val birthDate = LocalDate.parse(birthDateStr)
+        Period.between(birthDate, LocalDate.now()).years
+    } catch (e: Exception) { null }
 }

@@ -13,4 +13,7 @@ interface TokenStorage {
     fun clearLanguage()
     fun saveThemeMode(mode: String)
     fun getThemeMode(): String
+    fun saveMapChoice(choice: String)
+    fun getMapChoice(): String?
+    fun clearMapChoice()
 }

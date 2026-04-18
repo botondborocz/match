@@ -20,6 +20,7 @@ object Connections : Table("connections") {
     val user1Id = reference("user1_id", Users.id)
     val user2Id = reference("user2_id", Users.id)
     val createdAt = timestamp("created_at")
+    val theme = varchar("theme", 50).default("Default")
 
     override val primaryKey = PrimaryKey(id)
 }

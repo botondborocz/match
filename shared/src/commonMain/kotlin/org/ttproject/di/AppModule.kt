@@ -37,7 +37,7 @@ val appModule = module {
     viewModel { MatchViewModel(get()) }
     viewModel { ProfileViewModel(get()) }
     viewModel { LocationViewModel(get()) }
-    viewModel { ChatViewModel(get(), get()) }
+    viewModel { ChatViewModel(get(), get(), get()) }
     viewModel { MessagesViewModel(get()) }
 }
 

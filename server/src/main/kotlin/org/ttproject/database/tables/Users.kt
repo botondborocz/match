@@ -21,6 +21,8 @@ object Users : Table("users") {
     val skillLevel = enumerationByName("skill_level", 20, SkillLevel::class).nullable()
     val eloRating = integer("elo_rating").default(1200)
     val playStyle = enumerationByName("play_style", 20, PlayStyle::class).nullable()
+    val bio = varchar("bio", 500).nullable()
+    val birthDate = varchar("birth_date", 20).nullable() // Stored as "YYYY-MM-DD"
 
     val gearBlade = varchar("gear_blade", 100).nullable()
     val gearRubberFh = varchar("gear_rubber_fh", 100).nullable()

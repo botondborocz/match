@@ -62,6 +62,8 @@ enum class AuthRoute {
 @Serializable
 object HomeBase
 
+val LocalIsDarkTheme = compositionLocalOf { false }
+
 @Composable
 fun App(
     pendingChatId: String? = null,
@@ -114,14 +116,14 @@ fun App(
         tabNavController.navigate(targetRoute) {
             popUpTo<NavRoute.Map> { saveState = true }
             launchSingleTop = true
-            restoreState = targetRoute != NavRoute.Messages
+            restoreState = true
         }
     }
 
     LaunchedEffect(pendingChatId) {
         if (pendingChatId != null) {
             tabNavController.navigate(NavRoute.Messages) // Inner switch
-            rootNavController.navigate(NavRoute.ChatDetail(pendingChatId, "Chat", null)) // Outer push!
+            rootNavController.navigate(NavRoute.ChatDetail(pendingChatId, "Chat", null, "Default")) // Outer push!
             onChatConsumed()
         }
     }
@@ -136,10 +138,26 @@ fun App(
         )
     }
 
-    SetStatusBarColors(isDark = currentThemeMode == ThemeMode.Dark || (currentThemeMode == ThemeMode.System && isSystemInDarkTheme()))
+    // 👇 1. Actively listen to the live system theme
+    val isSystemDark = isSystemInDarkTheme()
+
+    // 👇 2. Calculate a definitive, reactive boolean that changes INSTANTLY
+    val isCurrentlyDark = when (currentThemeMode) {
+        ThemeMode.Light -> false
+        ThemeMode.Dark -> true
+        ThemeMode.System -> isSystemDark
+    }
+
+    SetStatusBarColors(
+        isDark = currentThemeMode == ThemeMode.Dark || (currentThemeMode == ThemeMode.System && isSystemInDarkTheme()),
+        isSystemDefault = currentThemeMode == ThemeMode.System
+    )
 
     key(currentLanguage) {
-        CompositionLocalProvider(LocalThemeMode provides currentThemeMode) {
+        CompositionLocalProvider(
+            LocalThemeMode provides currentThemeMode,
+            LocalIsDarkTheme provides isCurrentlyDark // 👇 Pass the live boolean down!
+        ) {
 
 
 //            val navBackStackEntry by navController.currentBackStackEntryAsState()
@@ -222,7 +240,7 @@ fun App(
                             // Scaffold is now INSIDE the route, so it slides beautifully!
                             Scaffold(
                                 topBar = {
-                                    if (isMobile && currentRoute != NavRoute.Map && currentRoute != NavRoute.Messages && currentRoute != NavRoute.Match) {
+                                    if (isMobile && currentRoute != NavRoute.Map && currentRoute != NavRoute.Messages && currentRoute != NavRoute.Match && currentRoute != NavRoute.Profile) {
                                         MobileTopBar()
                                     }
                                 },
@@ -238,7 +256,7 @@ fun App(
 
                                     // LAYER 1: MAP
                                     Box(modifier = Modifier.fillMaxSize().padding(bottom = frozenBottomPadding)) {
-                                        MapScreen(isActive = isMapActive)
+                                        MapScreen()
                                     }
 
                                     // LAYER 2: GLOBAL BACKGROUND
@@ -253,7 +271,7 @@ fun App(
                                     // LAYER 3: BOTTOM NAV BAR
                                     // No logic needed! It's permanently glued to the HomeBase screen.
                                     if (isMobile) {
-                                        Box(modifier = Modifier.align(Alignment.BottomCenter)) {
+                                        Box(modifier = Modifier.align(Alignment.BottomCenter).zIndex(10f)) {
                                             MobileBottomNav(currentRoute = currentRoute, onNavigate = onTabNavigate)
                                         }
                                     }
@@ -302,19 +320,18 @@ fun App(
                                             MessagesScreen(
                                                 playAnimation = playMessagesAnimation,
                                                 bottomNavPadding = frozenBottomPadding,
-                                                onNavigateToChat = { chatId, otherUsername, otherUserImageUrl ->
+                                                onNavigateToChat = { chatId, otherUsername, otherUserImageUrl, themeName ->
                                                     playMessagesAnimation = false
                                                     // 👇 THE MAGIC: Push ChatDetail onto the ROOT stack!
-                                                    rootNavController.navigate(NavRoute.ChatDetail(chatId, otherUsername, otherUserImageUrl))
+                                                    rootNavController.navigate(NavRoute.ChatDetail(chatId, otherUsername, otherUserImageUrl, themeName))
                                                 }
                                             )
                                         }
 
                                         composable<NavRoute.Profile> {
-                                            Box(modifier = Modifier.fillMaxSize().padding(innerPadding).padding(bottom = frozenBottomPadding)) {
+                                            Box(modifier = Modifier.fillMaxSize().padding(innerPadding).padding(bottom = 0.dp)) {
                                                 if (isLoggedIn) {
                                                     ProfileScreen(
-                                                        bottomNavPadding = 0.dp,
                                                         currentLanguage = currentLanguage,
                                                         currentThemeMode = currentThemeMode,
                                                         onLogoutClick = {
@@ -411,6 +428,7 @@ fun App(
                                     chatId = route.chatId,
                                     otherUsername = route.otherUsername,
                                     otherUserImageUrl = route.otherUserImageUrl,
+                                    initialThemeName = route.themeName,
                                     bottomNavPadding = 0.dp,
                                     onBack = { rootNavController.popBackStack() } // 👇 Pops the root stack!
                                 )

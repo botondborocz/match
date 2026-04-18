@@ -19,4 +19,7 @@ class AndroidTokenStorage(context: Context) : TokenStorage {
     override fun clearLanguage() { vault.deleteObject("language") }
     override fun saveThemeMode(mode: String) { vault.set("theme_mode", mode) }
     override fun getThemeMode(): String = vault.string("theme_mode") ?: "system"
+    override fun saveMapChoice(choice: String) { vault.set("map_choice", choice) }
+    override fun getMapChoice(): String? = vault.string("map_choice") ?: "google"
+    override fun clearMapChoice() { vault.deleteObject("map_choice") }
 }
