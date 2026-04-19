@@ -11,10 +11,14 @@ import io.ktor.server.response.*
 import io.ktor.server.websocket.*
 import io.ktor.websocket.*
 import io.ktor.http.HttpStatusCode
+import io.ktor.http.content.PartData
+import io.ktor.http.content.forEachPart
+import io.ktor.http.content.streamProvider
 import io.ktor.server.auth.authenticate
 import io.ktor.server.auth.jwt.JWTPrincipal
 import io.ktor.server.auth.principal
 import io.ktor.server.request.receive
+import io.ktor.server.request.receiveMultipart
 import kotlinx.coroutines.channels.consumeEach
 import kotlinx.serialization.json.Json
 import org.jetbrains.exposed.sql.Op
@@ -431,6 +435,43 @@ fun Route.messageRoutes() {
                 }
 
                 call.respond(HttpStatusCode.OK, "Theme updated successfully")
+            }
+            // --------------------------------------------------------
+            // 4. UPLOAD CHAT IMAGE
+            // --------------------------------------------------------
+            post("/image") {
+                val connectionId = call.parameters["connectionId"] ?: return@post call.respond(HttpStatusCode.BadRequest, "Missing connection ID")
+                val principal = call.principal<JWTPrincipal>()
+                val userId = principal?.payload?.getClaim("userId")?.asString() ?: return@post call.respond(HttpStatusCode.Unauthorized)
+
+                var imageBytes: ByteArray? = null
+
+                // Read the multipart form data
+                val multipartData = call.receiveMultipart()
+                multipartData.forEachPart { part ->
+                    if (part is PartData.FileItem) {
+                        imageBytes = part.streamProvider().readBytes()
+                    }
+                    part.dispose()
+                }
+
+                if (imageBytes != null) {
+                    try {
+                        val fileName = "chat_images/${connectionId}_${System.currentTimeMillis()}.jpg"
+                        val bucket = com.google.firebase.cloud.StorageClient.getInstance().bucket()
+                        bucket.create(fileName, imageBytes, "image/jpeg")
+
+                        val encodedFilePath = java.net.URLEncoder.encode(fileName, java.nio.charset.StandardCharsets.UTF_8.toString())
+                        val publicDownloadUrl = "https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/$encodedFilePath?alt=media"
+
+                        call.respond(HttpStatusCode.OK, mapOf("imageUrl" to publicDownloadUrl))
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                        call.respond(HttpStatusCode.InternalServerError, "Failed to upload image")
+                    }
+                } else {
+                    call.respond(HttpStatusCode.BadRequest, "No image file provided")
+                }
             }
         }
     }

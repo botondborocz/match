@@ -130,4 +130,15 @@ class ChatViewModel(
             }
         }
     }
+
+    fun sendImageMessage(connectionId: String, imageBytes: ByteArray, replyToMessageId: String?) {
+        viewModelScope.launch {
+            // Optional: You could set an _isUploading state here to show a spinner!
+            repository.uploadChatImage(connectionId, imageBytes).onSuccess { imageUrl ->
+                // Tag it so the UI knows it's an image, not text!
+                val specialMessagePayload = "[IMAGE]$imageUrl"
+                repository.sendMessage(specialMessagePayload, replyToMessageId)
+            }
+        }
+    }
 }

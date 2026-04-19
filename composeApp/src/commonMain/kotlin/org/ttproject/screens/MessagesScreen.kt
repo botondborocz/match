@@ -76,13 +76,16 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Reply
 import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material3.SheetState
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.layout.layout
@@ -320,7 +323,21 @@ fun ChatDetailScreen(
         }
     }
 
+    val scope = rememberCoroutineScope()
+    val galleryLauncher = com.preat.peekaboo.image.picker.rememberImagePickerLauncher(
+        selectionMode = com.preat.peekaboo.image.picker.SelectionMode.Single,
+        scope = scope,
+        onResult = { byteArrays ->
+            byteArrays.firstOrNull()?.let { imageBytes ->
+                // Send the image and clear the reply state!
+                viewModel.sendImageMessage(chatId, imageBytes, replyingToMessageId)
+                replyingToMessageId = null
+            }
+        }
+    )
+
     var selectedMessageId by remember { mutableStateOf<String?>(null) }
+    var fullScreenImageUrl by remember { mutableStateOf<String?>(null) }
     val listState = rememberLazyListState()
 
     ClearChatNotificationEffect(chatId = chatId)
@@ -463,7 +480,16 @@ fun ChatDetailScreen(
                             reactions = msg.reactions,
                             myBubbleColor = currentTheme.myBubbleColor,       // 👈 Pass Theme Color
                             otherBubbleColor = currentTheme.otherBubbleColor, // 👈 Pass Theme Color
-                            onClick = { selectedMessageId = if (isSelected) null else msg.id },
+                            onClick = {
+                                println(msg.content)
+                                if (msg.content.startsWith("[IMAGE]")) {
+                                    // It's an image! Open the full screen viewer
+                                    fullScreenImageUrl = msg.content.substringAfter("[IMAGE]")
+                                } else {
+                                    // It's text! Toggle the timestamp visibility
+                                    selectedMessageId = if (isSelected) null else msg.id
+                                }
+                            },
                             onReactionClick = { reactionSheetMessageId = msg.id },
                             onLongPress = { bounds, topStart, topEnd, bottomStart, bottomEnd, initialTouch, reactionBounds ->
                                 reactionMenuData = ReactionMenuData(msg.id, isMe, bounds, topStart, topEnd, bottomStart, bottomEnd, initialTouch, reactionBounds)
@@ -508,7 +534,23 @@ fun ChatDetailScreen(
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
                     verticalAlignment = Alignment.Bottom
                 ) {
-                    // 👇 1. Dynamically adjust the inset shadow!
+                    // 👇 1. Camera Button (Placeholder for the expect/actual we'll build next)
+                    IconButton(
+                        onClick = { /* TODO: Build Native Camera Launcher */ },
+                        modifier = Modifier.padding(bottom = 2.dp).size(36.dp)
+                    ) {
+                        Icon(Icons.Default.PhotoCamera, contentDescription = "Camera", tint = AppColors.TextGray)
+                    }
+
+                    // 👇 2. Gallery Button (Wired up to Peekaboo!)
+                    IconButton(
+                        onClick = { galleryLauncher.launch() },
+                        modifier = Modifier.padding(bottom = 2.dp).size(36.dp)
+                    ) {
+                        Icon(Icons.Default.Image, contentDescription = "Gallery", tint = AppColors.TextGray)
+                    }
+
+                    // 👇 3. Dynamically adjust the inset shadow!
                     val isDarkMode = org.ttproject.isDark // (Or isSystemInDarkTheme() depending on your imports)
                     val inputBgColor = if (isDarkMode) {
                         Color.Black.copy(alpha = 0.25f) // Deep shadow for Dark Mode
@@ -905,6 +947,102 @@ fun ChatDetailScreen(
                 }
             }
         }
+        // 👇 3. THE FULL-SCREEN ZOOMABLE IMAGE VIEWER
+        if (fullScreenImageUrl != null) {
+            // State for zooming and panning
+            var scale by remember { mutableFloatStateOf(1f) }
+            var offset by remember { mutableStateOf(Offset.Zero) }
+
+            androidx.compose.ui.window.Dialog(
+                onDismissRequest = { fullScreenImageUrl = null },
+                properties = androidx.compose.ui.window.DialogProperties(
+                    usePlatformDefaultWidth = false,
+                    dismissOnBackPress = true,
+                    dismissOnClickOutside = true
+                )
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black.copy(alpha = 0.95f))
+                        // 👇 1. Handle Double Tap to Zoom / Single Tap to Close
+                        .pointerInput(Unit) {
+                            detectTapGestures(
+                                onDoubleTap = {
+                                    // Reset zoom on double tap, or zoom in to 2.5x
+                                    if (scale > 1f) {
+                                        scale = 1f
+                                        offset = Offset.Zero
+                                    } else {
+                                        scale = 2.5f
+                                    }
+                                },
+                                onTap = {
+                                    // Only close if they tap when fully zoomed out
+                                    if (scale == 1f) fullScreenImageUrl = null
+                                }
+                            )
+                        }
+                        // 👇 2. Handle Pinch-to-Zoom and Drag-to-Pan
+                        .pointerInput(Unit) {
+                            detectTransformGestures { _, pan, zoom, _ ->
+                                // Calculate new scale (limit between 1x and 5x zoom)
+                                scale = (scale * zoom).coerceIn(1f, 5f)
+
+                                // If we are zoomed in, allow panning. If zoomed out, lock to center.
+                                if (scale > 1f) {
+                                    // Calculate the maximum allowed pan to keep the image on-screen
+                                    val maxPanX = (size.width * (scale - 1)) / 2
+                                    val maxPanY = (size.height * (scale - 1)) / 2
+
+                                    val newOffsetX = offset.x + pan.x * scale
+                                    val newOffsetY = offset.y + pan.y * scale
+
+                                    // Bound the offset so the image doesn't fly off into the void
+                                    offset = Offset(
+                                        newOffsetX.coerceIn(-maxPanX, maxPanX),
+                                        newOffsetY.coerceIn(-maxPanY, maxPanY)
+                                    )
+                                } else {
+                                    offset = Offset.Zero
+                                }
+                            }
+                        },
+                    contentAlignment = Alignment.Center
+                ) {
+
+                    // 👇 3. Apply the scale and offset to the GPU layer
+                    AsyncImage(
+                        model = fullScreenImageUrl,
+                        contentDescription = "Full screen image",
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .graphicsLayer {
+                                scaleX = scale
+                                scaleY = scale
+                                translationX = offset.x
+                                translationY = offset.y
+                            },
+                        contentScale = ContentScale.Fit
+                    )
+
+                    // Floating Close Button
+                    IconButton(
+                        onClick = { fullScreenImageUrl = null },
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(top = 48.dp, end = 16.dp)
+                            .background(Color.Black.copy(alpha = 0.5f), CircleShape)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = "Close",
+                            tint = Color.White
+                        )
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -1171,17 +1309,20 @@ fun ChatBubble(
             Box(contentAlignment = Alignment.BottomEnd) {
 
                 // --- THE ACTUAL CHAT BUBBLE ---
+                val isImage = text.startsWith("[IMAGE]")
+                val imageUrl = if (isImage) text.substringAfter("[IMAGE]") else null
+
                 Column(
                     modifier = Modifier
                         .widthIn(max = maxBubbleWidth)
                         .onGloballyPositioned { coordinates ->
                             bubbleBounds = coordinates.boundsInRoot()
                         }
-                        .background(
-                            color = animatedBackgroundColor,
-                            shape = bubbleShape
+                        // 👇 1. If it's an image, NO background, just clip it to the shape!
+                        .then(
+                            if (isImage) Modifier.clip(bubbleShape)
+                            else Modifier.background(animatedBackgroundColor, bubbleShape).clip(bubbleShape)
                         )
-                        .clip(bubbleShape)
                         .pointerInput(Unit) {
                             val slop = viewConfiguration.touchSlop
 
@@ -1236,16 +1377,28 @@ fun ChatBubble(
                                 }
                             }
                         }
-                        .padding(horizontal = 12.dp, vertical = 10.dp)
+                        // 👇 2. If it's an image, we remove the padding so the picture touches the edges
+                        .then(
+                            if (isImage) Modifier
+                            else Modifier.padding(horizontal = 12.dp, vertical = 10.dp)
+                        )
                 ) {
                     // 👇 THE QUOTE PREVIEW UI
                     if (repliedText != null && repliedSender != null) {
                         val isDarkMode = org.ttproject.isDark
-                        val quoteBgColor = if (isDarkMode) Color.Black.copy(alpha = 0.15f) else Color.Black.copy(alpha = 0.05f)
+
+                        // Parse if the quoted message was an image
+                        val isQuotedImage = repliedText.startsWith("[IMAGE]")
+                        val displayRepliedText = if (isQuotedImage) "📸 Photo" else repliedText
+
+                        // If the current message is an image, make the quote background darker so it's readable over the photo!
+                        val quoteBgColor = if (isImage) Color.Black.copy(alpha = 0.6f)
+                        else if (isDarkMode) Color.Black.copy(alpha = 0.15f)
+                        else Color.Black.copy(alpha = 0.05f)
 
                         Row(
                             modifier = Modifier
-                                .padding(bottom = 6.dp)
+                                .then(if (isImage) Modifier.padding(start = 8.dp, top = 8.dp, end = 8.dp, bottom = 4.dp) else Modifier.padding(bottom = 6.dp))
                                 .clip(RoundedCornerShape(6.dp))
                                 .background(quoteBgColor)
                                 .height(IntrinsicSize.Min)
@@ -1254,20 +1407,18 @@ fun ChatBubble(
                                 modifier = Modifier
                                     .width(4.dp)
                                     .fillMaxHeight()
-                                    // 👇 Uses Theme Color!
                                     .background(if (isMe) Color.White else myBubbleColor)
                             )
                             Column(modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)) {
                                 Text(
                                     text = repliedSender,
-                                    // 👇 Uses Theme Color!
                                     color = if (isMe) Color.White else myBubbleColor,
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.Bold
                                 )
                                 Text(
-                                    text = repliedText,
-                                    color = if (isMe) Color.White.copy(alpha = 0.85f) else AppColors.TextPrimary.copy(alpha = 0.85f),
+                                    text = displayRepliedText, // 👈 Render the parsed text
+                                    color = if (isImage || isMe) Color.White.copy(alpha = 0.85f) else AppColors.TextPrimary.copy(alpha = 0.85f),
                                     fontSize = 13.sp,
                                     maxLines = 3,
                                     overflow = TextOverflow.Ellipsis
@@ -1276,13 +1427,30 @@ fun ChatBubble(
                         }
                     }
 
-                    // The actual message
-                    Text(
-                        text = text,
-                        color = if (isMe) Color.White else AppColors.TextPrimary,
-                        fontSize = 15.sp,
-                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
-                    )
+                    // 👇 3. RENDER IMAGE OR TEXT
+                    if (isImage) {
+                        Box(contentAlignment = Alignment.Center) {
+                            AsyncImage(
+                                model = imageUrl,
+                                contentDescription = "Sent Image",
+                                modifier = Modifier
+                                    .widthIn(max = 280.dp) // Constrain how wide the image can get
+                                    .heightIn(max = 350.dp), // Constrain how tall the image can get
+                                contentScale = ContentScale.Crop
+                            )
+                            // If selected, apply a dark overlay over the image to show it's focused!
+                            if (isSelected) {
+                                Box(modifier = Modifier.matchParentSize().background(Color.Black.copy(alpha = 0.4f)))
+                            }
+                        }
+                    } else {
+                        Text(
+                            text = text,
+                            color = if (isMe) Color.White else AppColors.TextPrimary,
+                            fontSize = 15.sp,
+                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                        )
+                    }
                 }
 
                 // --- THE FLOATING REACTION BADGE ---
@@ -1416,7 +1584,8 @@ fun ChatListItem(thread: ChatThreadDto, onClick: () -> Unit) {
                 }
                 Spacer(modifier = Modifier.height(4.dp))
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                    Text(thread.lastMessage, color = if (thread.unreadCount > 0) AppColors.TextPrimary else Color.Gray, fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+                    val displayLastMessage = if (thread.lastMessage.startsWith("[IMAGE]")) "📸 Photo" else thread.lastMessage
+                    Text(displayLastMessage, color = if (thread.unreadCount > 0) AppColors.TextPrimary else Color.Gray, fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
                     if (thread.unreadCount > 0) {
                         Spacer(modifier = Modifier.width(8.dp))
                         Box(modifier = Modifier.size(20.dp).clip(CircleShape).background(AppColors.AccentOrange), contentAlignment = Alignment.Center) {
@@ -1475,6 +1644,8 @@ fun ReplyPreview(
 ) {
     val isDarkMode = org.ttproject.isDark
     val bgColor = if (isDarkMode) Color.Black.copy(alpha = 0.2f) else Color.Black.copy(alpha = 0.05f)
+    val displayMessage = if (messageContent.startsWith("[IMAGE]")) "📸 Photo" else messageContent
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -1500,7 +1671,7 @@ fun ReplyPreview(
         Column(modifier = Modifier.weight(1f).padding(vertical = 8.dp)) {
             Text("Replying to", color = themeColor, fontSize = 12.sp, fontWeight = FontWeight.Bold) // 👈 Theme matched title
             Text(
-                text = messageContent,
+                text = displayMessage,
                 color = AppColors.TextPrimary,
                 fontSize = 14.sp,
                 maxLines = 1,
@@ -1766,3 +1937,4 @@ private fun ReadOnlyGearItem(label: String, value: String, bgColor: Color, iconC
         }
     }
 }
+

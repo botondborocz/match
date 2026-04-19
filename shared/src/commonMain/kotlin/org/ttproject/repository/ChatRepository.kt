@@ -4,9 +4,14 @@ import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.request.*
 import io.ktor.client.plugins.websocket.*
+import io.ktor.client.request.forms.MultiPartFormDataContent
+import io.ktor.client.request.forms.formData
+import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
+import io.ktor.http.Headers
 import io.ktor.http.HttpHeaders
 import io.ktor.http.contentType
+import io.ktor.http.isSuccess
 import io.ktor.websocket.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
@@ -41,6 +46,7 @@ interface ChatRepository {
     suspend fun savePushToken(fcmToken: String)
     suspend fun markMessagesAsRead(chatId: String)
     suspend fun updateChatTheme(connectionId: String, themeName: String)
+    suspend fun uploadChatImage(connectionId: String, imageBytes: ByteArray): Result<String>
 }
 
 class ChatRepositoryImpl (
@@ -211,6 +217,39 @@ class ChatRepositoryImpl (
         } catch (e: Exception) {
             e.printStackTrace()
             // Fail silently, the theme just won't persist if offline
+        }
+    }
+
+    override suspend fun uploadChatImage(connectionId: String, imageBytes: ByteArray): Result<String> {
+        val token = tokenStorage.getToken() ?: return Result.failure(Exception("No token"))
+        return try {
+            val response = client.post("${SERVER_IP}/api/connections/$connectionId/image") {
+                header(HttpHeaders.Authorization, "Bearer $token")
+                setBody(
+                    MultiPartFormDataContent(
+                        formData {
+                            append("image", imageBytes, Headers.build {
+                                append(HttpHeaders.ContentType, "image/jpeg")
+                                append(
+                                    HttpHeaders.ContentDisposition,
+                                    "filename=\"chat_image.jpg\""
+                                )
+                            })
+                        }
+                    )
+                )
+            }
+            if (response.status.isSuccess()) {
+                val responseText = response.bodyAsText()
+                // Safely extract the imageUrl from the JSON response
+                val imageUrl = Json.parseToJsonElement(responseText).jsonObject["imageUrl"]!!.jsonPrimitive.content
+                Result.success(imageUrl)
+            } else {
+                Result.failure(Exception("Upload failed"))
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Result.failure(e)
         }
     }
 
