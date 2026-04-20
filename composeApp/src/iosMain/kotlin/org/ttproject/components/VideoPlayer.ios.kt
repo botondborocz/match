@@ -12,9 +12,9 @@ import platform.Foundation.NSURL
 @OptIn(ExperimentalForeignApi::class)
 @Composable
 actual fun VideoPlayer(modifier: Modifier, url: String) {
-    // 👇 FIX 1: Pass 'url' into remember!
-    val player = remember(url) { AVPlayer(uRL = NSURL.URLWithString(url)!!) }
-    val playerViewController = remember(url) { AVPlayerViewController() }
+    // 👇 FIX 1: Explicitly define <AVPlayer> so the compiler doesn't lose the type!
+    val player = remember<AVPlayer>(url) { AVPlayer(uRL = NSURL.URLWithString(url)!!) }
+    val playerViewController = remember<AVPlayerViewController>(url) { AVPlayerViewController() }
 
     playerViewController.player = player
     playerViewController.showsPlaybackControls = true
@@ -22,6 +22,9 @@ actual fun VideoPlayer(modifier: Modifier, url: String) {
     UIKitView(
         factory = { playerViewController.view },
         modifier = modifier,
-        update = { player.play() }
+        update = {
+            // 👇 FIX 2: Safely call play through the controller's specific player reference
+            playerViewController.player?.play()
+        }
     )
 }
