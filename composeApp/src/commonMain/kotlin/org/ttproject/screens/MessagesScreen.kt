@@ -93,11 +93,16 @@ import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PhotoCamera
+import androidx.compose.material.icons.filled.PlayCircleOutline
 import androidx.compose.material3.SheetState
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.text.TextStyle
+import io.github.vinceglb.filekit.compose.rememberFilePickerLauncher
+import io.github.vinceglb.filekit.core.PickerMode
+import io.github.vinceglb.filekit.core.PickerType
 import org.jetbrains.compose.resources.painterResource
+import org.ttproject.components.VideoPlayer
 import org.ttproject.components.rememberCameraLauncher
 import org.ttproject.data.ReactionDto
 import ttproject.composeapp.generated.resources.Res
@@ -336,17 +341,24 @@ fun ChatDetailScreen(
     }
 
     val scope = rememberCoroutineScope()
-    val galleryLauncher = com.preat.peekaboo.image.picker.rememberImagePickerLauncher(
-        selectionMode = com.preat.peekaboo.image.picker.SelectionMode.Multiple(maxSelection = 5),
-        scope = scope,
-        onResult = { byteArrays ->
-            // 👇 2. Pass the entire list to the ViewModel
-            if (byteArrays.isNotEmpty()) {
-                viewModel.sendImagesMessage(chatId, byteArrays, replyingToMessageId)
-                replyingToMessageId = null
+    // 👇 The new FileKit Launcher!
+    val mediaLauncher = rememberFilePickerLauncher(
+        type = PickerType.ImageAndVideo, // 👈 Explicitly allows both!
+        mode = PickerMode.Multiple(maxItems = 5),
+        title = "Select Media"
+    ) { files ->
+        if (files != null && files.isNotEmpty()) {
+            scope.launch {
+                // FileKit safely reads the bytes in the background
+                val byteArrays = files.mapNotNull { it.readBytes() }
+
+                if (byteArrays.isNotEmpty()) {
+                    viewModel.sendImagesMessage(chatId, byteArrays, replyingToMessageId)
+                    replyingToMessageId = null
+                }
             }
         }
-    )
+    }
 
     val cameraLauncher = rememberCameraLauncher { imageBytes ->
         if (imageBytes != null) {
@@ -589,7 +601,7 @@ fun ChatDetailScreen(
 
                     // 👇 2. Gallery Button (Wired up to Peekaboo!)
                     IconButton(
-                        onClick = { galleryLauncher.launch() },
+                        onClick = { mediaLauncher.launch() },
                         modifier = Modifier.padding(bottom = 2.dp).size(36.dp)
                     ) {
                         Icon(
@@ -1042,10 +1054,18 @@ fun ChatDetailScreen(
             }
         }
         // 👇 THE FULL-SCREEN PAGER VIEWER
-        if (fullScreenImages != null) {
+        // 1. SHADOW STATE FIX: This keeps the list alive in memory while the Dialog animates closed, preventing crashes!
+        var activeImages by remember { mutableStateOf<List<String>>(emptyList()) }
+        LaunchedEffect(fullScreenImages) {
+            if (fullScreenImages != null) {
+                activeImages = fullScreenImages!!
+            }
+        }
+
+        if (fullScreenImages != null && activeImages.isNotEmpty()) {
             val pagerState = rememberPagerState(
                 initialPage = fullScreenInitialPage,
-                pageCount = { fullScreenImages?.size ?: 0 }
+                pageCount = { activeImages.size } // 👈 Uses the shadow state!
             )
 
             androidx.compose.ui.window.Dialog(
@@ -1058,19 +1078,18 @@ fun ChatDetailScreen(
             ) {
                 Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.95f))) {
 
-                    androidx.compose.foundation.pager.HorizontalPager(
+                    HorizontalPager(
                         state = pagerState,
                         modifier = Modifier.fillMaxSize()
                     ) { page ->
                         var scale by remember { mutableFloatStateOf(1f) }
                         var offset by remember { mutableStateOf(Offset.Zero) }
 
-                        val transformableState = androidx.compose.foundation.gestures.rememberTransformableState { zoomChange, offsetChange, _ ->
+                        val transformableState = rememberTransformableState { zoomChange, offsetChange, _ ->
                             scale = (scale * zoomChange).coerceIn(1f, 5f)
                             val maxPanX = (2000f * (scale - 1)) / 2
                             val maxPanY = (2000f * (scale - 1)) / 2
                             offset = Offset(
-                                // 👇 FIX 1: Removed `* scale` so panning tracks your finger perfectly!
                                 (offset.x + offsetChange.x).coerceIn(-maxPanX, maxPanX),
                                 (offset.y + offsetChange.y).coerceIn(-maxPanY, maxPanY)
                             )
@@ -1093,14 +1112,10 @@ fun ChatDetailScreen(
                                         awaitFirstDown()
                                         do {
                                             val event = awaitPointerEvent()
-
-                                            // 👇 THE GESTURE FIX: Only consume the touch if 2 fingers are down, OR if we are zoomed in!
-                                            // If 1 finger is swiping at 1x zoom, we do nothing and let the Pager scroll!
+                                            // Only consume the touch if 2 fingers are down, OR if we are zoomed in!
                                             if (event.changes.size > 1 || scale > 1f) {
                                                 val zoomChange = event.calculateZoom()
                                                 val panChange = event.calculatePan()
-
-                                                // Consume the touch so the Pager doesn't get confused
                                                 event.changes.forEach { it.consume() }
 
                                                 scale = (scale * zoomChange).coerceIn(1f, 5f)
@@ -1117,19 +1132,33 @@ fun ChatDetailScreen(
                                 },
                             contentAlignment = Alignment.Center
                         ) {
-                            AsyncImage(
-                                model = fullScreenImages?.getOrNull(page),
-                                contentDescription = "Image $page",
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .graphicsLayer {
-                                        scaleX = scale
-                                        scaleY = scale
-                                        translationX = offset.x
-                                        translationY = offset.y
-                                    },
-                                contentScale = ContentScale.Fit
-                            )
+
+                            // 👇 Uses activeImages safely!
+                            val url = activeImages.getOrNull(page) ?: ""
+                            val isVideo = url.contains(".mp4")
+
+                            if (isVideo) {
+                                // Render the Native Video Player!
+                                VideoPlayer(
+                                    modifier = Modifier.fillMaxSize(),
+                                    url = url
+                                )
+                            } else {
+                                // Render the zoomable Image!
+                                AsyncImage(
+                                    model = url,
+                                    contentDescription = "Image $page",
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .graphicsLayer {
+                                            scaleX = scale
+                                            scaleY = scale
+                                            translationX = offset.x
+                                            translationY = offset.y
+                                        },
+                                    contentScale = ContentScale.Fit
+                                )
+                            }
                         }
                     }
 
@@ -1142,9 +1171,9 @@ fun ChatDetailScreen(
                     }
 
                     // Page Indicator
-                    if ((fullScreenImages?.size ?: 0) > 1) {
+                    if (activeImages.size > 1) {
                         Text(
-                            text = "${pagerState.currentPage + 1} / ${fullScreenImages?.size ?: 0}",
+                            text = "${pagerState.currentPage + 1} / ${activeImages.size}",
                             color = Color.White,
                             fontWeight = FontWeight.Bold,
                             modifier = Modifier.align(Alignment.TopCenter).padding(top = 60.dp)
@@ -1555,33 +1584,33 @@ fun ChatBubble(
                         Box(modifier = Modifier.widthIn(max = 280.dp).clip(bubbleShape)) {
                             when (imageUrls.size) {
                                 1 -> {
-                                    AsyncImage(model = imageUrls[0], contentDescription = null, modifier = Modifier.fillMaxWidth().heightIn(max = 350.dp), contentScale = ContentScale.Crop)
+                                    MediaThumbnail(url = imageUrls[0], modifier = Modifier.fillMaxWidth().heightIn(max = 350.dp))
                                 }
                                 2 -> {
                                     Row(modifier = Modifier.fillMaxWidth().height(200.dp)) {
-                                        AsyncImage(model = imageUrls[0], contentDescription = null, modifier = Modifier.weight(1f).fillMaxHeight().padding(end = 2.dp), contentScale = ContentScale.Crop)
-                                        AsyncImage(model = imageUrls[1], contentDescription = null, modifier = Modifier.weight(1f).fillMaxHeight().padding(start = 2.dp), contentScale = ContentScale.Crop)
+                                        MediaThumbnail(url = imageUrls[0], modifier = Modifier.weight(1f).fillMaxHeight().padding(end = 2.dp))
+                                        MediaThumbnail(url = imageUrls[1], modifier = Modifier.weight(1f).fillMaxHeight().padding(start = 2.dp))
                                     }
                                 }
                                 3 -> {
                                     Column(modifier = Modifier.fillMaxWidth().height(280.dp)) {
-                                        AsyncImage(model = imageUrls[0], contentDescription = null, modifier = Modifier.weight(1f).fillMaxWidth().padding(bottom = 2.dp), contentScale = ContentScale.Crop)
+                                        MediaThumbnail(url = imageUrls[0], modifier = Modifier.weight(1f).fillMaxWidth().padding(bottom = 2.dp))
                                         Row(modifier = Modifier.weight(1f).fillMaxWidth().padding(top = 2.dp)) {
-                                            AsyncImage(model = imageUrls[1], contentDescription = null, modifier = Modifier.weight(1f).fillMaxHeight().padding(end = 2.dp), contentScale = ContentScale.Crop)
-                                            AsyncImage(model = imageUrls[2], contentDescription = null, modifier = Modifier.weight(1f).fillMaxHeight().padding(start = 2.dp), contentScale = ContentScale.Crop)
+                                            MediaThumbnail(url = imageUrls[1], modifier = Modifier.weight(1f).fillMaxHeight().padding(end = 2.dp))
+                                            MediaThumbnail(url = imageUrls[2], modifier = Modifier.weight(1f).fillMaxHeight().padding(start = 2.dp))
                                         }
                                     }
                                 }
                                 else -> {
                                     Column(modifier = Modifier.fillMaxWidth().height(280.dp)) {
                                         Row(modifier = Modifier.weight(1f).fillMaxWidth().padding(bottom = 2.dp)) {
-                                            AsyncImage(model = imageUrls[0], contentDescription = null, modifier = Modifier.weight(1f).fillMaxHeight().padding(end = 2.dp), contentScale = ContentScale.Crop)
-                                            AsyncImage(model = imageUrls[1], contentDescription = null, modifier = Modifier.weight(1f).fillMaxHeight().padding(start = 2.dp), contentScale = ContentScale.Crop)
+                                            MediaThumbnail(url = imageUrls[0], modifier = Modifier.weight(1f).fillMaxHeight().padding(end = 2.dp))
+                                            MediaThumbnail(url = imageUrls[1], modifier = Modifier.weight(1f).fillMaxHeight().padding(start = 2.dp))
                                         }
                                         Row(modifier = Modifier.weight(1f).fillMaxWidth().padding(top = 2.dp)) {
-                                            AsyncImage(model = imageUrls[2], contentDescription = null, modifier = Modifier.weight(1f).fillMaxHeight().padding(end = 2.dp), contentScale = ContentScale.Crop)
+                                            MediaThumbnail(url = imageUrls[2], modifier = Modifier.weight(1f).fillMaxHeight().padding(end = 2.dp))
                                             Box(modifier = Modifier.weight(1f).fillMaxHeight().padding(start = 2.dp)) {
-                                                AsyncImage(model = imageUrls[3], contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+                                                MediaThumbnail(url = imageUrls[3], modifier = Modifier.fillMaxSize())
                                                 if (imageUrls.size > 4) {
                                                     Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.5f)), contentAlignment = Alignment.Center) {
                                                         Text("+${imageUrls.size - 4}", color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Bold)
@@ -2086,3 +2115,35 @@ private fun ReadOnlyGearItem(label: String, value: String, bgColor: Color, iconC
     }
 }
 
+@Composable
+fun MediaThumbnail(url: String, modifier: Modifier) {
+    println("MediaThumbnail: $url")
+    val isVideo = url.contains(".mp4")
+
+    // 👇 Added a solid black background so it is never transparent!
+    Box(
+        modifier = modifier.then(if (isVideo) Modifier.background(Color.Black) else Modifier),
+        contentAlignment = Alignment.Center
+    ) {
+        // Coil can't natively decode MP4s into images without extra dependencies,
+        // so we only try to load the image if it's NOT a video.
+        if (!isVideo) {
+            AsyncImage(
+                model = url,
+                contentDescription = "Media",
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
+            )
+        }
+
+        // Render the Play Button
+        if (isVideo) {
+            Icon(
+                imageVector = Icons.Default.PlayCircleOutline,
+                contentDescription = "Play Video",
+                tint = Color.White,
+                modifier = Modifier.size(48.dp)
+            )
+        }
+    }
+}

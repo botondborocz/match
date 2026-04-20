@@ -225,16 +225,27 @@ class ChatRepositoryImpl (
         val token = tokenStorage.getToken() ?: return Result.failure(Exception("No token"))
 
         return try {
-            val response = client.post("${SERVER_IP}/api/connections/$connectionId/images") { // 👈 Hit the new /images endpoint
+            val response = client.post("${SERVER_IP}/api/connections/$connectionId/images") {
                 header(HttpHeaders.Authorization, "Bearer $token")
                 setBody(
                     MultiPartFormDataContent(
                         formData {
-                            // 👇 Loop through the list and append every image to the form!
                             images.forEachIndexed { index, imageBytes ->
-                                append("image_$index", imageBytes, Headers.build {
-                                    append(HttpHeaders.ContentType, "image/jpeg")
-                                    append(HttpHeaders.ContentDisposition, "filename=\"chat_img_$index.jpg\"")
+
+                                // 👇 1. THE FIX: Detect MP4s right before we send them!
+                                val isVideo = imageBytes.size > 8 &&
+                                        imageBytes[4].toInt().toChar() == 'f' &&
+                                        imageBytes[5].toInt().toChar() == 't' &&
+                                        imageBytes[6].toInt().toChar() == 'y' &&
+                                        imageBytes[7].toInt().toChar() == 'p'
+
+                                val mimeType = if (isVideo) "video/mp4" else "image/jpeg"
+                                val extension = if (isVideo) "mp4" else "jpg"
+
+                                // 👇 2. Send the correct dynamic headers!
+                                append("media_$index", imageBytes, Headers.build {
+                                    append(HttpHeaders.ContentType, mimeType)
+                                    append(HttpHeaders.ContentDisposition, "filename=\"chat_media_$index.$extension\"")
                                 })
                             }
                         }
@@ -244,7 +255,6 @@ class ChatRepositoryImpl (
 
             if (response.status.isSuccess()) {
                 val responseText = response.bodyAsText()
-                // 👇 Parse the JSON Array back into a Kotlin List of Strings
                 val jsonArray = Json.parseToJsonElement(responseText).jsonObject["imageUrls"]!!.jsonArray
                 val imageUrls = jsonArray.map { it.jsonPrimitive.content }
 

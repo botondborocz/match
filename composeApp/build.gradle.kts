@@ -39,6 +39,8 @@ kotlin {
             implementation("io.ktor:ktor-client-okhttp:3.3.0")
             implementation("com.google.firebase:firebase-messaging:23.4.1")
             implementation("androidx.lifecycle:lifecycle-process:2.7.0")
+            implementation("androidx.media3:media3-exoplayer:1.10.0")
+            implementation("androidx.media3:media3-ui:1.10.0")
         }
         commonMain.dependencies {
             implementation(libs.compose.runtime)
@@ -63,6 +65,8 @@ kotlin {
             // In your commonMain dependencies block:
             implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.5.0") // Or whatever the latest version is
             implementation("io.github.onseok:peekaboo-image-picker:0.5.2") // Check for the latest version
+            implementation("io.github.vinceglb:filekit-compose:0.8.8")
+            implementation("io.github.vinceglb:filekit-core:0.8.8")
             // 1. Core Compose library for AsyncImage
             implementation("io.coil-kt.coil3:coil-compose:3.0.4")
 

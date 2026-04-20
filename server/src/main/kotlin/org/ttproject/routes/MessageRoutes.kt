@@ -205,7 +205,7 @@ fun Route.messageRoutes() {
                 val senderId = UUID.fromString(senderIdStr)
 
                 // 👇 FETCH RECEIVER ID AND SENDER NAME ONCE WHEN THEY CONNECT
-                val (receiverId, senderName) = transaction {
+                val (receiverId, senderName, senderImageUrl) = transaction {
                     val connRow = Connections.select { Connections.id eq connectionId }.singleOrNull()
                         ?: throw Exception("Connection not found")
 
@@ -214,8 +214,8 @@ fun Route.messageRoutes() {
                     val rId = if (u1 == senderId) u2 else u1
 
                     val sName = Users.slice(Users.username).select { Users.id eq senderId }.singleOrNull()?.get(Users.username) ?: "Someone"
-
-                    Pair(rId, sName)
+                    val senderImageUrl = Users.slice(Users.profileImageUrl).select { Users.id eq senderId }.singleOrNull()?.get(Users.profileImageUrl)
+                    Triple(rId, sName, senderImageUrl)
                 }
 
                 // 👇 Pass the senderId to the manager
@@ -308,6 +308,7 @@ fun Route.messageRoutes() {
                                                         // We send raw data, forcing the Android app to wake up and handle it.
                                                         .putData("chatId", connectionId.toString())
                                                         .putData("senderName", senderName)
+                                                        .putData("senderImageUrl", senderImageUrl ?: "")
                                                         .putData("text", textContent)
                                                         .build()
 
@@ -453,20 +454,30 @@ fun Route.messageRoutes() {
                     // Loop through EVERY file attached to the request
                     multipartData.forEachPart { part ->
                         if (part is PartData.FileItem) {
-                            val imageBytes = part.streamProvider().readBytes()
+                            val fileBytes = part.streamProvider().readBytes()
 
-                            // Generate a unique filename using UUID to prevent collisions if they upload 5 at the exact same millisecond
+                            // 👇 THE FIX: Bulletproof MP4 detection using "Magic Bytes"
+                            // Every MP4 file contains the string "ftyp" starting at byte 4.
+                            val isVideo = fileBytes.size > 8 &&
+                                    fileBytes[4].toInt().toChar() == 'f' &&
+                                    fileBytes[5].toInt().toChar() == 't' &&
+                                    fileBytes[6].toInt().toChar() == 'y' &&
+                                    fileBytes[7].toInt().toChar() == 'p'
+
+                            val extension = if (isVideo) "mp4" else "jpg"
+                            val mimeType = if (isVideo) "video/mp4" else "image/jpeg"
+
                             val uniqueId = java.util.UUID.randomUUID().toString().take(6)
-                            val fileName = "chat_images/${connectionId}_${System.currentTimeMillis()}_$uniqueId.jpg"
+                            val fileName = "chat_media/${connectionId}_${System.currentTimeMillis()}_$uniqueId.$extension"
 
-                            bucket.create(fileName, imageBytes, "image/jpeg")
+                            bucket.create(fileName, fileBytes, mimeType)
 
                             val encodedFilePath = java.net.URLEncoder.encode(fileName, java.nio.charset.StandardCharsets.UTF_8.toString())
                             val publicDownloadUrl = "https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/$encodedFilePath?alt=media"
 
                             uploadedUrls.add(publicDownloadUrl)
                         }
-                        part.dispose() // Free memory for this part!
+                        part.dispose()
                     }
 
                     if (uploadedUrls.isNotEmpty()) {
