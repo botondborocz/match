@@ -437,40 +437,47 @@ fun Route.messageRoutes() {
                 call.respond(HttpStatusCode.OK, "Theme updated successfully")
             }
             // --------------------------------------------------------
-            // 4. UPLOAD CHAT IMAGE
+            // 4. UPLOAD MULTIPLE CHAT IMAGES
             // --------------------------------------------------------
-            post("/image") {
+            post("/images") {
                 val connectionId = call.parameters["connectionId"] ?: return@post call.respond(HttpStatusCode.BadRequest, "Missing connection ID")
                 val principal = call.principal<JWTPrincipal>()
                 val userId = principal?.payload?.getClaim("userId")?.asString() ?: return@post call.respond(HttpStatusCode.Unauthorized)
 
-                var imageBytes: ByteArray? = null
+                val uploadedUrls = mutableListOf<String>()
 
-                // Read the multipart form data
-                val multipartData = call.receiveMultipart()
-                multipartData.forEachPart { part ->
-                    if (part is PartData.FileItem) {
-                        imageBytes = part.streamProvider().readBytes()
+                try {
+                    val bucket = com.google.firebase.cloud.StorageClient.getInstance().bucket()
+                    val multipartData = call.receiveMultipart()
+
+                    // Loop through EVERY file attached to the request
+                    multipartData.forEachPart { part ->
+                        if (part is PartData.FileItem) {
+                            val imageBytes = part.streamProvider().readBytes()
+
+                            // Generate a unique filename using UUID to prevent collisions if they upload 5 at the exact same millisecond
+                            val uniqueId = java.util.UUID.randomUUID().toString().take(6)
+                            val fileName = "chat_images/${connectionId}_${System.currentTimeMillis()}_$uniqueId.jpg"
+
+                            bucket.create(fileName, imageBytes, "image/jpeg")
+
+                            val encodedFilePath = java.net.URLEncoder.encode(fileName, java.nio.charset.StandardCharsets.UTF_8.toString())
+                            val publicDownloadUrl = "https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/$encodedFilePath?alt=media"
+
+                            uploadedUrls.add(publicDownloadUrl)
+                        }
+                        part.dispose() // Free memory for this part!
                     }
-                    part.dispose()
-                }
 
-                if (imageBytes != null) {
-                    try {
-                        val fileName = "chat_images/${connectionId}_${System.currentTimeMillis()}.jpg"
-                        val bucket = com.google.firebase.cloud.StorageClient.getInstance().bucket()
-                        bucket.create(fileName, imageBytes, "image/jpeg")
-
-                        val encodedFilePath = java.net.URLEncoder.encode(fileName, java.nio.charset.StandardCharsets.UTF_8.toString())
-                        val publicDownloadUrl = "https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/$encodedFilePath?alt=media"
-
-                        call.respond(HttpStatusCode.OK, mapOf("imageUrl" to publicDownloadUrl))
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                        call.respond(HttpStatusCode.InternalServerError, "Failed to upload image")
+                    if (uploadedUrls.isNotEmpty()) {
+                        call.respond(HttpStatusCode.OK, mapOf("imageUrls" to uploadedUrls))
+                    } else {
+                        call.respond(HttpStatusCode.BadRequest, "No image files provided")
                     }
-                } else {
-                    call.respond(HttpStatusCode.BadRequest, "No image file provided")
+
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    call.respond(HttpStatusCode.InternalServerError, "Failed to upload images")
                 }
             }
         }

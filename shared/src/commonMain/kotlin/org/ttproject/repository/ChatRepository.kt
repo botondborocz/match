@@ -16,6 +16,7 @@ import io.ktor.websocket.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import org.ttproject.ORACLE_IP
@@ -46,7 +47,7 @@ interface ChatRepository {
     suspend fun savePushToken(fcmToken: String)
     suspend fun markMessagesAsRead(chatId: String)
     suspend fun updateChatTheme(connectionId: String, themeName: String)
-    suspend fun uploadChatImage(connectionId: String, imageBytes: ByteArray): Result<String>
+    suspend fun uploadChatImages(connectionId: String, images: List<ByteArray>): Result<List<String>>
 }
 
 class ChatRepositoryImpl (
@@ -220,32 +221,36 @@ class ChatRepositoryImpl (
         }
     }
 
-    override suspend fun uploadChatImage(connectionId: String, imageBytes: ByteArray): Result<String> {
+    override suspend fun uploadChatImages(connectionId: String, images: List<ByteArray>): Result<List<String>> {
         val token = tokenStorage.getToken() ?: return Result.failure(Exception("No token"))
+
         return try {
-            val response = client.post("${SERVER_IP}/api/connections/$connectionId/image") {
+            val response = client.post("${SERVER_IP}/api/connections/$connectionId/images") { // 👈 Hit the new /images endpoint
                 header(HttpHeaders.Authorization, "Bearer $token")
                 setBody(
                     MultiPartFormDataContent(
                         formData {
-                            append("image", imageBytes, Headers.build {
-                                append(HttpHeaders.ContentType, "image/jpeg")
-                                append(
-                                    HttpHeaders.ContentDisposition,
-                                    "filename=\"chat_image.jpg\""
-                                )
-                            })
+                            // 👇 Loop through the list and append every image to the form!
+                            images.forEachIndexed { index, imageBytes ->
+                                append("image_$index", imageBytes, Headers.build {
+                                    append(HttpHeaders.ContentType, "image/jpeg")
+                                    append(HttpHeaders.ContentDisposition, "filename=\"chat_img_$index.jpg\"")
+                                })
+                            }
                         }
                     )
                 )
             }
+
             if (response.status.isSuccess()) {
                 val responseText = response.bodyAsText()
-                // Safely extract the imageUrl from the JSON response
-                val imageUrl = Json.parseToJsonElement(responseText).jsonObject["imageUrl"]!!.jsonPrimitive.content
-                Result.success(imageUrl)
+                // 👇 Parse the JSON Array back into a Kotlin List of Strings
+                val jsonArray = Json.parseToJsonElement(responseText).jsonObject["imageUrls"]!!.jsonArray
+                val imageUrls = jsonArray.map { it.jsonPrimitive.content }
+
+                Result.success(imageUrls)
             } else {
-                Result.failure(Exception("Upload failed"))
+                Result.failure(Exception("Upload failed. Status: ${response.status}"))
             }
         } catch (e: Exception) {
             e.printStackTrace()

@@ -76,7 +76,14 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.calculatePan
+import androidx.compose.foundation.gestures.calculateZoom
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
+import androidx.compose.foundation.gestures.rememberTransformableState
+import androidx.compose.foundation.gestures.transformable
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Reply
@@ -90,7 +97,12 @@ import androidx.compose.material3.SheetState
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.text.TextStyle
+import org.jetbrains.compose.resources.painterResource
+import org.ttproject.components.rememberCameraLauncher
 import org.ttproject.data.ReactionDto
+import ttproject.composeapp.generated.resources.Res
+import ttproject.composeapp.generated.resources.camera
+import ttproject.composeapp.generated.resources.image
 import kotlin.math.abs
 
 data class ChatThread(
@@ -325,19 +337,28 @@ fun ChatDetailScreen(
 
     val scope = rememberCoroutineScope()
     val galleryLauncher = com.preat.peekaboo.image.picker.rememberImagePickerLauncher(
-        selectionMode = com.preat.peekaboo.image.picker.SelectionMode.Single,
+        selectionMode = com.preat.peekaboo.image.picker.SelectionMode.Multiple(maxSelection = 5),
         scope = scope,
         onResult = { byteArrays ->
-            byteArrays.firstOrNull()?.let { imageBytes ->
-                // Send the image and clear the reply state!
-                viewModel.sendImageMessage(chatId, imageBytes, replyingToMessageId)
+            // 👇 2. Pass the entire list to the ViewModel
+            if (byteArrays.isNotEmpty()) {
+                viewModel.sendImagesMessage(chatId, byteArrays, replyingToMessageId)
                 replyingToMessageId = null
             }
         }
     )
 
+    val cameraLauncher = rememberCameraLauncher { imageBytes ->
+        if (imageBytes != null) {
+            // 👇 Wrap the single image in a list to reuse our bulk-upload endpoint!
+            viewModel.sendImagesMessage(chatId, listOf(imageBytes), replyingToMessageId)
+            replyingToMessageId = null
+        }
+    }
+
     var selectedMessageId by remember { mutableStateOf<String?>(null) }
-    var fullScreenImageUrl by remember { mutableStateOf<String?>(null) }
+    var fullScreenImages by remember { mutableStateOf<List<String>?>(null) }
+    var fullScreenInitialPage by remember { mutableIntStateOf(0) }
     val listState = rememberLazyListState()
 
     ClearChatNotificationEffect(chatId = chatId)
@@ -413,13 +434,21 @@ fun ChatDetailScreen(
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(if (isIosPlatform()) Icons.Filled.ArrowBackIosNew else Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = AppColors.TextPrimary)
+                        Icon(
+                            if (isIosPlatform()) Icons.Filled.ArrowBackIosNew else Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back",
+                            tint = currentTheme.myBubbleColor
+                        )
                     }
                 },
                 // 👇 3. ADD THE THEME PALETTE ICON HERE
                 actions = {
                     IconButton(onClick = { isThemeSheetOpen = true }) {
-                        Icon(Icons.Default.Palette, contentDescription = "Change Theme", tint = AppColors.TextPrimary)
+                        Icon(
+                            Icons.Default.Palette,
+                            contentDescription = "Change Theme",
+                            tint = currentTheme.myBubbleColor
+                        )
                     }
                 },
                 // 👇 4. Make it transparent so the gradient flows behind it!
@@ -481,14 +510,13 @@ fun ChatDetailScreen(
                             myBubbleColor = currentTheme.myBubbleColor,       // 👈 Pass Theme Color
                             otherBubbleColor = currentTheme.otherBubbleColor, // 👈 Pass Theme Color
                             onClick = {
-                                println(msg.content)
-                                if (msg.content.startsWith("[IMAGE]")) {
-                                    // It's an image! Open the full screen viewer
-                                    fullScreenImageUrl = msg.content.substringAfter("[IMAGE]")
-                                } else {
-                                    // It's text! Toggle the timestamp visibility
-                                    selectedMessageId = if (isSelected) null else msg.id
-                                }
+                                // 👇 Only toggles the timestamp now!
+                                selectedMessageId = if (isSelected) null else msg.id
+                            },
+                            onImageClick = { index, urls ->
+                                // 👇 Opens the full screen viewer!
+                                fullScreenImages = urls
+                                fullScreenInitialPage = index
                             },
                             onReactionClick = { reactionSheetMessageId = msg.id },
                             onLongPress = { bounds, topStart, topEnd, bottomStart, bottomEnd, initialTouch, reactionBounds ->
@@ -498,7 +526,19 @@ fun ChatDetailScreen(
                             onLongPressEnd = { hasDragged ->
                                 if (hasDragged) {
                                     if (reactionMenuData != null && hoveredReactionIndex != -1) {
-                                        viewModel.sendReaction(reactionMenuData!!.messageId, emojis[hoveredReactionIndex])
+                                        val msgId = reactionMenuData!!.messageId
+                                        val selectedEmoji = emojis[hoveredReactionIndex]
+                                        val targetMsg = messages.find { it.id == msgId }
+                                        val currentUserId = tokenStorage.getUserId() ?: ""
+
+                                        // 👇 Check if they already have this exact reaction
+                                        val hasReacted = targetMsg?.reactions?.any { it.userId == currentUserId && it.emoji == selectedEmoji } == true
+
+                                        if (hasReacted) {
+                                            viewModel.removeReaction(msgId)
+                                        } else {
+                                            viewModel.sendReaction(msgId, selectedEmoji)
+                                        }
                                         reactionMenuData = null
                                     }
                                     activeReactionDragPosition = null
@@ -536,10 +576,15 @@ fun ChatDetailScreen(
                 ) {
                     // 👇 1. Camera Button (Placeholder for the expect/actual we'll build next)
                     IconButton(
-                        onClick = { /* TODO: Build Native Camera Launcher */ },
+                        onClick = { cameraLauncher.launch() },
                         modifier = Modifier.padding(bottom = 2.dp).size(36.dp)
                     ) {
-                        Icon(Icons.Default.PhotoCamera, contentDescription = "Camera", tint = AppColors.TextGray)
+                        Icon(
+                            painter = painterResource(Res.drawable.camera),
+                            contentDescription = "Camera",
+                            // 👇 Applies your custom chat theme color dynamically!
+                            tint = currentTheme.myBubbleColor
+                        )
                     }
 
                     // 👇 2. Gallery Button (Wired up to Peekaboo!)
@@ -547,7 +592,12 @@ fun ChatDetailScreen(
                         onClick = { galleryLauncher.launch() },
                         modifier = Modifier.padding(bottom = 2.dp).size(36.dp)
                     ) {
-                        Icon(Icons.Default.Image, contentDescription = "Gallery", tint = AppColors.TextGray)
+                        Icon(
+                            painter = painterResource(Res.drawable.image),
+                            contentDescription = "Gallery",
+                            // 👇 Applies your custom chat theme color dynamically!
+                            tint = currentTheme.myBubbleColor
+                        )
                     }
 
                     // 👇 3. Dynamically adjust the inset shadow!
@@ -898,8 +948,18 @@ fun ChatDetailScreen(
                                         } else {
                                             isTracking = false
                                             if (hoveredReactionIndex != -1 && hoveredReactionIndex in emojis.indices) {
-                                                // 1. Emoji selected via tap/short drag! Send and close.
-                                                viewModel.sendReaction(state.messageId, emojis[hoveredReactionIndex])
+
+                                                // 👇 1. Tap Toggle Logic
+                                                val selectedEmoji = emojis[hoveredReactionIndex]
+                                                val targetMsg = messages.find { it.id == state.messageId }
+                                                val currentUserId = tokenStorage.getUserId() ?: ""
+                                                val hasReacted = targetMsg?.reactions?.any { it.userId == currentUserId && it.emoji == selectedEmoji } == true
+
+                                                if (hasReacted) {
+                                                    viewModel.removeReaction(state.messageId)
+                                                } else {
+                                                    viewModel.sendReaction(state.messageId, selectedEmoji)
+                                                }
                                                 reactionMenuData = null
                                             }
                                             hoveredReactionIndex = -1
@@ -917,14 +977,19 @@ fun ChatDetailScreen(
                         )
                         // 👇 3. THE FOREGROUND LAYER (Emojis)
                         // Because the parent isn't clipped, these can grow over the edges!
+                        val targetMessage = messages.find { it.id == state.messageId }
+                        val currentUserId = tokenStorage.getUserId() ?: ""
+
                         Row(
                             modifier = Modifier.fillMaxSize(),
                             horizontalArrangement = Arrangement.SpaceEvenly,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             emojis.forEachIndexed { index, emoji ->
+                                val isHovered = hoveredReactionIndex == index
+
                                 val scale by animateFloatAsState(
-                                    targetValue = if (hoveredReactionIndex == index) 1.6f else 1f,
+                                    targetValue = if (isHovered) 1.6f else 1f,
                                     animationSpec = androidx.compose.animation.core.spring(
                                         dampingRatio = androidx.compose.animation.core.Spring.DampingRatioMediumBouncy,
                                         stiffness = androidx.compose.animation.core.Spring.StiffnessLow
@@ -932,112 +997,157 @@ fun ChatDetailScreen(
                                     label = "emojiScale"
                                 )
 
-                                Text(
-                                    text = emoji,
-                                    fontSize = 26.sp,
-                                    modifier = Modifier.graphicsLayer {
-                                        scaleX = scale
-                                        scaleY = scale
-//                                        translationY = if (hoveredReactionIndex == index) -15f else 0f
-                                    }
+                                // 👇 1. Add the bounce-up animation!
+                                val offsetY by animateFloatAsState(
+                                    targetValue = if (isHovered) -15f else 0f,
+                                    animationSpec = androidx.compose.animation.core.spring(
+                                        dampingRatio = androidx.compose.animation.core.Spring.DampingRatioMediumBouncy,
+                                        stiffness = androidx.compose.animation.core.Spring.StiffnessLow
+                                    ),
+                                    label = "emojiOffset"
                                 )
+
+                                // 👇 2. Check if the current user already selected this emoji
+                                val hasReacted = targetMessage?.reactions?.any { it.userId == currentUserId && it.emoji == emoji } == true
+
+                                // Use a Box so the dot stays cleanly at the bottom without shifting the text
+                                Box(
+                                    modifier = Modifier.fillMaxHeight().width(40.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = emoji,
+                                        fontSize = 26.sp,
+                                        modifier = Modifier.graphicsLayer {
+                                            scaleX = scale
+                                            scaleY = scale
+                                            translationY = offsetY // Apply the upward bounce
+                                        }
+                                    )
+
+                                    // 👇 3. The Active Indicator Dot (Matches Chat Theme!)
+                                    Box(
+                                        modifier = Modifier
+                                            .align(Alignment.BottomCenter)
+                                            .padding(bottom = 6.dp)
+                                            .size(4.dp)
+                                            .clip(CircleShape)
+                                            .background(if (hasReacted) currentTheme.myBubbleColor else Color.Transparent)
+                                    )
+                                }
                             }
                         }
                     }
                 }
             }
         }
-        // 👇 3. THE FULL-SCREEN ZOOMABLE IMAGE VIEWER
-        if (fullScreenImageUrl != null) {
-            // State for zooming and panning
-            var scale by remember { mutableFloatStateOf(1f) }
-            var offset by remember { mutableStateOf(Offset.Zero) }
+        // 👇 THE FULL-SCREEN PAGER VIEWER
+        if (fullScreenImages != null) {
+            val pagerState = rememberPagerState(
+                initialPage = fullScreenInitialPage,
+                pageCount = { fullScreenImages?.size ?: 0 }
+            )
 
             androidx.compose.ui.window.Dialog(
-                onDismissRequest = { fullScreenImageUrl = null },
+                onDismissRequest = { fullScreenImages = null },
                 properties = androidx.compose.ui.window.DialogProperties(
                     usePlatformDefaultWidth = false,
                     dismissOnBackPress = true,
                     dismissOnClickOutside = true
                 )
             ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(Color.Black.copy(alpha = 0.95f))
-                        // 👇 1. Handle Double Tap to Zoom / Single Tap to Close
-                        .pointerInput(Unit) {
-                            detectTapGestures(
-                                onDoubleTap = {
-                                    // Reset zoom on double tap, or zoom in to 2.5x
-                                    if (scale > 1f) {
-                                        scale = 1f
-                                        offset = Offset.Zero
-                                    } else {
-                                        scale = 2.5f
-                                    }
-                                },
-                                onTap = {
-                                    // Only close if they tap when fully zoomed out
-                                    if (scale == 1f) fullScreenImageUrl = null
-                                }
+                Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.95f))) {
+
+                    androidx.compose.foundation.pager.HorizontalPager(
+                        state = pagerState,
+                        modifier = Modifier.fillMaxSize()
+                    ) { page ->
+                        var scale by remember { mutableFloatStateOf(1f) }
+                        var offset by remember { mutableStateOf(Offset.Zero) }
+
+                        val transformableState = androidx.compose.foundation.gestures.rememberTransformableState { zoomChange, offsetChange, _ ->
+                            scale = (scale * zoomChange).coerceIn(1f, 5f)
+                            val maxPanX = (2000f * (scale - 1)) / 2
+                            val maxPanY = (2000f * (scale - 1)) / 2
+                            offset = Offset(
+                                // 👇 FIX 1: Removed `* scale` so panning tracks your finger perfectly!
+                                (offset.x + offsetChange.x).coerceIn(-maxPanX, maxPanX),
+                                (offset.y + offsetChange.y).coerceIn(-maxPanY, maxPanY)
                             )
                         }
-                        // 👇 2. Handle Pinch-to-Zoom and Drag-to-Pan
-                        .pointerInput(Unit) {
-                            detectTransformGestures { _, pan, zoom, _ ->
-                                // Calculate new scale (limit between 1x and 5x zoom)
-                                scale = (scale * zoom).coerceIn(1f, 5f)
 
-                                // If we are zoomed in, allow panning. If zoomed out, lock to center.
-                                if (scale > 1f) {
-                                    // Calculate the maximum allowed pan to keep the image on-screen
-                                    val maxPanX = (size.width * (scale - 1)) / 2
-                                    val maxPanY = (size.height * (scale - 1)) / 2
-
-                                    val newOffsetX = offset.x + pan.x * scale
-                                    val newOffsetY = offset.y + pan.y * scale
-
-                                    // Bound the offset so the image doesn't fly off into the void
-                                    offset = Offset(
-                                        newOffsetX.coerceIn(-maxPanX, maxPanX),
-                                        newOffsetY.coerceIn(-maxPanY, maxPanY)
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .pointerInput(Unit) {
+                                    detectTapGestures(
+                                        onDoubleTap = {
+                                            if (scale > 1f) { scale = 1f; offset = Offset.Zero }
+                                            else { scale = 2.5f }
+                                        },
+                                        onTap = { if (scale == 1f) fullScreenImages = null }
                                     )
-                                } else {
-                                    offset = Offset.Zero
                                 }
-                            }
-                        },
-                    contentAlignment = Alignment.Center
-                ) {
+                                .pointerInput(Unit) {
+                                    awaitEachGesture {
+                                        awaitFirstDown()
+                                        do {
+                                            val event = awaitPointerEvent()
 
-                    // 👇 3. Apply the scale and offset to the GPU layer
-                    AsyncImage(
-                        model = fullScreenImageUrl,
-                        contentDescription = "Full screen image",
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .graphicsLayer {
-                                scaleX = scale
-                                scaleY = scale
-                                translationX = offset.x
-                                translationY = offset.y
-                            },
-                        contentScale = ContentScale.Fit
-                    )
+                                            // 👇 THE GESTURE FIX: Only consume the touch if 2 fingers are down, OR if we are zoomed in!
+                                            // If 1 finger is swiping at 1x zoom, we do nothing and let the Pager scroll!
+                                            if (event.changes.size > 1 || scale > 1f) {
+                                                val zoomChange = event.calculateZoom()
+                                                val panChange = event.calculatePan()
+
+                                                // Consume the touch so the Pager doesn't get confused
+                                                event.changes.forEach { it.consume() }
+
+                                                scale = (scale * zoomChange).coerceIn(1f, 5f)
+                                                val maxPanX = (size.width * (scale - 1)) / 2
+                                                val maxPanY = (size.height * (scale - 1)) / 2
+
+                                                offset = Offset(
+                                                    (offset.x + panChange.x).coerceIn(-maxPanX, maxPanX),
+                                                    (offset.y + panChange.y).coerceIn(-maxPanY, maxPanY)
+                                                )
+                                            }
+                                        } while (event.changes.any { it.pressed })
+                                    }
+                                },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            AsyncImage(
+                                model = fullScreenImages?.getOrNull(page),
+                                contentDescription = "Image $page",
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .graphicsLayer {
+                                        scaleX = scale
+                                        scaleY = scale
+                                        translationX = offset.x
+                                        translationY = offset.y
+                                    },
+                                contentScale = ContentScale.Fit
+                            )
+                        }
+                    }
 
                     // Floating Close Button
                     IconButton(
-                        onClick = { fullScreenImageUrl = null },
-                        modifier = Modifier
-                            .align(Alignment.TopEnd)
-                            .padding(top = 48.dp, end = 16.dp)
-                            .background(Color.Black.copy(alpha = 0.5f), CircleShape)
+                        onClick = { fullScreenImages = null },
+                        modifier = Modifier.align(Alignment.TopEnd).padding(top = 48.dp, end = 16.dp)
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Close,
-                            contentDescription = "Close",
-                            tint = Color.White
+                        Icon(Icons.Default.Close, contentDescription = "Close", tint = Color.White)
+                    }
+
+                    // Page Indicator
+                    if ((fullScreenImages?.size ?: 0) > 1) {
+                        Text(
+                            text = "${pagerState.currentPage + 1} / ${fullScreenImages?.size ?: 0}",
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.align(Alignment.TopCenter).padding(top = 60.dp)
                         )
                     }
                 }
@@ -1062,6 +1172,7 @@ fun AnimatedMessageBubble(
     myBubbleColor: Color,
     otherBubbleColor: Color,
     onClick: () -> Unit,
+    onImageClick: (Int, List<String>) -> Unit,
     onReactionClick: () -> Unit,
     onLongPress: (Rect, Dp, Dp, Dp, Dp, Offset, Rect?) -> Unit,
     onLongPressDrag: (Offset) -> Unit,
@@ -1186,6 +1297,7 @@ fun AnimatedMessageBubble(
                 myBubbleColor = myBubbleColor,
                 otherBubbleColor = otherBubbleColor,
                 onClick = onClick,
+                onImageClick = onImageClick,
                 onReactionClick = onReactionClick,
                 onLongPress = onLongPress,
                 onLongPressDrag = onLongPressDrag,
@@ -1254,12 +1366,14 @@ fun ChatBubble(
     otherBubbleColor: Color,
     modifier: Modifier = Modifier,
     onClick: () -> Unit,
+    onImageClick: (Int, List<String>) -> Unit,
     onReactionClick: () -> Unit,
     onLongPress: (Rect, Dp, Dp, Dp, Dp, Offset, Rect?) -> Unit,
     onLongPressDrag: (Offset) -> Unit,
     onLongPressEnd: (Boolean) -> Unit
 ) {
     val currentOnClick by rememberUpdatedState(onClick)
+    val currentOnImageClick by rememberUpdatedState(onImageClick)
     val currentOnLongPress by rememberUpdatedState(onLongPress)
     val currentOnLongPressDrag by rememberUpdatedState(onLongPressDrag)
     val currentOnLongPressEnd by rememberUpdatedState(onLongPressEnd)
@@ -1309,8 +1423,17 @@ fun ChatBubble(
             Box(contentAlignment = Alignment.BottomEnd) {
 
                 // --- THE ACTUAL CHAT BUBBLE ---
-                val isImage = text.startsWith("[IMAGE]")
-                val imageUrl = if (isImage) text.substringAfter("[IMAGE]") else null
+                val isSingleImage = text.startsWith("[IMAGE]") && !text.startsWith("[IMAGES]")
+                val isMultiImage = text.startsWith("[IMAGES]")
+                val isAnyImage = isSingleImage || isMultiImage
+
+                val imageUrls = remember(text) {
+                    when {
+                        isMultiImage -> text.substringAfter("[IMAGES]").split(",")
+                        isSingleImage -> listOf(text.substringAfter("[IMAGE]"))
+                        else -> emptyList()
+                    }
+                }
 
                 Column(
                     modifier = Modifier
@@ -1320,7 +1443,7 @@ fun ChatBubble(
                         }
                         // 👇 1. If it's an image, NO background, just clip it to the shape!
                         .then(
-                            if (isImage) Modifier.clip(bubbleShape)
+                            if (isAnyImage) Modifier.clip(bubbleShape)
                             else Modifier.background(animatedBackgroundColor, bubbleShape).clip(bubbleShape)
                         )
                         .pointerInput(Unit) {
@@ -1349,7 +1472,29 @@ fun ChatBubble(
                                 }
 
                                 if (isTap) {
-                                    currentOnClick()
+                                    // 👇 FIX: Use math to find out which image they tapped!
+                                    if (isAnyImage) {
+                                        val x = down.position.x
+                                        val y = down.position.y
+                                        val w = size.width
+                                        val h = size.height
+
+                                        val index = when (imageUrls.size) {
+                                            1 -> 0
+                                            2 -> if (x < w / 2) 0 else 1
+                                            3 -> if (y < h / 2) 0 else if (x < w / 2) 1 else 2
+                                            else -> {
+                                                if (y < h / 2) {
+                                                    if (x < w / 2) 0 else 1
+                                                } else {
+                                                    if (x < w / 2) 2 else 3
+                                                }
+                                            }
+                                        }
+                                        currentOnImageClick(index, imageUrls)
+                                    } else {
+                                        currentOnClick()
+                                    }
                                 } else if (isLongPress) {
                                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                     val globalTouch = bubbleBounds.topLeft + down.position
@@ -1379,77 +1524,80 @@ fun ChatBubble(
                         }
                         // 👇 2. If it's an image, we remove the padding so the picture touches the edges
                         .then(
-                            if (isImage) Modifier
+                            if (isAnyImage) Modifier
                             else Modifier.padding(horizontal = 12.dp, vertical = 10.dp)
                         )
                 ) {
                     // 👇 THE QUOTE PREVIEW UI
                     if (repliedText != null && repliedSender != null) {
                         val isDarkMode = org.ttproject.isDark
-
-                        // Parse if the quoted message was an image
-                        val isQuotedImage = repliedText.startsWith("[IMAGE]")
+                        val isQuotedImage = repliedText.startsWith("[IMAGE")
                         val displayRepliedText = if (isQuotedImage) "📸 Photo" else repliedText
-
-                        // If the current message is an image, make the quote background darker so it's readable over the photo!
-                        val quoteBgColor = if (isImage) Color.Black.copy(alpha = 0.6f)
-                        else if (isDarkMode) Color.Black.copy(alpha = 0.15f)
-                        else Color.Black.copy(alpha = 0.05f)
+                        val quoteBgColor = if (isAnyImage) Color.Black.copy(alpha = 0.6f) else if (isDarkMode) Color.Black.copy(alpha = 0.15f) else Color.Black.copy(alpha = 0.05f)
 
                         Row(
                             modifier = Modifier
-                                .then(if (isImage) Modifier.padding(start = 8.dp, top = 8.dp, end = 8.dp, bottom = 4.dp) else Modifier.padding(bottom = 6.dp))
+                                .then(if (isAnyImage) Modifier.padding(start = 8.dp, top = 8.dp, end = 8.dp, bottom = 4.dp) else Modifier.padding(bottom = 6.dp))
                                 .clip(RoundedCornerShape(6.dp))
                                 .background(quoteBgColor)
                                 .height(IntrinsicSize.Min)
                         ) {
-                            Box(
-                                modifier = Modifier
-                                    .width(4.dp)
-                                    .fillMaxHeight()
-                                    .background(if (isMe) Color.White else myBubbleColor)
-                            )
+                            Box(modifier = Modifier.width(4.dp).fillMaxHeight().background(if (isMe) Color.White else myBubbleColor))
                             Column(modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)) {
-                                Text(
-                                    text = repliedSender,
-                                    color = if (isMe) Color.White else myBubbleColor,
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-                                Text(
-                                    text = displayRepliedText, // 👈 Render the parsed text
-                                    color = if (isImage || isMe) Color.White.copy(alpha = 0.85f) else AppColors.TextPrimary.copy(alpha = 0.85f),
-                                    fontSize = 13.sp,
-                                    maxLines = 3,
-                                    overflow = TextOverflow.Ellipsis
-                                )
+                                Text(text = repliedSender, color = if (isMe) Color.White else myBubbleColor, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                Text(text = displayRepliedText, color = if (isAnyImage || isMe) Color.White.copy(alpha = 0.85f) else AppColors.TextPrimary.copy(alpha = 0.85f), fontSize = 13.sp, maxLines = 3, overflow = TextOverflow.Ellipsis)
                             }
                         }
                     }
 
-                    // 👇 3. RENDER IMAGE OR TEXT
-                    if (isImage) {
-                        Box(contentAlignment = Alignment.Center) {
-                            AsyncImage(
-                                model = imageUrl,
-                                contentDescription = "Sent Image",
-                                modifier = Modifier
-                                    .widthIn(max = 280.dp) // Constrain how wide the image can get
-                                    .heightIn(max = 350.dp), // Constrain how tall the image can get
-                                contentScale = ContentScale.Crop
-                            )
-                            // If selected, apply a dark overlay over the image to show it's focused!
+                    // 👇 3. RENDER DYNAMIC COLLAGE OR TEXT
+                    if (isAnyImage) {
+                        Box(modifier = Modifier.widthIn(max = 280.dp).clip(bubbleShape)) {
+                            when (imageUrls.size) {
+                                1 -> {
+                                    AsyncImage(model = imageUrls[0], contentDescription = null, modifier = Modifier.fillMaxWidth().heightIn(max = 350.dp), contentScale = ContentScale.Crop)
+                                }
+                                2 -> {
+                                    Row(modifier = Modifier.fillMaxWidth().height(200.dp)) {
+                                        AsyncImage(model = imageUrls[0], contentDescription = null, modifier = Modifier.weight(1f).fillMaxHeight().padding(end = 2.dp), contentScale = ContentScale.Crop)
+                                        AsyncImage(model = imageUrls[1], contentDescription = null, modifier = Modifier.weight(1f).fillMaxHeight().padding(start = 2.dp), contentScale = ContentScale.Crop)
+                                    }
+                                }
+                                3 -> {
+                                    Column(modifier = Modifier.fillMaxWidth().height(280.dp)) {
+                                        AsyncImage(model = imageUrls[0], contentDescription = null, modifier = Modifier.weight(1f).fillMaxWidth().padding(bottom = 2.dp), contentScale = ContentScale.Crop)
+                                        Row(modifier = Modifier.weight(1f).fillMaxWidth().padding(top = 2.dp)) {
+                                            AsyncImage(model = imageUrls[1], contentDescription = null, modifier = Modifier.weight(1f).fillMaxHeight().padding(end = 2.dp), contentScale = ContentScale.Crop)
+                                            AsyncImage(model = imageUrls[2], contentDescription = null, modifier = Modifier.weight(1f).fillMaxHeight().padding(start = 2.dp), contentScale = ContentScale.Crop)
+                                        }
+                                    }
+                                }
+                                else -> {
+                                    Column(modifier = Modifier.fillMaxWidth().height(280.dp)) {
+                                        Row(modifier = Modifier.weight(1f).fillMaxWidth().padding(bottom = 2.dp)) {
+                                            AsyncImage(model = imageUrls[0], contentDescription = null, modifier = Modifier.weight(1f).fillMaxHeight().padding(end = 2.dp), contentScale = ContentScale.Crop)
+                                            AsyncImage(model = imageUrls[1], contentDescription = null, modifier = Modifier.weight(1f).fillMaxHeight().padding(start = 2.dp), contentScale = ContentScale.Crop)
+                                        }
+                                        Row(modifier = Modifier.weight(1f).fillMaxWidth().padding(top = 2.dp)) {
+                                            AsyncImage(model = imageUrls[2], contentDescription = null, modifier = Modifier.weight(1f).fillMaxHeight().padding(end = 2.dp), contentScale = ContentScale.Crop)
+                                            Box(modifier = Modifier.weight(1f).fillMaxHeight().padding(start = 2.dp)) {
+                                                AsyncImage(model = imageUrls[3], contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+                                                if (imageUrls.size > 4) {
+                                                    Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.5f)), contentAlignment = Alignment.Center) {
+                                                        Text("+${imageUrls.size - 4}", color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Bold)
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                             if (isSelected) {
                                 Box(modifier = Modifier.matchParentSize().background(Color.Black.copy(alpha = 0.4f)))
                             }
                         }
                     } else {
-                        Text(
-                            text = text,
-                            color = if (isMe) Color.White else AppColors.TextPrimary,
-                            fontSize = 15.sp,
-                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
-                        )
+                        Text(text = text, color = if (isMe) Color.White else AppColors.TextPrimary, fontSize = 15.sp, modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp))
                     }
                 }
 
@@ -1584,7 +1732,7 @@ fun ChatListItem(thread: ChatThreadDto, onClick: () -> Unit) {
                 }
                 Spacer(modifier = Modifier.height(4.dp))
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                    val displayLastMessage = if (thread.lastMessage.startsWith("[IMAGE]")) "📸 Photo" else thread.lastMessage
+                    val displayLastMessage = if (thread.lastMessage.startsWith("[IMAGE")) "📸 Photo" else thread.lastMessage
                     Text(displayLastMessage, color = if (thread.unreadCount > 0) AppColors.TextPrimary else Color.Gray, fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
                     if (thread.unreadCount > 0) {
                         Spacer(modifier = Modifier.width(8.dp))
@@ -1644,7 +1792,7 @@ fun ReplyPreview(
 ) {
     val isDarkMode = org.ttproject.isDark
     val bgColor = if (isDarkMode) Color.Black.copy(alpha = 0.2f) else Color.Black.copy(alpha = 0.05f)
-    val displayMessage = if (messageContent.startsWith("[IMAGE]")) "📸 Photo" else messageContent
+    val displayMessage = if (messageContent.startsWith("[IMAGE")) "📸 Photo" else messageContent
 
     Row(
         modifier = Modifier

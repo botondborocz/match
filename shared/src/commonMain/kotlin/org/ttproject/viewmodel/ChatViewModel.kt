@@ -131,14 +131,28 @@ class ChatViewModel(
         }
     }
 
-    fun sendImageMessage(connectionId: String, imageBytes: ByteArray, replyToMessageId: String?) {
+    // 👇 Accepts a List of ByteArrays
+    fun sendImagesMessage(connectionId: String, images: List<ByteArray>, replyToMessageId: String?) {
+        // Prevent empty uploads
+        if (images.isEmpty()) return
+
         viewModelScope.launch {
-            // Optional: You could set an _isUploading state here to show a spinner!
-            repository.uploadChatImage(connectionId, imageBytes).onSuccess { imageUrl ->
-                // Tag it so the UI knows it's an image, not text!
-                val specialMessagePayload = "[IMAGE]$imageUrl"
+            // TODO: Optional - set an _isUploading StateFlow to true here to show a spinner on the UI!
+
+            repository.uploadChatImages(connectionId, images).onSuccess { imageUrls ->
+                // 1. Join the list of URLs into a single string separated by commas
+                val urlsJoined = imageUrls.joinToString(",")
+
+                // 2. Prefix it with our special tag
+                val specialMessagePayload = "[IMAGES]$urlsJoined"
+
+                // 3. Send it through the standard WebSocket pipeline
                 repository.sendMessage(specialMessagePayload, replyToMessageId)
+            }.onFailure {
+                // Handle upload error (e.g., show a toast)
             }
+
+            // TODO: Optional - set _isUploading to false here!
         }
     }
 }
