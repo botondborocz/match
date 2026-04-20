@@ -94,6 +94,7 @@ import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.PlayCircleOutline
+import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material3.SheetState
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.layout.layout
@@ -104,10 +105,12 @@ import io.github.vinceglb.filekit.core.PickerType
 import org.jetbrains.compose.resources.painterResource
 import org.ttproject.components.VideoPlayer
 import org.ttproject.components.rememberCameraLauncher
+import org.ttproject.components.rememberVideoLauncher
 import org.ttproject.data.ReactionDto
 import ttproject.composeapp.generated.resources.Res
 import ttproject.composeapp.generated.resources.camera
 import ttproject.composeapp.generated.resources.image
+import ttproject.composeapp.generated.resources.video
 import kotlin.math.abs
 
 data class ChatThread(
@@ -360,6 +363,15 @@ fun ChatDetailScreen(
         }
     }
 
+    val videoLauncher = rememberVideoLauncher { videoBytes ->
+        if (videoBytes != null) {
+            // Because we fixed the MP4 detection on your backend earlier,
+            // you can safely pass these bytes into the exact same upload function!
+            viewModel.sendImagesMessage(chatId, listOf(videoBytes), replyingToMessageId)
+            replyingToMessageId = null
+        }
+    }
+
     val cameraLauncher = rememberCameraLauncher { imageBytes ->
         if (imageBytes != null) {
             // 👇 Wrap the single image in a list to reuse our bulk-upload endpoint!
@@ -594,6 +606,19 @@ fun ChatDetailScreen(
                         Icon(
                             painter = painterResource(Res.drawable.camera),
                             contentDescription = "Camera",
+                            // 👇 Applies your custom chat theme color dynamically!
+                            tint = currentTheme.myBubbleColor
+                        )
+                    }
+
+                    // 👇 2. NEW: Video Camera Button
+                    IconButton(
+                        onClick = { videoLauncher.launch() },
+                        modifier = Modifier.padding(bottom = 2.dp).size(36.dp)
+                    ) {
+                        Icon(
+                            painter = painterResource(Res.drawable.video),
+                            contentDescription = "Video",
                             // 👇 Applies your custom chat theme color dynamically!
                             tint = currentTheme.myBubbleColor
                         )

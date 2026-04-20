@@ -8,6 +8,7 @@ import kotlinx.cinterop.ExperimentalForeignApi
 import platform.AVFoundation.AVPlayer
 import platform.AVKit.AVPlayerViewController
 import platform.Foundation.NSURL
+import platform.AVFoundation.play
 
 @OptIn(ExperimentalForeignApi::class)
 @Composable

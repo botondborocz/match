@@ -8,3 +8,6 @@ expect class CameraLauncher {
 
 @Composable
 expect fun rememberCameraLauncher(onResult: (ByteArray?) -> Unit): CameraLauncher
+
+@Composable
+expect fun rememberVideoLauncher(onResult: (ByteArray?) -> Unit): CameraLauncher

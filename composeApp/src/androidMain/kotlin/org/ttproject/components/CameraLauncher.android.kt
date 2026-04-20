@@ -53,3 +53,41 @@ actual fun rememberCameraLauncher(onResult: (ByteArray?) -> Unit): CameraLaunche
         )
     }
 }
+
+@Composable
+actual fun rememberVideoLauncher(onResult: (ByteArray?) -> Unit): CameraLauncher {
+    val context = LocalContext.current
+    var tempVideoUri by remember { mutableStateOf<Uri?>(null) }
+
+    val videoLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CaptureVideo(),
+        onResult = { success ->
+            if (success && tempVideoUri != null) {
+                // Read the raw MP4 bytes
+                val bytes = context.contentResolver.openInputStream(tempVideoUri!!)?.use { it.readBytes() }
+                onResult(bytes)
+            } else {
+                onResult(null)
+            }
+        }
+    )
+
+    return remember {
+        CameraLauncher(
+            onLaunch = {
+                // 1. Create a temporary MP4 file
+                val tempFile = File.createTempFile("capture_", ".mp4", context.cacheDir)
+
+                // 2. Get secure URI
+                tempVideoUri = FileProvider.getUriForFile(
+                    context,
+                    "${context.packageName}.provider",
+                    tempFile
+                )
+
+                // 3. Launch Android Video Camera!
+                videoLauncher.launch(tempVideoUri!!)
+            }
+        )
+    }
+}

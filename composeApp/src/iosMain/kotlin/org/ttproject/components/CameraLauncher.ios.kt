@@ -59,6 +59,52 @@ actual fun rememberCameraLauncher(onResult: (ByteArray?) -> Unit): CameraLaunche
     }
 }
 
+@Composable
+actual fun rememberVideoLauncher(onResult: (ByteArray?) -> Unit): CameraLauncher {
+    val delegate = remember {
+        object : NSObject(), UIImagePickerControllerDelegateProtocol, UINavigationControllerDelegateProtocol {
+            override fun imagePickerController(
+                picker: UIImagePickerController,
+                didFinishPickingMediaWithInfo: Map<Any?, *>
+            ) {
+                // iOS returns video as a file URL
+                val videoUrl = didFinishPickingMediaWithInfo[UIImagePickerControllerMediaURL] as? NSURL
+
+                if (videoUrl != null) {
+                    val videoData = NSData.dataWithContentsOfURL(videoUrl)
+                    onResult(videoData?.toByteArray())
+                } else {
+                    onResult(null)
+                }
+                picker.dismissViewControllerAnimated(true, null)
+            }
+
+            override fun imagePickerControllerDidCancel(picker: UIImagePickerController) {
+                onResult(null)
+                picker.dismissViewControllerAnimated(true, null)
+            }
+        }
+    }
+
+    return remember {
+        CameraLauncher(
+            onLaunch = {
+                val picker = UIImagePickerController()
+                picker.sourceType = UIImagePickerControllerSourceType.UIImagePickerControllerSourceTypeCamera
+
+                // 👇 Force the camera into Video mode!
+                picker.mediaTypes = listOf("public.movie")
+                picker.videoQuality = UIImagePickerControllerQualityTypeHigh
+                picker.delegate = delegate
+
+                UIApplication.sharedApplication.keyWindow?.rootViewController?.presentViewController(
+                    picker, animated = true, completion = null
+                )
+            }
+        )
+    }
+}
+
 // Helper extension to convert Apple's NSData into a Kotlin ByteArray
 @OptIn(ExperimentalForeignApi::class)
 private fun NSData.toByteArray(): ByteArray {
