@@ -87,12 +87,15 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Reply
+import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PhotoCamera
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.PlayCircleOutline
 import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material3.SheetState
@@ -365,9 +368,8 @@ fun ChatDetailScreen(
 
     val videoLauncher = rememberVideoLauncher { videoBytes ->
         if (videoBytes != null) {
-            // Because we fixed the MP4 detection on your backend earlier,
-            // you can safely pass these bytes into the exact same upload function!
-            viewModel.sendImagesMessage(chatId, listOf(videoBytes), replyingToMessageId)
+            // 👇 Call the new dedicated Video function!
+            viewModel.sendVideoMessage(chatId, videoBytes, replyingToMessageId)
             replyingToMessageId = null
         }
     }
@@ -489,93 +491,162 @@ fun ChatDetailScreen(
                 isInitialBatchProcessed = true
             }
 
-            LazyColumn(
-                state = listState,
-                modifier = Modifier.weight(1f).fillMaxWidth(),
-                contentPadding = PaddingValues(16.dp),
-                reverseLayout = true
-            ) {
-                val currentUserId = tokenStorage.getUserId() ?: ""
-                val displayMessages = messages.reversed()
+            // 👇 1. Wrap the LazyColumn in a Box so we can overlay the FAB
+            Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
+                LazyColumn(
+                    state = listState,
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(16.dp),
+                    reverseLayout = true
+                ) {
+                    val currentUserId = tokenStorage.getUserId() ?: ""
+                    val displayMessages = messages.reversed()
 
-                itemsIndexed(displayMessages, key = { _, msg -> msg.id }) { index, msg ->
-                    val isMe = msg.senderId == currentUserId
-                    val isSelected = selectedMessageId == msg.id
-                    val olderMessage = displayMessages.getOrNull(index + 1)
-                    val newerMessage = displayMessages.getOrNull(index - 1)
+                    itemsIndexed(displayMessages, key = { _, msg -> msg.id }) { index, msg ->
+                        val isMe = msg.senderId == currentUserId
+                        val isSelected = selectedMessageId == msg.id
+                        val olderMessage = displayMessages.getOrNull(index + 1)
+                        val newerMessage = displayMessages.getOrNull(index - 1)
 
-                    val showTimeHeader = olderMessage == null || isTimeGapGreater(olderMessage.createdAt, msg.createdAt, 30)
-                    val newerShowsHeader = newerMessage != null && isTimeGapGreater(msg.createdAt, newerMessage.createdAt, 30)
-
-                    val visuallyConnectToOlder = olderMessage?.senderId == msg.senderId && !showTimeHeader
-                    val visuallyConnectToNewer = newerMessage?.senderId == msg.senderId && !newerShowsHeader
-
-                    val playAnimation = remember(msg.id) {
-                        if (!isInitialBatchProcessed) false else !knownMessageIds.contains(msg.id) && index < 5
-                    }
-
-                    val repliedMessage = msg.replyToMessageId?.let { replyId -> messages.find { it.id == replyId } }
-                    val repliedText = repliedMessage?.content
-                    val repliedSender = if (repliedMessage?.senderId == currentUserId) "You" else otherUsername
-
-                    Box(modifier = Modifier.zIndex(displayMessages.size - index.toFloat())) {
-                        AnimatedMessageBubble(
-                            text = msg.content,
-                            isMe = isMe,
-                            time = msg.createdAt,
-                            playAnimation = playAnimation,
-                            showTimeHeader = showTimeHeader,
-                            isOlderSame = visuallyConnectToOlder,
-                            isNewerSame = visuallyConnectToNewer,
-                            isSelected = isSelected,
-                            repliedText = repliedText,
-                            repliedSender = repliedSender,
-                            reactions = msg.reactions,
-                            myBubbleColor = currentTheme.myBubbleColor,       // 👈 Pass Theme Color
-                            otherBubbleColor = currentTheme.otherBubbleColor, // 👈 Pass Theme Color
-                            onClick = {
-                                // 👇 Only toggles the timestamp now!
-                                selectedMessageId = if (isSelected) null else msg.id
-                            },
-                            onImageClick = { index, urls ->
-                                // 👇 Opens the full screen viewer!
-                                fullScreenImages = urls
-                                fullScreenInitialPage = index
-                            },
-                            onReactionClick = { reactionSheetMessageId = msg.id },
-                            onLongPress = { bounds, topStart, topEnd, bottomStart, bottomEnd, initialTouch, reactionBounds ->
-                                reactionMenuData = ReactionMenuData(msg.id, isMe, bounds, topStart, topEnd, bottomStart, bottomEnd, initialTouch, reactionBounds)
-                            },
-                            onLongPressDrag = { globalPos -> activeReactionDragPosition = globalPos },
-                            onLongPressEnd = { hasDragged ->
-                                if (hasDragged) {
-                                    if (reactionMenuData != null && hoveredReactionIndex != -1) {
-                                        val msgId = reactionMenuData!!.messageId
-                                        val selectedEmoji = emojis[hoveredReactionIndex]
-                                        val targetMsg = messages.find { it.id == msgId }
-                                        val currentUserId = tokenStorage.getUserId() ?: ""
-
-                                        // 👇 Check if they already have this exact reaction
-                                        val hasReacted = targetMsg?.reactions?.any { it.userId == currentUserId && it.emoji == selectedEmoji } == true
-
-                                        if (hasReacted) {
-                                            viewModel.removeReaction(msgId)
-                                        } else {
-                                            viewModel.sendReaction(msgId, selectedEmoji)
-                                        }
-                                        reactionMenuData = null
-                                    }
-                                    activeReactionDragPosition = null
-                                    hoveredReactionIndex = -1
-                                } else {
-                                    activeReactionDragPosition = null
-                                }
-                            },
-                            onSwipeToReply = { replyingToMessageId = msg.id }
+                        val showTimeHeader = olderMessage == null || isTimeGapGreater(
+                            olderMessage.createdAt,
+                            msg.createdAt,
+                            30
                         )
+                        val newerShowsHeader = newerMessage != null && isTimeGapGreater(
+                            msg.createdAt,
+                            newerMessage.createdAt,
+                            30
+                        )
+
+                        val visuallyConnectToOlder =
+                            olderMessage?.senderId == msg.senderId && !showTimeHeader
+                        val visuallyConnectToNewer =
+                            newerMessage?.senderId == msg.senderId && !newerShowsHeader
+
+                        val playAnimation = remember(msg.id) {
+                            if (!isInitialBatchProcessed) false else !knownMessageIds.contains(msg.id) && index < 5
+                        }
+
+                        val repliedMessage =
+                            msg.replyToMessageId?.let { replyId -> messages.find { it.id == replyId } }
+                        val repliedText = repliedMessage?.content
+                        val repliedSender =
+                            if (repliedMessage?.senderId == currentUserId) "You" else otherUsername
+
+                        Box(modifier = Modifier.zIndex(displayMessages.size - index.toFloat())) {
+                            AnimatedMessageBubble(
+                                text = msg.content,
+                                isMe = isMe,
+                                time = msg.createdAt,
+                                playAnimation = playAnimation,
+                                showTimeHeader = showTimeHeader,
+                                isOlderSame = visuallyConnectToOlder,
+                                isNewerSame = visuallyConnectToNewer,
+                                isSelected = isSelected,
+                                repliedText = repliedText,
+                                repliedSender = repliedSender,
+                                reactions = msg.reactions,
+                                myBubbleColor = currentTheme.myBubbleColor,       // 👈 Pass Theme Color
+                                otherBubbleColor = currentTheme.otherBubbleColor, // 👈 Pass Theme Color
+                                onClick = {
+                                    // 👇 Only toggles the timestamp now!
+                                    selectedMessageId = if (isSelected) null else msg.id
+                                },
+                                onImageClick = { index, urls ->
+                                    // 👇 Opens the full screen viewer!
+                                    fullScreenImages = urls
+                                    fullScreenInitialPage = index
+                                },
+                                onReactionClick = { reactionSheetMessageId = msg.id },
+                                onLongPress = { bounds, topStart, topEnd, bottomStart, bottomEnd, initialTouch, reactionBounds ->
+                                    reactionMenuData = ReactionMenuData(
+                                        msg.id,
+                                        isMe,
+                                        bounds,
+                                        topStart,
+                                        topEnd,
+                                        bottomStart,
+                                        bottomEnd,
+                                        initialTouch,
+                                        reactionBounds
+                                    )
+                                },
+                                onLongPressDrag = { globalPos ->
+                                    activeReactionDragPosition = globalPos
+                                },
+                                onLongPressEnd = { hasDragged ->
+                                    if (hasDragged) {
+                                        if (reactionMenuData != null && hoveredReactionIndex != -1) {
+                                            val msgId = reactionMenuData!!.messageId
+                                            val selectedEmoji = emojis[hoveredReactionIndex]
+                                            val targetMsg = messages.find { it.id == msgId }
+                                            val currentUserId = tokenStorage.getUserId() ?: ""
+
+                                            // 👇 Check if they already have this exact reaction
+                                            val hasReacted =
+                                                targetMsg?.reactions?.any { it.userId == currentUserId && it.emoji == selectedEmoji } == true
+
+                                            if (hasReacted) {
+                                                viewModel.removeReaction(msgId)
+                                            } else {
+                                                viewModel.sendReaction(msgId, selectedEmoji)
+                                            }
+                                            reactionMenuData = null
+                                        }
+                                        activeReactionDragPosition = null
+                                        hoveredReactionIndex = -1
+                                    } else {
+                                        activeReactionDragPosition = null
+                                    }
+                                },
+                                onSwipeToReply = { replyingToMessageId = msg.id }
+                            )
+                        }
                     }
                 }
-            }
+
+                // 👇 2. THE SCROLL TO BOTTOM BUTTON
+                val showScrollToBottom by remember {
+                    derivedStateOf {
+                        listState.firstVisibleItemIndex > 1 || listState.firstVisibleItemScrollOffset > 300
+                    }
+                }
+
+                // 👇 THE FIX: An invisible Box handles the alignment to protect the compiler scope
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = 8.dp) // Hovers just above the text field!
+                ) {
+                    androidx.compose.animation.AnimatedVisibility(
+                        visible = showScrollToBottom,
+                        enter = fadeIn() + androidx.compose.animation.scaleIn(),
+                        exit = fadeOut() + androidx.compose.animation.scaleOut()
+                    ) {
+                        // A sleek circular button that perfectly matches your chat theme
+                        Box(
+                            modifier = Modifier
+                                .size(40.dp)
+                                .clip(CircleShape)
+                                .background(currentTheme.myBubbleColor)
+                                .clickable {
+                                    coroutineScope.launch {
+                                        // Smoothly glide back down to the newest message
+                                        listState.animateScrollToItem(0)
+                                    }
+                                },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.ArrowDownward,
+                                contentDescription = "Scroll to newest",
+                                tint = Color.White
+                            )
+                        }
+                    }
+                }
+            } // 👈 End of the Box wrapper
 
             // --- THE KEYBOARD-AWARE INPUT AREA ---
             // 👇 THE FIX: Removed the .background(Color.Black.copy(alpha = 0.4f)) so it matches the theme
@@ -1479,12 +1550,23 @@ fun ChatBubble(
                 // --- THE ACTUAL CHAT BUBBLE ---
                 val isSingleImage = text.startsWith("[IMAGE]") && !text.startsWith("[IMAGES]")
                 val isMultiImage = text.startsWith("[IMAGES]")
-                val isAnyImage = isSingleImage || isMultiImage
+                val isVideo = text.startsWith("[VIDEO]") // 👈 NEW!
+                val isAnyMedia = isSingleImage || isMultiImage || isVideo
 
+                // Let's assume your payload is [VIDEO]thumbnailUrl,videoUrl
+                // If you don't have thumbnails yet, just pass the video URL and we'll handle the UI structure anyway!
+                val videoThumbnailUrl = if (isVideo) text.substringAfter("[VIDEO]").split(",").firstOrNull() else null
+                println("Raw text for video bubble: $text") // Debug log to verify incoming text
+                println("Parsed video thumbnail URL: $videoThumbnailUrl") // Debug log to verify parsing
+                // 👇 1. Fix the parser to grab the Video URL
                 val imageUrls = remember(text) {
                     when {
                         isMultiImage -> text.substringAfter("[IMAGES]").split(",")
                         isSingleImage -> listOf(text.substringAfter("[IMAGE]"))
+                        isVideo -> {
+                            // Safely grab the actual video URL (in case we ever add thumbnails later like [VIDEO]thumb,video)
+                            listOf(text.substringAfter("[VIDEO]").split(",").last())
+                        }
                         else -> emptyList()
                     }
                 }
@@ -1497,7 +1579,7 @@ fun ChatBubble(
                         }
                         // 👇 1. If it's an image, NO background, just clip it to the shape!
                         .then(
-                            if (isAnyImage) Modifier.clip(bubbleShape)
+                            if (isAnyMedia) Modifier.clip(bubbleShape)
                             else Modifier.background(animatedBackgroundColor, bubbleShape).clip(bubbleShape)
                         )
                         .pointerInput(Unit) {
@@ -1527,7 +1609,7 @@ fun ChatBubble(
 
                                 if (isTap) {
                                     // 👇 FIX: Use math to find out which image they tapped!
-                                    if (isAnyImage) {
+                                    if (isAnyMedia) {
                                         val x = down.position.x
                                         val y = down.position.y
                                         val w = size.width
@@ -1578,7 +1660,7 @@ fun ChatBubble(
                         }
                         // 👇 2. If it's an image, we remove the padding so the picture touches the edges
                         .then(
-                            if (isAnyImage) Modifier
+                            if (isAnyMedia) Modifier
                             else Modifier.padding(horizontal = 12.dp, vertical = 10.dp)
                         )
                 ) {
@@ -1586,12 +1668,16 @@ fun ChatBubble(
                     if (repliedText != null && repliedSender != null) {
                         val isDarkMode = org.ttproject.isDark
                         val isQuotedImage = repliedText.startsWith("[IMAGE")
-                        val displayRepliedText = if (isQuotedImage) "📸 Photo" else repliedText
-                        val quoteBgColor = if (isAnyImage) Color.Black.copy(alpha = 0.6f) else if (isDarkMode) Color.Black.copy(alpha = 0.15f) else Color.Black.copy(alpha = 0.05f)
+                        val displayRepliedText = when {
+                            repliedText.startsWith("[VIDEO]") -> "🎥 Video"
+                            repliedText.startsWith("[IMAGE") -> "📸 Photo"
+                            else -> repliedText
+                        }
+                        val quoteBgColor = if (isAnyMedia) Color.Black.copy(alpha = 0.6f) else if (isDarkMode) Color.Black.copy(alpha = 0.15f) else Color.Black.copy(alpha = 0.05f)
 
                         Row(
                             modifier = Modifier
-                                .then(if (isAnyImage) Modifier.padding(start = 8.dp, top = 8.dp, end = 8.dp, bottom = 4.dp) else Modifier.padding(bottom = 6.dp))
+                                .then(if (isAnyMedia) Modifier.padding(start = 8.dp, top = 8.dp, end = 8.dp, bottom = 4.dp) else Modifier.padding(bottom = 6.dp))
                                 .clip(RoundedCornerShape(6.dp))
                                 .background(quoteBgColor)
                                 .height(IntrinsicSize.Min)
@@ -1599,46 +1685,120 @@ fun ChatBubble(
                             Box(modifier = Modifier.width(4.dp).fillMaxHeight().background(if (isMe) Color.White else myBubbleColor))
                             Column(modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)) {
                                 Text(text = repliedSender, color = if (isMe) Color.White else myBubbleColor, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                                Text(text = displayRepliedText, color = if (isAnyImage || isMe) Color.White.copy(alpha = 0.85f) else AppColors.TextPrimary.copy(alpha = 0.85f), fontSize = 13.sp, maxLines = 3, overflow = TextOverflow.Ellipsis)
+                                Text(text = displayRepliedText, color = if (isAnyMedia || isMe) Color.White.copy(alpha = 0.85f) else AppColors.TextPrimary.copy(alpha = 0.85f), fontSize = 13.sp, maxLines = 3, overflow = TextOverflow.Ellipsis)
                             }
                         }
                     }
 
                     // 👇 3. RENDER DYNAMIC COLLAGE OR TEXT
-                    if (isAnyImage) {
+                    if (isAnyMedia) {
                         Box(modifier = Modifier.widthIn(max = 280.dp).clip(bubbleShape)) {
                             when (imageUrls.size) {
                                 1 -> {
-                                    MediaThumbnail(url = imageUrls[0], modifier = Modifier.fillMaxWidth().heightIn(max = 350.dp))
+                                    MediaThumbnail(
+                                        url = imageUrls[0],
+                                        modifier = Modifier.fillMaxWidth().heightIn(max = 350.dp),
+                                        isVideo = imageUrls[0].contains(".mp4"),
+                                        videoThumbnailUrl = videoThumbnailUrl,
+                                        bubbleShape = bubbleShape,
+                                    )
                                 }
                                 2 -> {
                                     Row(modifier = Modifier.fillMaxWidth().height(200.dp)) {
-                                        MediaThumbnail(url = imageUrls[0], modifier = Modifier.weight(1f).fillMaxHeight().padding(end = 2.dp))
-                                        MediaThumbnail(url = imageUrls[1], modifier = Modifier.weight(1f).fillMaxHeight().padding(start = 2.dp))
+                                        MediaThumbnail(
+                                            url = imageUrls[0],
+                                            modifier = Modifier.weight(1f).fillMaxHeight().padding(end = 2.dp),
+                                            isVideo = imageUrls[0].contains(".mp4"),
+                                            videoThumbnailUrl = videoThumbnailUrl,
+                                            bubbleShape = bubbleShape,
+                                        )
+                                        MediaThumbnail(
+                                            url = imageUrls[1],
+                                            modifier = Modifier.weight(1f).fillMaxHeight().padding(start = 2.dp),
+                                            isVideo = imageUrls[1].contains(".mp4"),
+                                            videoThumbnailUrl = videoThumbnailUrl,
+                                            bubbleShape = bubbleShape,
+                                        )
                                     }
                                 }
                                 3 -> {
                                     Column(modifier = Modifier.fillMaxWidth().height(280.dp)) {
-                                        MediaThumbnail(url = imageUrls[0], modifier = Modifier.weight(1f).fillMaxWidth().padding(bottom = 2.dp))
+                                        MediaThumbnail(
+                                            url = imageUrls[0],
+                                            modifier = Modifier.weight(1f).fillMaxWidth().padding(bottom = 2.dp),
+                                            isVideo = imageUrls[0].contains(".mp4"),
+                                            videoThumbnailUrl = videoThumbnailUrl,
+                                            bubbleShape = bubbleShape,
+                                        )
                                         Row(modifier = Modifier.weight(1f).fillMaxWidth().padding(top = 2.dp)) {
-                                            MediaThumbnail(url = imageUrls[1], modifier = Modifier.weight(1f).fillMaxHeight().padding(end = 2.dp))
-                                            MediaThumbnail(url = imageUrls[2], modifier = Modifier.weight(1f).fillMaxHeight().padding(start = 2.dp))
+                                            MediaThumbnail(
+                                                url = imageUrls[1],
+                                                modifier = Modifier.weight(1f).fillMaxHeight().padding(end = 2.dp),
+                                                isVideo = imageUrls[1].contains(".mp4"),
+                                                videoThumbnailUrl = videoThumbnailUrl,
+                                                bubbleShape = bubbleShape,
+                                            )
+                                            MediaThumbnail(
+                                                url = imageUrls[2],
+                                                modifier = Modifier.weight(1f).fillMaxHeight().padding(start = 2.dp),
+                                                isVideo = imageUrls[2].contains(".mp4"),
+                                                videoThumbnailUrl = videoThumbnailUrl,
+                                                bubbleShape = bubbleShape,
+                                            )
                                         }
                                     }
                                 }
                                 else -> {
+                                    // 4 or more images (2x2 grid)
                                     Column(modifier = Modifier.fillMaxWidth().height(280.dp)) {
                                         Row(modifier = Modifier.weight(1f).fillMaxWidth().padding(bottom = 2.dp)) {
-                                            MediaThumbnail(url = imageUrls[0], modifier = Modifier.weight(1f).fillMaxHeight().padding(end = 2.dp))
-                                            MediaThumbnail(url = imageUrls[1], modifier = Modifier.weight(1f).fillMaxHeight().padding(start = 2.dp))
+                                            MediaThumbnail(
+                                                url = imageUrls[0],
+                                                modifier = Modifier.weight(1f).fillMaxHeight().padding(end = 2.dp),
+                                                isVideo = imageUrls[0].contains(".mp4"),
+                                                videoThumbnailUrl = videoThumbnailUrl,
+                                                bubbleShape = bubbleShape,
+                                            )
+                                            MediaThumbnail(
+                                                url = imageUrls[1],
+                                                modifier = Modifier.weight(1f).fillMaxHeight().padding(start = 2.dp),
+                                                isVideo = imageUrls[1].contains(".mp4"),
+                                                videoThumbnailUrl = videoThumbnailUrl,
+                                                bubbleShape = bubbleShape,
+                                            )
                                         }
                                         Row(modifier = Modifier.weight(1f).fillMaxWidth().padding(top = 2.dp)) {
-                                            MediaThumbnail(url = imageUrls[2], modifier = Modifier.weight(1f).fillMaxHeight().padding(end = 2.dp))
+                                            MediaThumbnail(
+                                                url = imageUrls[2],
+                                                modifier = Modifier.weight(1f).fillMaxHeight().padding(end = 2.dp),
+                                                isVideo = imageUrls[2].contains(".mp4"),
+                                                videoThumbnailUrl = videoThumbnailUrl,
+                                                bubbleShape = bubbleShape,
+                                            )
                                             Box(modifier = Modifier.weight(1f).fillMaxHeight().padding(start = 2.dp)) {
-                                                MediaThumbnail(url = imageUrls[3], modifier = Modifier.fillMaxSize())
+                                                MediaThumbnail(
+                                                    url = imageUrls[3],
+                                                    modifier = Modifier.fillMaxSize(),
+                                                    isVideo = imageUrls[3].contains(".mp4"),
+                                                    videoThumbnailUrl = videoThumbnailUrl,
+                                                    bubbleShape = bubbleShape,
+                                                )
+                                                // Show +X overlay if there are more than 4 images
                                                 if (imageUrls.size > 4) {
-                                                    Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.5f)), contentAlignment = Alignment.Center) {
-                                                        Text("+${imageUrls.size - 4}", color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Bold)
+                                                    // Note: We don't add a clickable modifier here because
+                                                    // the MediaThumbnail underneath will catch the tap!
+                                                    Box(
+                                                        modifier = Modifier
+                                                            .fillMaxSize()
+                                                            .background(Color.Black.copy(alpha = 0.5f)),
+                                                        contentAlignment = Alignment.Center
+                                                    ) {
+                                                        Text(
+                                                            text = "+${imageUrls.size - 4}",
+                                                            color = Color.White,
+                                                            fontSize = 24.sp,
+                                                            fontWeight = FontWeight.Bold
+                                                        )
                                                     }
                                                 }
                                             }
@@ -1786,7 +1946,11 @@ fun ChatListItem(thread: ChatThreadDto, onClick: () -> Unit) {
                 }
                 Spacer(modifier = Modifier.height(4.dp))
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                    val displayLastMessage = if (thread.lastMessage.startsWith("[IMAGE")) "📸 Photo" else thread.lastMessage
+                    val displayLastMessage = when {
+                        thread.lastMessage.startsWith("[VIDEO]") -> "🎥 Video"
+                        thread.lastMessage.startsWith("[IMAGE") -> "📸 Photo"
+                        else -> thread.lastMessage
+                    }
                     Text(displayLastMessage, color = if (thread.unreadCount > 0) AppColors.TextPrimary else Color.Gray, fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
                     if (thread.unreadCount > 0) {
                         Spacer(modifier = Modifier.width(8.dp))
@@ -1846,7 +2010,11 @@ fun ReplyPreview(
 ) {
     val isDarkMode = org.ttproject.isDark
     val bgColor = if (isDarkMode) Color.Black.copy(alpha = 0.2f) else Color.Black.copy(alpha = 0.05f)
-    val displayMessage = if (messageContent.startsWith("[IMAGE")) "📸 Photo" else messageContent
+    val displayMessage = when {
+        messageContent.startsWith("[VIDEO]") -> "🎥 Video"
+        messageContent.startsWith("[IMAGE") -> "📸 Photo"
+        else -> messageContent
+    }
 
     Row(
         modifier = Modifier
@@ -2141,34 +2309,51 @@ private fun ReadOnlyGearItem(label: String, value: String, bgColor: Color, iconC
 }
 
 @Composable
-fun MediaThumbnail(url: String, modifier: Modifier) {
-    println("MediaThumbnail: $url")
-    val isVideo = url.contains(".mp4")
-
-    // 👇 Added a solid black background so it is never transparent!
+fun MediaThumbnail(
+    url: String,
+    modifier: Modifier,
+    isVideo: Boolean,
+    videoThumbnailUrl: String?,
+    bubbleShape: RoundedCornerShape
+    // 👈 1. Removed onClick parameter!
+) {
     Box(
         modifier = modifier.then(if (isVideo) Modifier.background(Color.Black) else Modifier),
         contentAlignment = Alignment.Center
     ) {
-        // Coil can't natively decode MP4s into images without extra dependencies,
-        // so we only try to load the image if it's NOT a video.
-        if (!isVideo) {
+        val displayUrl = if (isVideo) (videoThumbnailUrl ?: url) else url
+
+        if (displayUrl != null) {
             AsyncImage(
-                model = url,
+                model = displayUrl,
                 contentDescription = "Media",
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop
             )
         }
 
-        // Render the Play Button
         if (isVideo) {
-            Icon(
-                imageVector = Icons.Default.PlayCircleOutline,
-                contentDescription = "Play Video",
-                tint = Color.White,
-                modifier = Modifier.size(48.dp)
-            )
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .clip(bubbleShape),
+                // 👈 2. Removed .clickable here! The parent handles it now.
+                contentAlignment = Alignment.Center
+            ) {
+                Box(modifier = Modifier.matchParentSize().background(Color.Black.copy(alpha = 0.3f)))
+                Box(
+                    modifier = Modifier.size(56.dp).clip(CircleShape).background(Color.Black.copy(alpha = 0.6f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.PlayArrow,
+                        contentDescription = "Play Video",
+                        tint = Color.White,
+                        modifier = Modifier.size(36.dp).offset(x = 2.dp)
+                    )
+                }
+            }
         }
+        // 👈 3. Removed the else { Box(clickable) } completely!
     }
 }
