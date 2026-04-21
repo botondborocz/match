@@ -1,11 +1,13 @@
 package org.ttproject.components
 
 import androidx.compose.runtime.*
+import kotlinx.cinterop.ExperimentalForeignApi
+import kotlinx.cinterop.cValue // 👈 Added this
 import platform.AVFoundation.*
 import platform.CoreMedia.*
 import platform.Foundation.*
-import platform.darwin.NSObject
 
+@OptIn(ExperimentalForeignApi::class) // 👈 Added global opt-in for this class
 class IosAudioPlayer : AudioPlayer {
     private var player: AVPlayer? = null
     private var timeObserver: Any? = null
@@ -16,29 +18,36 @@ class IosAudioPlayer : AudioPlayer {
 
     override fun play(url: String) {
         val nsUrl = NSURL.URLWithString(url) ?: return
-
-        // 1. Clean up any existing observer/player
         stop()
 
         val playerItem = AVPlayerItem(uRL = nsUrl)
         player = AVPlayer(playerItem = playerItem)
 
-        // 2. Add Periodic Time Observer (updates every 100ms)
-        val interval = CMTimeMake(value = 1, timescale = 10)
-        timeObserver = player?.addPeriodicTimeObserverForInterval(interval, null) { time ->
-            val currentTimeSeconds = CMTimeGetSeconds(time!!)
-            currentPosition = (currentTimeSeconds * 1000).toLong()
+        // 👈 FIX: Wrap CMTimeMake in cValue
+        val interval = cValue<CMTime> {
+            val time = CMTimeMake(value = 1, timescale = 10)
+            value = time.value
+            timescale = time.timescale
+            flags = time.flags
+            epoch = time.epoch
+        }
 
-            val durationSeconds = CMTimeGetSeconds(player?.currentItem?.duration ?: return@addPeriodicTimeObserverForInterval)
-            if (!durationSeconds.isNaN()) {
-                duration = (durationSeconds * 1000).toLong()
+        timeObserver = player?.addPeriodicTimeObserverForInterval(interval, null) { time ->
+            time?.useContents {
+                currentPosition = (CMTimeGetSeconds(this) * 1000).toLong()
             }
 
-            // Sync playing state
+            val durationTime = player?.currentItem?.duration
+            durationTime?.useContents {
+                val secs = CMTimeGetSeconds(this)
+                if (!secs.isNaN()) {
+                    duration = (secs * 1000).toLong()
+                }
+            }
+
             isPlaying = player?.rate != 0f
         }
 
-        // 3. Listen for completion to reset UI
         NSNotificationCenter.defaultCenter.addObserverForName(
             name = AVPlayerItemDidPlayToEndTimeNotification,
             `object` = player?.currentItem,
@@ -46,7 +55,8 @@ class IosAudioPlayer : AudioPlayer {
         ) { _ ->
             isPlaying = false
             currentPosition = 0L
-            player?.seekToTime(kCMTimeZero)
+            // 👈 FIX: Use kCMTimeZero properly
+            player?.seekToTime(kCMTimeZero.readValue())
         }
 
         player?.play()
@@ -75,7 +85,14 @@ class IosAudioPlayer : AudioPlayer {
     }
 
     override fun seekTo(position: Long) {
-        val time = CMTimeMakeWithSeconds(seconds = position / 1000.0, preferredTimescale = 1000)
+        // 👈 FIX: Wrap seek time in cValue
+        val time = cValue<CMTime> {
+            val t = CMTimeMakeWithSeconds(seconds = position / 1000.0, preferredTimescale = 1000)
+            value = t.value
+            timescale = t.timescale
+            flags = t.flags
+            epoch = t.epoch
+        }
         player?.seekToTime(time)
         currentPosition = position
     }
@@ -84,13 +101,8 @@ class IosAudioPlayer : AudioPlayer {
 @Composable
 actual fun rememberAudioPlayer(): AudioPlayer {
     val player = remember { IosAudioPlayer() }
-
-    // Cleanup when the user leaves the chat screen
     DisposableEffect(Unit) {
-        onDispose {
-            player.stop()
-        }
+        onDispose { player.stop() }
     }
-
     return player
 }

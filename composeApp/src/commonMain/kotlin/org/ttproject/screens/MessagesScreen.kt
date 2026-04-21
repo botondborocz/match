@@ -2,6 +2,7 @@ package org.ttproject.screens
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.MutableTransitionState
+import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
@@ -75,6 +76,7 @@ import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.calculatePan
@@ -102,6 +104,7 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.PlayCircleOutline
 import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material3.SheetState
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.text.TextStyle
@@ -819,6 +822,7 @@ fun ChatDetailScreen(
                             onValueChange = { messageText = it },
                             modifier = Modifier
                                 .weight(1f)
+                                .focusRequester(inputFocusRequester)
                                 .clip(RoundedCornerShape(24.dp))
                                 .background(if (org.ttproject.isDark) Color.Black.copy(alpha = 0.25f) else Color.Black.copy(alpha = 0.05f))
                                 .border(1.dp, if (messageText.isNotBlank()) currentTheme.myBubbleColor else AppColors.TextGray.copy(alpha = 0.3f), RoundedCornerShape(24.dp))
@@ -1410,6 +1414,11 @@ fun AnimatedMessageBubble(
     val coroutineScope = rememberCoroutineScope()
     val haptic = LocalHapticFeedback.current
 
+    val isVoice = text.startsWith("[VOICE]")
+    val voiceUrl = if (isVoice) text.substringAfter("[VOICE]") else ""
+    val isActiveVoice = currentlyPlayingUrl == voiceUrl
+    val isSeekingAllowed = isActiveVoice && isAudioPlaying
+
     Column(
         // 👇 THE FIX: Bypass the graphicsLayer cache bug by using physical layout modifiers!
         modifier = Modifier
@@ -1517,8 +1526,45 @@ fun AnimatedMessageBubble(
                 isAudioPlaying = isAudioPlaying,
                 audioPlayer = audioPlayer,
                 onVoiceClick = onVoiceClick,
-                modifier = Modifier.graphicsLayer { translationX = swipeOffset.value }
-            )
+                modifier = Modifier
+                    .graphicsLayer { translationX = swipeOffset.value }
+                    .pointerInput(isSeekingAllowed) { // 👈 Re-bind when playing state changes
+                        if (isSeekingAllowed) {
+                            // When playing, we don't want to swipe.
+                            // The internal ChatBubble will handle seeking.
+                            return@pointerInput
+                        }
+
+                        // --- EXISTING SWIPE LOGIC ---
+                        var hasTriggeredHaptic = false
+                        detectHorizontalDragGestures(
+                            onDragEnd = {
+                                if (abs(swipeOffset.value) > 120f) onSwipeToReply()
+                                coroutineScope.launch {
+                                    swipeOffset.animateTo(0f, spring(dampingRatio = Spring.DampingRatioMediumBouncy))
+                                }
+                                hasTriggeredHaptic = false
+                            },
+                            onDragCancel = {
+                                coroutineScope.launch { swipeOffset.animateTo(0f, spring(dampingRatio = Spring.DampingRatioMediumBouncy)) }
+                                hasTriggeredHaptic = false
+                            },
+                            onHorizontalDrag = { change, dragAmount ->
+                                change.consume()
+                                val newOffset = if (isMe) {
+                                    (swipeOffset.value + dragAmount).coerceIn(-200f, 0f)
+                                } else {
+                                    (swipeOffset.value + dragAmount).coerceIn(0f, 200f)
+                                }
+                                coroutineScope.launch { swipeOffset.snapTo(newOffset) }
+
+                                if (abs(newOffset) > 120f && !hasTriggeredHaptic) {
+                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    hasTriggeredHaptic = true
+                                }
+                            }
+                        )
+                    }            )
         }
         Spacer(modifier = Modifier.height(if (isNewerSame) 4.dp else 16.dp))
     }
@@ -1712,11 +1758,13 @@ fun ChatBubble(
 
                     // 👇 3. RENDER DYNAMIC COLLAGE OR TEXT
                     if (isVoice) {
+                        // We removed the Box wrapper here so the Column itself defines the bounds
                         VoiceMessageContent(
                             voiceUrl = voiceUrl,
                             isMe = isMe,
                             player = audioPlayer,
                             activeUrl = currentlyPlayingUrl,
+                            isAudioPlaying = isAudioPlaying,
                             themeColor = if (isMe) Color.White else myBubbleColor,
                             onPlayToggle = { url -> onVoiceClick(url) }
                         )
@@ -2395,6 +2443,7 @@ fun VoiceMessageContent(
     isMe: Boolean,
     player: AudioPlayer,
     activeUrl: String?,
+    isAudioPlaying: Boolean,
     themeColor: Color,
     onPlayToggle: (String) -> Unit
 ) {
@@ -2439,15 +2488,24 @@ fun VoiceMessageContent(
             Slider(
                 value = progress,
                 onValueChange = {
-                    if (isActive) {
+                    if (isActive && isAudioPlaying) { // 👈 Only allow seeking if active
                         player.seekTo((it * player.duration).toLong())
                     }
                 },
-                modifier = Modifier.height(24.dp),
+                // THE FIX: Set enabled to false if not playing.
+                // This stops the slider from consuming horizontal drags!
+                enabled = isActive && isAudioPlaying,
+                modifier = Modifier
+                    .height(24.dp)
+                    .alpha(if (isActive) 1f else 0.5f),
                 colors = SliderDefaults.colors(
                     thumbColor = if (isMe) Color.White else themeColor,
                     activeTrackColor = if (isMe) Color.White else themeColor,
-                    inactiveTrackColor = if (isMe) Color.White.copy(0.3f) else Color.Gray.copy(0.3f)
+                    inactiveTrackColor = if (isMe) Color.White.copy(alpha = 0.3f) else Color.Gray.copy(0.3f),
+                    // Hide the thumb dot when not playing to make it look like a progress bar
+                    disabledThumbColor = Color.Transparent,
+                    disabledActiveTrackColor = if (isMe) Color.White else themeColor,
+                    disabledInactiveTrackColor = if (isMe) Color.White.copy(alpha = 0.3f) else Color.Gray.copy(0.3f)
                 )
             )
 
