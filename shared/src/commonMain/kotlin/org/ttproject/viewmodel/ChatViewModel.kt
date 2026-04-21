@@ -215,4 +215,16 @@ class ChatViewModel(
             // TODO: Set _isUploading = false here
         }
     }
+
+    fun sendVoiceMessage(connectionId: String, audioBytes: ByteArray, replyToMessageId: String?) {
+        viewModelScope.launch {
+            // Upload to a dedicated voice endpoint (or reuse the images one)
+            repository.uploadAudioMessage(connectionId, audioBytes).onSuccess { url ->
+                val payload = "[VOICE]$url"
+                repository.sendMessage(payload, replyToMessageId)
+            }.onFailure {
+                it.printStackTrace()
+            }
+        }
+    }
 }

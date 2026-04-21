@@ -491,6 +491,43 @@ fun Route.messageRoutes() {
                     call.respond(HttpStatusCode.InternalServerError, "Failed to upload images")
                 }
             }
+
+            // --------------------------------------------------------
+            // 5. UPLOAD VOICE NOTE
+            // --------------------------------------------------------
+            post("/voice") {
+                val connectionId = call.parameters["connectionId"] ?: return@post call.respond(HttpStatusCode.BadRequest, "Missing connection ID")
+
+                try {
+                    val bucket = com.google.firebase.cloud.StorageClient.getInstance().bucket()
+                    val multipartData = call.receiveMultipart()
+                    var publicDownloadUrl = ""
+
+                    multipartData.forEachPart { part ->
+                        if (part is PartData.FileItem) {
+                            val audioBytes = part.streamProvider().readBytes()
+                            val uniqueId = java.util.UUID.randomUUID().toString().take(6)
+                            val fileName = "chat_audio/${connectionId}_${System.currentTimeMillis()}_$uniqueId.m4a"
+
+                            bucket.create(fileName, audioBytes, "audio/m4a")
+
+                            val encodedFilePath = java.net.URLEncoder.encode(fileName, java.nio.charset.StandardCharsets.UTF_8.toString())
+                            publicDownloadUrl = "https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/$encodedFilePath?alt=media"
+                        }
+                        part.dispose()
+                    }
+
+                    if (publicDownloadUrl.isNotBlank()) {
+                        call.respond(HttpStatusCode.OK, mapOf("audioUrl" to publicDownloadUrl))
+                    } else {
+                        call.respond(HttpStatusCode.BadRequest, "No audio file provided")
+                    }
+
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    call.respond(HttpStatusCode.InternalServerError, "Failed to upload audio")
+                }
+            }
         }
     }
 }

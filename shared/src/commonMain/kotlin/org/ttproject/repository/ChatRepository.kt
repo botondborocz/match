@@ -48,6 +48,7 @@ interface ChatRepository {
     suspend fun markMessagesAsRead(chatId: String)
     suspend fun updateChatTheme(connectionId: String, themeName: String)
     suspend fun uploadChatImages(connectionId: String, images: List<ByteArray>): Result<List<String>>
+    suspend fun uploadAudioMessage(connectionId: String, audioBytes: ByteArray): Result<String>
 }
 
 class ChatRepositoryImpl (
@@ -264,6 +265,35 @@ class ChatRepositoryImpl (
             }
         } catch (e: Exception) {
             e.printStackTrace()
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun uploadAudioMessage(connectionId: String, audioBytes: ByteArray): Result<String> {
+        val token = tokenStorage.getToken() ?: return Result.failure(Exception("No token"))
+
+        return try {
+            val response = client.post("${SERVER_IP}/api/connections/$connectionId/voice") {
+                header(HttpHeaders.Authorization, "Bearer $token")
+                setBody(
+                    MultiPartFormDataContent(
+                        formData {
+                            append("voice_note", audioBytes, Headers.build {
+                                append(HttpHeaders.ContentType, "audio/m4a") // Standard format for iOS/Android voice notes
+                                append(HttpHeaders.ContentDisposition, "filename=\"voice_note.m4a\"")
+                            })
+                        }
+                    )
+                )
+            }
+            if (response.status.isSuccess()) {
+                val responseText = response.bodyAsText()
+                val url = Json.parseToJsonElement(responseText).jsonObject["audioUrl"]!!.jsonPrimitive.content
+                Result.success(url)
+            } else {
+                Result.failure(Exception("Upload failed"))
+            }
+        } catch (e: Exception) {
             Result.failure(e)
         }
     }
