@@ -1,13 +1,13 @@
 package org.ttproject.components
 
 import androidx.compose.runtime.*
+import kotlinx.cinterop.CValue
 import kotlinx.cinterop.ExperimentalForeignApi
-import kotlinx.cinterop.cValue // 👈 Added this
 import platform.AVFoundation.*
 import platform.CoreMedia.*
 import platform.Foundation.*
 
-@OptIn(ExperimentalForeignApi::class) // 👈 Added global opt-in for this class
+@OptIn(ExperimentalForeignApi::class)
 class IosAudioPlayer : AudioPlayer {
     private var player: AVPlayer? = null
     private var timeObserver: Any? = null
@@ -23,25 +23,23 @@ class IosAudioPlayer : AudioPlayer {
         val playerItem = AVPlayerItem(uRL = nsUrl)
         player = AVPlayer(playerItem = playerItem)
 
-        // 👈 FIX: Wrap CMTimeMake in cValue
-        val interval = cValue<CMTime> {
-            val time = CMTimeMake(value = 1, timescale = 10)
-            value = time.value
-            timescale = time.timescale
-            flags = time.flags
-            epoch = time.epoch
-        }
+        // 👇 FIX 1: CMTimeMake directly returns CValue<CMTime>. No wrapper needed!
+        val interval = CMTimeMake(value = 1, timescale = 10)
 
+        // KMP passes 'time' as a CValue<CMTime> into this block
         timeObserver = player?.addPeriodicTimeObserverForInterval(interval, null) { time ->
-            time?.useContents {
-                currentPosition = (CMTimeGetSeconds(this) * 1000).toLong()
+            // 👇 FIX 2: Pass 'time' directly to CMTimeGetSeconds. No .useContents needed!
+            val secs = CMTimeGetSeconds(time)
+            if (!secs.isNaN()) {
+                currentPosition = (secs * 1000).toLong()
             }
 
             val durationTime = player?.currentItem?.duration
-            durationTime?.useContents {
-                val secs = CMTimeGetSeconds(this)
-                if (!secs.isNaN()) {
-                    duration = (secs * 1000).toLong()
+            if (durationTime != null) {
+                // durationTime is also a CValue<CMTime>
+                val durationSecs = CMTimeGetSeconds(durationTime)
+                if (!durationSecs.isNaN()) {
+                    duration = (durationSecs * 1000).toLong()
                 }
             }
 
@@ -55,8 +53,9 @@ class IosAudioPlayer : AudioPlayer {
         ) { _ ->
             isPlaying = false
             currentPosition = 0L
-            // 👈 FIX: Use kCMTimeZero properly
-            player?.seekToTime(kCMTimeZero.readValue())
+            // 👇 FIX 3: kCMTimeZero is already a CValue<CMTime>.
+            // If the compiler complains about kCMTimeZero, use CMTimeMakeWithSeconds(0.0, 1)
+            player?.seekToTime(CMTimeMakeWithSeconds(0.0, 1))
         }
 
         player?.play()
@@ -85,14 +84,8 @@ class IosAudioPlayer : AudioPlayer {
     }
 
     override fun seekTo(position: Long) {
-        // 👈 FIX: Wrap seek time in cValue
-        val time = cValue<CMTime> {
-            val t = CMTimeMakeWithSeconds(seconds = position / 1000.0, preferredTimescale = 1000)
-            value = t.value
-            timescale = t.timescale
-            flags = t.flags
-            epoch = t.epoch
-        }
+        // 👇 FIX 4: CMTimeMakeWithSeconds directly returns CValue<CMTime>
+        val time = CMTimeMakeWithSeconds(seconds = position / 1000.0, preferredTimescale = 1000)
         player?.seekToTime(time)
         currentPosition = position
     }
