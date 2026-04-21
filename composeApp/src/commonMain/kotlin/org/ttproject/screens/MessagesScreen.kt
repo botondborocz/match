@@ -831,7 +831,7 @@ fun ChatDetailScreen(
                             cursorBrush = SolidColor(currentTheme.myBubbleColor),
                             decorationBox = { innerTextField ->
                                 Box(contentAlignment = Alignment.CenterStart) {
-                                    if (messageText.isEmpty()) Text("Type a message...", color = AppColors.TextGray, fontSize = 15.sp)
+//                                    if (messageText.isEmpty()) Text("Type a message...", color = AppColors.TextGray, fontSize = 15.sp)
                                     innerTextField()
                                 }
                             }
