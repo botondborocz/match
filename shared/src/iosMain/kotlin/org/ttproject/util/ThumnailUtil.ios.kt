@@ -5,6 +5,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.withContext
 import platform.AVFoundation.*
+import platform.CoreGraphics.* // 👈 THE FIX: Import CoreGraphics!
 import platform.CoreMedia.CMTimeMake
 import platform.Foundation.*
 import platform.UIKit.UIImage
@@ -25,7 +26,7 @@ actual suspend fun generateVideoThumbnail(videoBytes: ByteArray): ByteArray? = w
 
         // 3. Extract frame using AVFoundation
         val url = NSURL.fileURLWithPath(tempPath)
-        val asset = AVURLAsset.assetWithURL(url, null)
+        val asset = AVURLAsset.assetWithURL(url)
         val generator = AVAssetImageGenerator(asset)
         generator.appliesPreferredTrackTransform = true
 
