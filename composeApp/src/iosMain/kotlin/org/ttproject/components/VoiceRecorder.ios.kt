@@ -8,6 +8,7 @@ import platform.posix.memcpy
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 
+@OptIn(ExperimentalForeignApi::class) // 👈 FIX 1: Applied globally to the class
 class VoiceRecorderImpl(
     private val onPermissionDenied: () -> Unit
 ) : VoiceRecorder {
@@ -20,7 +21,13 @@ class VoiceRecorderImpl(
         session.requestRecordPermission { granted ->
             if (granted) {
                 try {
-                    session.setCategory(AVAudioSessionCategoryPlayAndRecord, mode = AVAudioSessionModeDefault, error = null)
+                    // 👇 FIX 2: Added the 'options' parameter to satisfy the iOS API requirements
+                    session.setCategory(
+                        category = AVAudioSessionCategoryPlayAndRecord,
+                        mode = AVAudioSessionModeDefault,
+                        options = AVAudioSessionCategoryOptionDefaultToSpeaker,
+                        error = null
+                    )
                     session.setActive(true, error = null)
 
                     // 1. Create temp path
@@ -50,7 +57,6 @@ class VoiceRecorderImpl(
         }
     }
 
-    @OptIn(ExperimentalForeignApi::class)
     override fun stopRecording(): ByteArray? {
         recorder?.stop()
         recorder = null
