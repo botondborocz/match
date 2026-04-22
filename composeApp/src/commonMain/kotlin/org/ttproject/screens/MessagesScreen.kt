@@ -89,6 +89,7 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
 import androidx.compose.material.icons.automirrored.filled.Reply
 import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.Build
@@ -105,9 +106,12 @@ import androidx.compose.material.icons.filled.PlayCircleOutline
 import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material3.SheetState
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.layout.layout
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.input.TextFieldValue
 import io.github.vinceglb.filekit.compose.rememberFilePickerLauncher
 import io.github.vinceglb.filekit.core.PickerMode
 import io.github.vinceglb.filekit.core.PickerType
@@ -323,7 +327,15 @@ fun ChatDetailScreen(
     val messages by viewModel.messages.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
 
-    var messageText by remember { mutableStateOf("") }
+    var messageText by remember { mutableStateOf(TextFieldValue("")) }
+    var forceShowIcons by remember { mutableStateOf(false) }
+
+    LaunchedEffect(messageText) {
+        if (messageText.text.isBlank()) {
+            forceShowIcons = false
+        }
+    }
+
     var replyingToMessageId by remember { mutableStateOf<String?>(null) }
     val replyingToMessage = remember(replyingToMessageId, messages) {
         messages.find { it.id == replyingToMessageId }
@@ -394,6 +406,7 @@ fun ChatDetailScreen(
     }
 
     var selectedMessageId by remember { mutableStateOf<String?>(null) }
+    var highlightedMessageId by remember { mutableStateOf<String?>(null) }
     var fullScreenImages by remember { mutableStateOf<List<String>?>(null) }
     var fullScreenInitialPage by remember { mutableIntStateOf(0) }
     val listState = rememberLazyListState()
@@ -579,6 +592,33 @@ fun ChatDetailScreen(
                                 reactions = msg.reactions,
                                 myBubbleColor = currentTheme.myBubbleColor,       // 👈 Pass Theme Color
                                 otherBubbleColor = currentTheme.otherBubbleColor, // 👈 Pass Theme Color
+                                isHighlighted = msg.id == highlightedMessageId,
+                                onQuoteClick = {
+                                    msg.replyToMessageId?.let { targetId ->
+                                        val targetIndex = displayMessages.indexOfFirst { it.id == targetId }
+
+                                        if (targetIndex != -1) {
+                                            coroutineScope.launch {
+                                                // 👇 1. Ask the list exactly how tall its visible area is
+                                                val viewportHeight = listState.layoutInfo.viewportSize.height
+
+                                                // 👇 2. Scroll to the item, but offset it by half the screen height!
+                                                // (We use a negative number to pull the item away from the starting edge)
+                                                listState.animateScrollToItem(
+                                                    index = targetIndex,
+                                                    scrollOffset = -(viewportHeight / 4)
+                                                )
+
+                                                // 3. Trigger the pop animation!
+                                                highlightedMessageId = targetId
+
+                                                // 4. Reset the state after a second
+                                                kotlinx.coroutines.delay(1000)
+                                                if (highlightedMessageId == targetId) highlightedMessageId = null
+                                            }
+                                        }
+                                    }
+                                },
                                 onClick = {
                                     // 👇 Only toggles the timestamp now!
                                     selectedMessageId = if (isSelected) null else msg.id
@@ -714,7 +754,7 @@ fun ChatDetailScreen(
                 }
 
                 Row(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
+                    modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 20.dp),
                     verticalAlignment = Alignment.Bottom
                 ) {
                     if (isRecordingVoice) {
@@ -791,27 +831,57 @@ fun ChatDetailScreen(
                     } else {
                         // --- STANDARD UI ---
 
-                        // Media Icons
-                        IconButton(onClick = { cameraLauncher.launch() }, modifier = Modifier.size(36.dp)) {
-                            Icon(painterResource(Res.drawable.camera), contentDescription = "Camera", tint = currentTheme.myBubbleColor)
-                        }
-                        IconButton(onClick = { videoLauncher.launch() }, modifier = Modifier.size(36.dp)) {
-                            Icon(painterResource(Res.drawable.video), contentDescription = "Video", tint = currentTheme.myBubbleColor)
-                        }
-                        IconButton(onClick = { mediaLauncher.launch() }, modifier = Modifier.size(36.dp)) {
-                            Icon(painterResource(Res.drawable.image), contentDescription = "Gallery", tint = currentTheme.myBubbleColor)
+                        val showMediaIcons = messageText.text.isBlank() || forceShowIcons
+
+                        // 1. The Expand Arrow (Shows when typing, hides when icons are visible)
+                        androidx.compose.animation.AnimatedVisibility(
+                            visible = !showMediaIcons,
+                            enter = androidx.compose.animation.expandHorizontally() + fadeIn(),
+                            exit = androidx.compose.animation.shrinkHorizontally() + fadeOut()
+                        ) {
+                            IconButton(
+                                onClick = { forceShowIcons = true },
+                                modifier = Modifier.size(36.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos, // Or Icons.Default.Add
+                                    contentDescription = "Expand Media",
+                                    tint = currentTheme.myBubbleColor,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
                         }
 
-                        // 👇 THE TAP-TO-RECORD BUTTON
-                        IconButton(
-                            onClick = {
-                                if (messageText.isBlank()) {
-                                    voiceRecorder.startRecording { isRecordingVoice = true }
-                                }
-                            },
-                            modifier = Modifier.size(36.dp)
+                        // 2. The Media Icons (Hides when typing)
+                        androidx.compose.animation.AnimatedVisibility(
+                            visible = showMediaIcons,
+                            enter = androidx.compose.animation.expandHorizontally() + fadeIn(),
+                            exit = androidx.compose.animation.shrinkHorizontally() + fadeOut()
                         ) {
-                            Icon(painterResource(Res.drawable.mic), contentDescription = "Record Voice", tint = currentTheme.myBubbleColor)
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                // Media Icons
+                                IconButton(onClick = { cameraLauncher.launch() }, modifier = Modifier.size(36.dp)) {
+                                    Icon(painterResource(Res.drawable.camera), contentDescription = "Camera", tint = currentTheme.myBubbleColor)
+                                }
+                                IconButton(onClick = { videoLauncher.launch() }, modifier = Modifier.size(36.dp)) {
+                                    Icon(painterResource(Res.drawable.video), contentDescription = "Video", tint = currentTheme.myBubbleColor)
+                                }
+                                IconButton(onClick = { mediaLauncher.launch() }, modifier = Modifier.size(36.dp)) {
+                                    Icon(painterResource(Res.drawable.image), contentDescription = "Gallery", tint = currentTheme.myBubbleColor)
+                                }
+
+                                // The Tap-To-Record Button
+                                IconButton(
+                                    onClick = {
+                                        if (messageText.text.isBlank()) {
+                                            voiceRecorder.startRecording { isRecordingVoice = true }
+                                        }
+                                    },
+                                    modifier = Modifier.size(36.dp)
+                                ) {
+                                    Icon(painterResource(Res.drawable.mic), contentDescription = "Record Voice", tint = currentTheme.myBubbleColor)
+                                }
+                            }
                         }
 
                         Spacer(modifier = Modifier.width(8.dp))
@@ -819,19 +889,43 @@ fun ChatDetailScreen(
                         // Text Input Field
                         BasicTextField(
                             value = messageText,
-                            onValueChange = { messageText = it },
+                            onValueChange = {
+                                messageText = it
+                                forceShowIcons = false
+                            },
+                            maxLines = if (showMediaIcons) 1 else 16,
                             modifier = Modifier
                                 .weight(1f)
                                 .focusRequester(inputFocusRequester)
+                                .onFocusChanged { focusState ->
+                                    if (focusState.isFocused) {
+                                        // If they tap the text field to bring the keyboard up, instantly hide the icons
+                                        forceShowIcons = false
+                                        messageText = messageText.copy(
+                                            selection = TextRange(messageText.text.length)
+                                        )
+                                    } else {
+                                        // If the text field loses focus (they tapped the screen to close the keyboard), bring the icons back!
+                                        forceShowIcons = true
+                                    }
+                                }
                                 .clip(RoundedCornerShape(24.dp))
                                 .background(if (org.ttproject.isDark) Color.Black.copy(alpha = 0.25f) else Color.Black.copy(alpha = 0.05f))
-                                .border(1.dp, if (messageText.isNotBlank()) currentTheme.myBubbleColor else AppColors.TextGray.copy(alpha = 0.3f), RoundedCornerShape(24.dp))
+                                .border(1.dp, if (messageText.text.isNotBlank()) currentTheme.myBubbleColor else AppColors.TextGray.copy(alpha = 0.3f), RoundedCornerShape(24.dp))
                                 .padding(horizontal = 16.dp, vertical = 10.dp),
                             textStyle = TextStyle(color = AppColors.TextPrimary, fontSize = 15.sp),
                             cursorBrush = SolidColor(currentTheme.myBubbleColor),
                             decorationBox = { innerTextField ->
                                 Box(contentAlignment = Alignment.CenterStart) {
-//                                    if (messageText.isEmpty()) Text("Type a message...", color = AppColors.TextGray, fontSize = 15.sp)
+                                    if (messageText.text.isEmpty()) {
+                                        Text(
+                                            text = "Message",
+                                            color = AppColors.TextGray,
+                                            fontSize = 15.sp,
+                                            maxLines = 1, // Forces it to stay on one line
+                                            overflow = TextOverflow.Ellipsis // Adds "..." if it still somehow gets cut off
+                                        )
+                                    }
                                     innerTextField()
                                 }
                             }
@@ -844,15 +938,15 @@ fun ChatDetailScreen(
                             modifier = Modifier
                                 .size(42.dp)
                                 .clip(CircleShape)
-                                .background(if (messageText.isNotBlank()) currentTheme.myBubbleColor else AppColors.SurfaceDark.copy(alpha = 0.5f))
-                                .clickable(enabled = messageText.isNotBlank()) {
-                                    viewModel.sendMessage(messageText, replyingToMessageId)
-                                    messageText = ""
+                                .background(if (messageText.text.isNotBlank()) currentTheme.myBubbleColor else AppColors.SurfaceDark.copy(alpha = 0.5f))
+                                .clickable(enabled = messageText.text.isNotBlank()) {
+                                    viewModel.sendMessage(messageText.text, replyingToMessageId)
+                                    messageText = TextFieldValue("")
                                     replyingToMessageId = null
                                 },
                             contentAlignment = Alignment.Center
                         ) {
-                            Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Send", tint = if (messageText.isNotBlank()) Color.White else AppColors.TextGray, modifier = Modifier.size(18.dp).offset(x = 2.dp))
+                            Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Send", tint = if (messageText.text.isNotBlank()) Color.White else AppColors.TextGray, modifier = Modifier.size(18.dp).offset(x = 2.dp))
                         }
                     }
                 }
@@ -1386,6 +1480,8 @@ fun AnimatedMessageBubble(
     isAudioPlaying: Boolean,        // 👈 NEW
     audioPlayer: AudioPlayer,
     onVoiceClick: (String) -> Unit,
+    isHighlighted: Boolean,
+    onQuoteClick: () -> Unit,
     onClick: () -> Unit,
     onImageClick: (Int, List<String>) -> Unit,
     onReactionClick: () -> Unit,
@@ -1398,6 +1494,22 @@ fun AnimatedMessageBubble(
     // Instead, strictly obey the parent's command using Animatable.
     val alphaAnim = remember { androidx.compose.animation.core.Animatable(if (playAnimation) 0.01f else 1f) }
     val offsetAnim = remember { androidx.compose.animation.core.Animatable(if (playAnimation) 100f else 0f) }
+
+    // 👇 1. ADD THE SCALE ANIMATABLE
+    val scaleAnim = remember { androidx.compose.animation.core.Animatable(1f) }
+
+    // 👇 2. ADD THE POP EFFECT
+    LaunchedEffect(isHighlighted) {
+        if (isHighlighted) {
+            // Quick swell up...
+            scaleAnim.animateTo(1.05f, tween(150))
+            // ...and bounce back down!
+            scaleAnim.animateTo(1f, androidx.compose.animation.core.spring(
+                dampingRatio = androidx.compose.animation.core.Spring.DampingRatioMediumBouncy,
+                stiffness = androidx.compose.animation.core.Spring.StiffnessLow
+            ))
+        }
+    }
 
     LaunchedEffect(playAnimation) {
         if (playAnimation) {
@@ -1429,6 +1541,8 @@ fun AnimatedMessageBubble(
                 translationX = if (isMe) (offsetAnim.value / 2) else (-offsetAnim.value / 2)
                 translationY = offsetAnim.value
                 this.alpha = alphaAnim.value
+                scaleX = scaleAnim.value
+                scaleY = scaleAnim.value
             }
     ) {
         // --- THE CENTERED TIMESTAMP ---
@@ -1516,6 +1630,7 @@ fun AnimatedMessageBubble(
                 reactions = reactions,
                 myBubbleColor = myBubbleColor,
                 otherBubbleColor = otherBubbleColor,
+                onQuoteClick = onQuoteClick,
                 onClick = onClick,
                 onImageClick = onImageClick,
                 onReactionClick = onReactionClick,
@@ -1588,6 +1703,7 @@ fun ChatBubble(
     audioPlayer: AudioPlayer,
     onVoiceClick: (String) -> Unit,
     modifier: Modifier = Modifier,
+    onQuoteClick: () -> Unit,
     onClick: () -> Unit,
     onImageClick: (Int, List<String>) -> Unit,
     onReactionClick: () -> Unit,
@@ -1746,6 +1862,7 @@ fun ChatBubble(
                                 .then(if (isAnyMedia) Modifier.padding(start = 8.dp, top = 8.dp, end = 8.dp, bottom = 4.dp) else Modifier.padding(bottom = 6.dp))
                                 .clip(RoundedCornerShape(6.dp))
                                 .background(quoteBgColor)
+                                .clickable { onQuoteClick() }
                                 .height(IntrinsicSize.Min)
                         ) {
                             Box(modifier = Modifier.width(4.dp).fillMaxHeight().background(if (isMe) Color.White else myBubbleColor))
