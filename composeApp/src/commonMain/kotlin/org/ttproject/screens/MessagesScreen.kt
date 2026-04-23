@@ -77,6 +77,7 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.calculatePan
@@ -463,10 +464,21 @@ fun ChatDetailScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            // 👇 2. Apply the beautiful theme gradient to the background!
-            .background(currentTheme.backgroundBrush)
             .windowInsetsPadding(bottomNavInset.union(imeInsets))
     ) {
+        // 👇 Render Image if it exists, otherwise render Gradient
+        if (currentTheme.backgroundImage != null) {
+            Image(
+                painter = painterResource(currentTheme.backgroundImage as org.jetbrains.compose.resources.DrawableResource),
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
+            )
+            // Tint overlay to make text readable
+            Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.4f)))
+        } else {
+            Box(modifier = Modifier.fillMaxSize().background(currentTheme.backgroundBrush))
+        }
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -736,9 +748,8 @@ fun ChatDetailScreen(
                 }
             } // 👈 End of the Box wrapper
 
-            // --- THE KEYBOARD-AWARE INPUT AREA ---
-            // 👇 THE FIX: Removed the .background(Color.Black.copy(alpha = 0.4f)) so it matches the theme
-            Column(modifier = Modifier.fillMaxWidth()) {
+            // --- THE KEYBOARD-AWARE INPUT AREA (OPTION 2: FLOATING ISLAND) ---
+            Column(modifier = Modifier.fillMaxWidth().padding(start = 12.dp, end = 12.dp, bottom = 16.dp)) {
                 AnimatedVisibility(
                     visible = replyingToMessage != null,
                     enter = expandVertically() + fadeIn(),
@@ -747,198 +758,136 @@ fun ChatDetailScreen(
                     if (replyingToMessage != null) {
                         ReplyPreview(
                             messageContent = replyingToMessage.content,
-                            themeColor = currentTheme.myBubbleColor, // 👈 Pass the active theme color!
+                            themeColor = currentTheme.myBubbleColor,
                             onCancel = { replyingToMessageId = null }
                         )
+                        Spacer(modifier = Modifier.height(8.dp))
                     }
                 }
 
+                // 👇 The Outer Island Wrapper (Slimmed Down!)
                 Row(
-                    modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 20.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(28.dp))
+                        .background(if (org.ttproject.isDark) Color.Black.copy(alpha = 0.25f) else Color.Black.copy(alpha = 0.05f))
+//                        .background(AppColors.SurfaceDark.copy(alpha = 0.85f))
+//                        .background(currentTheme.myBubbleColor.copy(alpha = 0.15f))
+                        .border(1.dp, currentTheme.myBubbleColor.copy(alpha = 0.3f), RoundedCornerShape(28.dp))
+                        .padding(start = 4.dp, end = 4.dp, top = 4.dp, bottom = 4.dp), // 👈 Reduced outer padding
                     verticalAlignment = Alignment.Bottom
                 ) {
                     if (isRecordingVoice) {
                         // --- ACTIVE RECORDING UI ---
-
-                        // 1. CANCEL/DELETE BUTTON
                         IconButton(
-                            onClick = {
-                                isRecordingVoice = false
-                                voiceRecorder.cancelRecording()
-                            },
-                            modifier = Modifier.size(42.dp)
-                        ) {
-                            Icon(Icons.Default.Close, contentDescription = "Cancel", tint = Color.Red)
-                        }
+                            onClick = { isRecordingVoice = false; voiceRecorder.cancelRecording() },
+                            modifier = Modifier.size(36.dp) // 👈 Reduced from 42.dp
+                        ) { Icon(Icons.Default.Close, contentDescription = "Cancel", tint = Color.Red, modifier = Modifier.size(20.dp)) }
 
-                        // 2. THE RECORDING TRACKER
                         Row(
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(42.dp)
-                                .clip(RoundedCornerShape(24.dp))
-                                .background(AppColors.SurfaceDark)
-                                .padding(horizontal = 12.dp),
+                            modifier = Modifier.weight(1f).height(38.dp).padding(horizontal = 12.dp), // 👈 Reduced from 42.dp
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            // Blinking Red Dot
                             val infiniteTransition = androidx.compose.animation.core.rememberInfiniteTransition()
                             val alpha by infiniteTransition.animateFloat(
                                 initialValue = 1f, targetValue = 0.2f,
-                                animationSpec = androidx.compose.animation.core.infiniteRepeatable(
-                                    animation = tween(800), repeatMode = androidx.compose.animation.core.RepeatMode.Reverse
-                                )
+                                animationSpec = androidx.compose.animation.core.infiniteRepeatable(tween(800), androidx.compose.animation.core.RepeatMode.Reverse)
                             )
                             Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(Color.Red.copy(alpha = alpha)))
-
                             Spacer(modifier = Modifier.width(8.dp))
-
                             Text(text = "Recording...", color = Color.White, fontSize = 14.sp)
-
                             Spacer(modifier = Modifier.weight(1f))
-
-                            // Timer
                             val minutes = recordingDuration / 60
                             val seconds = recordingDuration % 60
-                            Text(
-                                text = "${minutes}:${seconds.toString().padStart(2, '0')}",
-                                color = currentTheme.myBubbleColor,
-                                fontWeight = FontWeight.Bold
-                            )
+                            Text(text = "${minutes}:${seconds.toString().padStart(2, '0')}", color = currentTheme.myBubbleColor, fontWeight = FontWeight.Bold)
                         }
-
-                        Spacer(modifier = Modifier.width(8.dp))
-
-                        // 3. STOP & SEND BUTTON
                         Box(
-                            modifier = Modifier
-                                .size(42.dp)
-                                .clip(CircleShape)
-                                .background(currentTheme.myBubbleColor)
-                                .clickable {
-                                    isRecordingVoice = false
-                                    val audioBytes = voiceRecorder.stopRecording()
-                                    if (audioBytes != null && recordingDuration > 0) {
-                                        viewModel.sendVoiceMessage(chatId, audioBytes, replyingToMessageId)
-                                        replyingToMessageId = null
-                                    }
-                                },
+                            modifier = Modifier.size(36.dp).clip(CircleShape).background(currentTheme.myBubbleColor).clickable { // 👈 Reduced from 42.dp
+                                isRecordingVoice = false
+                                val audioBytes = voiceRecorder.stopRecording()
+                                if (audioBytes != null && recordingDuration > 0) {
+                                    viewModel.sendVoiceMessage(chatId, audioBytes, replyingToMessageId)
+                                    replyingToMessageId = null
+                                }
+                            },
                             contentAlignment = Alignment.Center
-                        ) {
-                            Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Send Voice", tint = Color.White, modifier = Modifier.size(18.dp).offset(x = 2.dp))
-                        }
+                        ) { Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Send Voice", tint = Color.White, modifier = Modifier.size(16.dp).offset(x = 1.dp)) }
 
                     } else {
                         // --- STANDARD UI ---
-
                         val showMediaIcons = messageText.text.isBlank() || forceShowIcons
 
-                        // 1. The Expand Arrow (Shows when typing, hides when icons are visible)
+                        // 1. The Expand Arrow
                         androidx.compose.animation.AnimatedVisibility(
                             visible = !showMediaIcons,
                             enter = androidx.compose.animation.expandHorizontally() + fadeIn(),
                             exit = androidx.compose.animation.shrinkHorizontally() + fadeOut()
                         ) {
-                            IconButton(
-                                onClick = { forceShowIcons = true },
-                                modifier = Modifier.size(36.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos, // Or Icons.Default.Add
-                                    contentDescription = "Expand Media",
-                                    tint = currentTheme.myBubbleColor,
-                                    modifier = Modifier.size(20.dp)
-                                )
+                            IconButton(onClick = { forceShowIcons = true }, modifier = Modifier.size(36.dp)) { // 👈 Reduced from 42.dp
+                                Icon(Icons.AutoMirrored.Filled.ArrowForwardIos, contentDescription = "Expand Media", tint = currentTheme.myBubbleColor, modifier = Modifier.size(18.dp))
                             }
                         }
 
-                        // 2. The Media Icons (Hides when typing)
+                        // 2. The Media Icons
                         androidx.compose.animation.AnimatedVisibility(
                             visible = showMediaIcons,
                             enter = androidx.compose.animation.expandHorizontally() + fadeIn(),
                             exit = androidx.compose.animation.shrinkHorizontally() + fadeOut()
                         ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                // Media Icons
-                                IconButton(onClick = { cameraLauncher.launch() }, modifier = Modifier.size(36.dp)) {
-                                    Icon(painterResource(Res.drawable.camera), contentDescription = "Camera", tint = currentTheme.myBubbleColor)
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.height(38.dp) // 👈 Reduced from 42.dp
+                            ) {
+                                IconButton(onClick = { cameraLauncher.launch() }, modifier = Modifier.size(36.dp)) { // 👈 Reduced from 36.dp
+                                    Icon(painterResource(Res.drawable.camera), contentDescription = "Camera", tint = currentTheme.myBubbleColor, modifier = Modifier.size(20.dp))
                                 }
                                 IconButton(onClick = { videoLauncher.launch() }, modifier = Modifier.size(36.dp)) {
-                                    Icon(painterResource(Res.drawable.video), contentDescription = "Video", tint = currentTheme.myBubbleColor)
+                                    Icon(painterResource(Res.drawable.video), contentDescription = "Video", tint = currentTheme.myBubbleColor, modifier = Modifier.size(20.dp))
                                 }
                                 IconButton(onClick = { mediaLauncher.launch() }, modifier = Modifier.size(36.dp)) {
-                                    Icon(painterResource(Res.drawable.image), contentDescription = "Gallery", tint = currentTheme.myBubbleColor)
+                                    Icon(painterResource(Res.drawable.image), contentDescription = "Gallery", tint = currentTheme.myBubbleColor, modifier = Modifier.size(18.dp))
                                 }
-
-                                // The Tap-To-Record Button
                                 IconButton(
-                                    onClick = {
-                                        if (messageText.text.isBlank()) {
-                                            voiceRecorder.startRecording { isRecordingVoice = true }
-                                        }
-                                    },
+                                    onClick = { if (messageText.text.isBlank()) voiceRecorder.startRecording { isRecordingVoice = true } },
                                     modifier = Modifier.size(36.dp)
                                 ) {
-                                    Icon(painterResource(Res.drawable.mic), contentDescription = "Record Voice", tint = currentTheme.myBubbleColor)
+                                    Icon(painterResource(Res.drawable.mic), contentDescription = "Record Voice", tint = currentTheme.myBubbleColor, modifier = Modifier.size(20.dp))
                                 }
                             }
                         }
 
-                        Spacer(modifier = Modifier.width(8.dp))
-
                         // Text Input Field
                         BasicTextField(
                             value = messageText,
-                            onValueChange = {
-                                messageText = it
-                                forceShowIcons = false
-                            },
-                            maxLines = if (showMediaIcons) 1 else 16,
+                            onValueChange = { messageText = it; forceShowIcons = false },
+                            maxLines = if (showMediaIcons) 1 else 6,
                             modifier = Modifier
                                 .weight(1f)
                                 .focusRequester(inputFocusRequester)
                                 .onFocusChanged { focusState ->
                                     if (focusState.isFocused) {
-                                        // If they tap the text field to bring the keyboard up, instantly hide the icons
                                         forceShowIcons = false
-                                        messageText = messageText.copy(
-                                            selection = TextRange(messageText.text.length)
-                                        )
+                                        messageText = messageText.copy(selection = TextRange(messageText.text.length))
                                     } else {
-                                        // If the text field loses focus (they tapped the screen to close the keyboard), bring the icons back!
                                         forceShowIcons = true
                                     }
                                 }
-                                .clip(RoundedCornerShape(24.dp))
-                                .background(if (org.ttproject.isDark) Color.Black.copy(alpha = 0.25f) else Color.Black.copy(alpha = 0.05f))
-                                .border(1.dp, if (messageText.text.isNotBlank()) currentTheme.myBubbleColor else AppColors.TextGray.copy(alpha = 0.3f), RoundedCornerShape(24.dp))
-                                .padding(horizontal = 16.dp, vertical = 10.dp),
-                            textStyle = TextStyle(color = AppColors.TextPrimary, fontSize = 15.sp),
+                                .padding(horizontal = 8.dp, vertical = 8.dp), // 👈 Reduced vertical padding from 12.dp to 8.dp
+                            textStyle = TextStyle(color = AppColors.TextPrimary, fontSize = 16.sp),
                             cursorBrush = SolidColor(currentTheme.myBubbleColor),
                             decorationBox = { innerTextField ->
                                 Box(contentAlignment = Alignment.CenterStart) {
                                     if (messageText.text.isEmpty()) {
-                                        Text(
-                                            text = "Message",
-                                            color = AppColors.TextGray,
-                                            fontSize = 15.sp,
-                                            maxLines = 1, // Forces it to stay on one line
-                                            overflow = TextOverflow.Ellipsis // Adds "..." if it still somehow gets cut off
-                                        )
+                                        Text("Message", color = AppColors.TextGray, fontSize = 16.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                     }
                                     innerTextField()
                                 }
                             }
                         )
 
-                        Spacer(modifier = Modifier.width(8.dp))
-
                         // Send Text Button
                         Box(
-                            modifier = Modifier
-                                .size(42.dp)
-                                .clip(CircleShape)
-                                .background(if (messageText.text.isNotBlank()) currentTheme.myBubbleColor else AppColors.SurfaceDark.copy(alpha = 0.5f))
+                            modifier = Modifier.size(38.dp).clip(CircleShape).background(if (messageText.text.isNotBlank()) currentTheme.myBubbleColor else AppColors.TextGray.copy(alpha = 0.2f)) // 👈 Reduced from 42.dp
                                 .clickable(enabled = messageText.text.isNotBlank()) {
                                     viewModel.sendMessage(messageText.text, replyingToMessageId)
                                     messageText = TextFieldValue("")
@@ -946,7 +895,7 @@ fun ChatDetailScreen(
                                 },
                             contentAlignment = Alignment.Center
                         ) {
-                            Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Send", tint = if (messageText.text.isNotBlank()) Color.White else AppColors.TextGray, modifier = Modifier.size(18.dp).offset(x = 2.dp))
+                            Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Send", tint = if (messageText.text.isNotBlank()) Color.White else AppColors.TextGray, modifier = Modifier.size(17.dp).offset(x = 2.dp)) // 👈 Reduced icon from 18 to 16
                         }
                     }
                 }
