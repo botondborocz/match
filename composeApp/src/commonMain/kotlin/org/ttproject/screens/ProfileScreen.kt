@@ -91,6 +91,7 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import org.koin.compose.koinInject
 import org.ttproject.AppIcon
+import org.ttproject.components.BadgesSection
 import org.ttproject.components.NativeDatePickerField
 import org.ttproject.components.NativeDropdownField
 import org.ttproject.data.TokenStorage
@@ -267,6 +268,19 @@ fun ProfileScreen(
                                     isMatchCardPreviewOpen = true
                                 } // 👈 NEW
                             )
+                            Spacer(modifier = Modifier.height(32.dp))
+                        }
+                    }
+
+                    // 👇 ÚJ: BADGE SECTION (Kitűzők beszúrása ide) 👇
+                    AnimatedVisibility(
+                        visible = animateTrigger,
+                        enter = fadeIn(tween(400, delayMillis = 50)) + slideInVertically(
+                            tween(400, delayMillis = 50)
+                        ) { 50 }
+                    ) {
+                        Column {
+                            BadgesSection() // Ezt a komponenst hívjuk meg!
                             Spacer(modifier = Modifier.height(32.dp))
                         }
                     }
@@ -904,7 +918,7 @@ private fun SettingsAndLogout(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        if (true) {
+        if (isIosPlatform()) {
             // 👇 The cleanly styled Reset Map Choice Button
             Row(
                 modifier = Modifier
